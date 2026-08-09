@@ -91,19 +91,46 @@ seed §2는 🔴·🟠의 주 공급원을 Track C로 지목했다. Track C 이�
 
 ---
 
-## 수집 — 셸 의존 0 (라운드 4)
+## 수집 — 유닉스 유틸 의존 0 (라운드 4 · 2026-08-09 실측으로 정정)
 
-**Bash를 쓰지 않는다.** seed §0·§3의 Bash 블록 3개(`pnpm outdated | jq` · `pnpm info peerDependencies` · `pnpm info time | jq`)와 `date -v-14d`가 전부 registry HTTP 1경로로 접힌다.
+> **정정 이력:** 라운드 4의 결론은 *"Bash를 쓰지 않는다 — 전부 registry HTTP 1경로로 접힌다"*였다. 스펙 리뷰의 **실측이 이 전제를 깨뜨렸다** (§실측 결과). 결론의 목적(유닉스 유틸·PM·호스트 비의존)은 유지되지만 **수단이 WebFetch 단일에서 `node -e` 병용으로 바뀐다.** `pnpm`·`jq`·`date`·`cat`·`ls` 금지는 그대로다.
 
 | 재료 | 획득 경로 |
 | --- | --- |
 | 대상 목록 · 선언 범위 | `package.json` **Read** — `dependencies` 키만 읽으면 devDependencies가 자동 배제된다. seed의 `jq` `dependencyType` 필터가 불필요해진다 |
 | 설치된 정확 버전 | lockfile **Read** (`pnpm-lock.yaml` 등) |
-| 최신 · dist-tags · 프리릴리즈 여부 | `registry.npmjs.org/<pkg>` **WebFetch** |
-| peer 상한 재료 | 같은 응답의 `versions[*].peerDependencies` |
-| 배포일 (soak·churn 재료) | 같은 응답의 `time` |
-| deprecated 여부 | 같은 응답의 `versions[*].deprecated` |
+| `latest` · dist-tags · 프리릴리즈 여부 | `registry.npmjs.org/-/package/<pkg>/dist-tags` **WebFetch** — 작고 절단되지 않는다 (실측 확인) |
+| peer 상한 재료 · `deprecated` | `registry.npmjs.org/<pkg>/<ver>` **WebFetch** — 버전 단위 문서. 정확히 온다 (실측 확인) |
+| **버전 목록 · 배포일 (soak·churn 재료)** | **`node -e` 1줄** — full packument를 fetch해 필요 필드만 뽑아 출력 |
 | 오늘 날짜 | **컨텍스트 현재 날짜** — `date` 호출 없음 |
+
+### 실측 결과 (2026-08-09 · `react-native-worklets`)
+
+| 경로 | 결과 |
+| --- | --- |
+| `registry.npmjs.org/<pkg>` (full packument) WebFetch | **절단됨** — 최상위 `time` 객체 부재, `latest` 버전 엔트리조차 응답에 없음 |
+| `registry.npmjs.org/<pkg>/<ver>` WebFetch | **정확** — `peerDependencies` 원문, `deprecated` 판정 가능 |
+| `registry.npmjs.org/-/package/<pkg>/dist-tags` WebFetch | **정확**, 작다 |
+| GitHub releases·tags 페이지 WebFetch | 마크다운 변환에서 목록 소실 — 날짜 획득 불가 |
+| `npmjs.com/package/<pkg>?activeTab=versions` WebFetch | **HTTP 403** |
+
+- **full packument는 인기 패키지일수록 크다.** 작은 패키지에서 이미 절단됐으므로 `react-native`에서는 확실히 절단된다.
+- WebFetch는 페이지를 **작은 모델이 요약**해 돌려준다. 실측에서 그 모델이 버전 문서의 비공식 `_npmOperationalInternal.tmp` ms 타임스탬프(`1784907028542` = 2026-07-24)를 **"February 24, 2025"로 오변환**했다. **날짜 산술을 요약 모델에 맡기면 틀린다** — §환각 금지가 직접 걸린다. 그 필드는 비공식이기도 하므로 **쓰지 않는다.**
+
+### `node -e` — 유일하게 허용되는 Bash 용도
+
+```sh
+node -e "fetch('https://registry.npmjs.org/<pkg>').then(r=>r.json()).then(d=>{
+  const t=d.time;
+  Object.keys(d.versions).filter(v=>!/-/.test(v)).slice(-10)
+    .forEach(v=>console.log(v, t[v].slice(0,10), d.versions[v].deprecated?'DEPRECATED':''));
+})"
+```
+
+- **Bash 출력은 원문 그대로 컨텍스트에 들어온다** — 요약 모델을 경유하지 않는다. 이게 WebFetch와의 결정적 차이이고, 이 예외의 유일한 근거다.
+- **`node`는 새 의존이 아니다.** 대상이 React Native 프로젝트이므로 100% 존재한다. `jq`·`pnpm`·`curl`과 달리 호스트·PM에 무관하고 Windows Git Bash에서도 동작한다 — §호스트 지원의 전 호스트 ✅가 유지된다.
+- **셸 문법을 쓰지 않는다.** 파이프·리다이렉트·`date`·`cat`·`ls`·`jq` 전부 금지. 허용되는 건 위 형태의 `node -e` 호출 하나뿐이고, 날짜 산술도 셸이 아니라 ISO 문자열 비교로 한다.
+- **degrade:** `node`가 없거나 `node -e`가 실패하면 그 대상의 **soak·churn 게이트만** `확인 못 함`으로 두고 나머지 게이트(1·2·5·6)로 권장을 산정한다. 대상을 리포트에서 빼지 않는다. 권장 줄에 `⚠ 숙성 미확인`을 병기한다 — 근거 없이 "충분히 익었다"고 말하지 않는다.
 
 ### 근거 — 이식성을 구조로 만든다
 
@@ -114,7 +141,9 @@ seed §2는 🔴·🟠의 주 공급원을 Track C로 지목했다. Track C 이�
 
 ### 파급
 
-- `allowed-tools`: **`Read Write WebFetch Agent Skill`** — `Bash` 불포함, **`WebSearch`도 불포함**.
+- `allowed-tools`: **`Read Write Glob Bash WebFetch Agent Skill`** — **`WebSearch` 불포함**. (2026-08-09 정정: `Bash`가 `node -e` 1종 용도로 들어오고 `Glob`이 lockfile·`gradle.properties` 탐색용으로 추가됐다.)
+  - **`Bash`는 위 `node -e` 형태의 registry 조회에만 쓴다.** 다른 용도의 셸 호출은 이 스펙 전체에서 금지다 — 도구 목록이 아니라 본문 규칙으로 잠근다. `allowed-tools`로는 이 구분을 표현할 수 없으므로 `SKILL.md` 본문에 금지 목록(`pnpm`·`jq`·`date`·`cat`·`ls`·파이프·리다이렉트)을 명시한다.
+  - **`Glob` 추가 근거:** lockfile 4종 중 어느 것이 있는지, `gradle.properties`가 어디 있는지 탐색해야 한다. `Read`만으로는 부재와 경로 못 찾음을 구분할 수 없다.
   - `WebSearch` 제외 근거는 확정사항 6이다. "최신이 몇이냐"를 검색으로 찾지 않는다는 규칙을 도구 목록으로 강제한다 — `platform-watch`가 셸을 빼서 이식성을 구조화한 것과 같은 수법. (이 항목은 확정사항 6에서 파생됐고 인터뷰 라운드에서 별도 확인되지 않았다.)
   - 릴리즈 노트 URL이 죽으면 대안 검색을 하지 않고 `확인 못 함`으로 간다.
 - soak 컷오프는 `컨텍스트 현재 날짜 − 14d/7d`로 만든다. 날짜는 ISO라 **문자열 비교로 충분**하다(`"2026-07-23" > "2026-07-17"`). 파싱·산술 하지 않는다.
@@ -197,6 +226,22 @@ seed §2는 🔴·🟠의 주 공급원을 Track C로 지목했다. Track C 이�
 4. 파일이 없으면 하한 없이 계산하고 **`플랫폼 하한 미반영`**을 적는다.
 
 **계약 5항 (라운드 7에서 추가):** 핸드오프의 `current` 필드는 currency 스냅샷 헤더의 `targetSdk`·`iOS min`의 **유일한 공급원**이다. currency는 그 값을 직접 파싱하지 않는다.
+
+**계약 6항 (인터뷰 후 추가 — 2026-08-09):** 핸드오프의 `urgency` 필드는 정책 하한 항목의 **🔴/🟠 분기의 유일한 공급원**이다. currency는 `deadline`으로 D-day를 계산하지 않는다.
+
+| 핸드오프 `urgency` | currency 등급 |
+| --- | --- |
+| `임박` | 🔴 Urgent |
+| `여유` | 🟠 Deadline |
+| `판정 불가` | 등급 축에 올리지 않고 ⚠ 블록 — `마감 임박도 판정 불가 (platform-watch)` |
+
+> **추가 사유:** §정체성의 등급표는 🔴 = *마감 임박 정책 하한*, 🟠 = *여유 있는 정책 하한*으로 갈리는데, §Non-Goals는 *"정책 요구의 마감일 판정 — 날짜 축은 `platform-watch`"*다. 임계일 90은 `platform-watch` 소유이고 `status` 3값(미충족/충족/확인 못 함)은 임박도를 안 실어 나른다. 즉 currency가 **정의되지 않은 임계일로 날짜 산술을 다시 하는 수밖에 없는 상태**였다 — 두 스킬이 같은 항목에 다른 급박도를 말하는 경로이고, §Non-Goals 위반이다.
+>
+> 해법은 `rn_floor`를 안 둔 것과 **반대 방향의 같은 수법**이다: 재료 없는 쪽이 채우게 만들지 말고 **재료 가진 쪽이 계산해 넘긴다.** currency는 매핑만 한다.
+>
+> **파급:** §Non-Goals의 *핸드오프 신선도 판정 안 함*과 정합적이다 — currency는 여전히 날짜를 판정하지 않는다. `stale`이 붙은 항목의 `urgency`도 그대로 쓴다(낡은 임박도는 **과소평가**일 뿐이고, 안 쓰는 쪽이 낙관 편향이라는 §degrade 2분기의 비대칭 근거가 그대로 적용된다).
+
+**계약 7항 (인터뷰 후 추가):** 핸드오프 항목에 `stale: <날짜>`가 붙어 있어도 **하한·`current`·`urgency`를 그대로 쓴다.** `stale`은 `platform-watch`가 좁힌 스코프로 실행돼 그 항목을 이번에 조회하지 않았다는 표기이고, 판정을 바꾸지 않는다. 헤더의 `핸드오프 <생성일>` 옆에 `(일부 항목 stale)`을 병기한다.
 
 ---
 
@@ -333,6 +378,19 @@ seed §2는 🔴·🟠의 주 공급원을 Track C로 지목했다. Track C 이�
 
 seed의 `platform` 스코프와 `platform-watch`의 `--platform android|ios`는 **같은 단어에 다른 의미**다. `--track`으로 개명해 한 플러그인 안에서 같은 플래그가 두 뜻을 갖는 상황을 없앤다.
 
+### 인자 문법 — bare 토큰 규칙 (인터뷰 후 추가 — 2026-08-09)
+
+| 입력 | 해석 |
+| --- | --- |
+| `platform` (bare) | 범위 안내 후 종료 — 아래 |
+| `--track platform` | **같은 안내 후 종료.** 값 검증 에러로 처리하지 않는다 |
+| `<pkg>` (그 외 bare 토큰) | `--target <pkg>`와 동일 |
+| 유효하지 않은 bare 토큰 | `지정 스코프에 해당 대상 없음` + 유효한 값 목록 (§스코프 인자의 공집합 처리와 같은 경로) |
+
+> **추가 사유:** 인터뷰 산출물이 세 군데서 어긋나 있었다 — 본문·AC는 bare `platform`, §Non-Goals는 `--track platform`. 둘 중 하나만 받으면 나머지 표기로 친 사용자가 조용히 빈 결과를 본다.
+>
+> bare 토큰 일반 규칙도 없었다. seed 문법은 `/rn-currency reanimated`(bare 대상명)였고 `references/cadence.md`에도 그 형태가 남아 있다 — 규칙이 없으면 seed 사용자의 손버릇이 "패키지명으로 해석돼 빈 결과"를 만든다. **`platform` 안내가 죽이려던 실패 모양과 정확히 같다.**
+
 ### `platform` — 범위 안내 (수명 영구)
 
 `platform`을 받되 **실행하지 않고 안내 후 종료**한다. 리포트 파일을 생성하지 않는다.
@@ -376,7 +434,7 @@ platform 추적은 platform-watch가 담당한다.
 
 - `platform-watch`와 **같은 값·같은 정리 보고 한 줄**. 같은 매체(마크다운 수 KB)이므로 성격이 같다.
 - `rehearsal`의 N=3은 매체가 다르므로(수십 MB) **성격에서 파생된 정당한 차이**다.
-- **N은 조정 가능한 값으로 한 곳에** 둔다. 두 advisory 스킬이 같은 상수를 참조해 한쪽만 바뀌는 드리프트를 막는다(`platform-watch`의 등급 임계일 90을 참조 파일에 둔 것과 같은 처리).
+- **N은 조정 가능한 값으로 한 곳에** 둔다. 두 advisory 스킬이 같은 상수를 참조해 한쪽만 바뀌는 드리프트를 막는다. 물리적 위치는 **플러그인 루트 `shared/constants.md`의 `report_retention_n`**으로 확정됐다 (인터뷰 후 — `.omc/specs/plugin-shell.md` §2). 스킬별 `references/`는 소유자가 하나라 공유물을 담을 수 없다. `soak_minor_days`·`soak_patch_days`·`handoff_path`·`handoff_schema_version`도 같은 파일에서 온다.
 - **삭제는 조용히 하지 않는다.** 몇 개를 지웠는지 리포트 말미에 한 줄. 사용자가 사라진 파일을 찾다 헤매지 않게 한다.
 
 ### 보존은 청소가 아니라 기능이다
@@ -384,6 +442,7 @@ platform 추적은 platform-watch가 담당한다.
 `platform-watch`는 델타를 `state.json`에서 뽑지만 currency는 **직전 리포트 파일 자체**를 델타 표기용으로 읽는다. **N=1이면 델타 줄이 영구히 빈다.** 상한에는 기능적 하한 2가 있다.
 
 - 직전 리포트는 **표기 전용**이다: 새로 생긴 gap · 해소된 gap · 등급이 바뀐 항목 · **지난번 `유지`가 이번에 승격으로 풀렸는지**(soak 만료·회귀 픽스 도착)를 헤더 아래 한 줄로.
+- **델타는 양쪽 리포트에서 모두 조회된 대상에서만 계산한다** (인터뷰 후 추가). 스코프를 좁혀 돌려도 파일을 쪼개지 않고 덮어쓰므로, 직전 리포트가 좁힌 실행 산물이면 그때 `미조회`였던 대상이 이번에 **"신규 gap"으로 오탐**되고 반대 방향이면 **"해소"로 오탐**된다. 양쪽 `미조회` 블록을 읽어 교집합 밖 대상은 델타 계산에서 제외하고, 제외된 개수를 델타 줄 끝에 `(비교 제외 N건)`으로 적는다.
 - **판정 근거로 재활용하지 않는다.** 지난 리포트는 stale이고 근거는 이번 실행의 registry·노트 조회에서 다시 나와야 한다. (`platform-watch` §상태가 판정에 새어드는 통로 차단과 동형.)
 - 직전 리포트가 없으면 델타 줄만 생략되고 리포트는 정상 산출된다.
 
@@ -397,7 +456,7 @@ platform 추적은 platform-watch가 담당한다.
 | Linux | ✅ | ✅ | android만 |
 | Windows | ✅ | ✅ | **실행 거부** |
 
-- currency의 ✅는 **선언이 아니라 구조적 사실**이다: 셸 호출 0, 네이티브 실행 경로 0. 파일 접근은 Read/Write 도구만.
+- currency의 ✅는 **선언이 아니라 구조적 사실**이다: 유닉스 유틸·PM 의존 0, 셸 문법 0, 네이티브 실행 경로 0. 유일한 셸 사용은 `node -e` 1종이고 `node`는 대상이 RN 프로젝트라 항상 존재한다 — Windows Git Bash에서도 동작한다. (2026-08-09 정정: 원래 근거는 *"셸 호출 0"*이었으나 실측으로 배포일 획득 경로가 없음이 드러나 수단이 바뀌었다. **호스트 비의존이라는 결론은 그대로다** — 바뀐 건 근거 문장이다.)
 - `rehearsal`의 거부 사유는 "Windows"가 아니라 **"네이티브 빌드 실행"**이다. 원칙(*검증 못 한 실행 경로를 사실로 쓰지 않는다*)은 같고 적용 결과만 다르다.
 - README 지원 매트릭스에 **거부 사유까지** 적는다 — "rehearsal: POSIX 전용 — 네이티브 빌드를 실제 실행하기 때문", "platform-watch·currency: 전 호스트 — 조회·파일 읽기만".
 
@@ -501,7 +560,9 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 - **currency 리포트의 기계 판독 계약화** — `rehearsal`이 리포트를 파싱하지 않는다.
 - **네이티브 설정 파싱 규칙 보유** — `targetSdk`·iOS min은 핸드오프에서 온다. 직접 읽는 건 `newArchEnabled`·`hermesEnabled` 둘뿐.
 - **정책↔버전 매핑표 보유** — 매 실행 노트를 근거로 단다.
-- **셸 호출** — `pnpm`·`jq`·`date` 포함. Read/Write/WebFetch 도구만.
+- **`node -e` 외의 셸 호출** — `pnpm`·`jq`·`date`·`cat`·`ls`·파이프·리다이렉트 전부 금지. `Bash`의 유일한 허용 용도는 §수집의 registry 조회 `node -e` 1종이다.
+- **비공식 registry 필드 사용** — `_npmOperationalInternal.tmp`의 타임스탬프 등. 공식 필드가 아니고 실측에서 요약 모델이 오변환했다.
+- **soak·churn 재료를 못 얻었을 때 "익었다"고 판정** — `확인 못 함` + `⚠ 숙성 미확인`으로 남긴다.
 - **웹 검색** — `WebSearch`를 `allowed-tools`에 두지 않는다. "최신이 몇이냐"를 검색으로 찾지 않는다.
 - **Expo 관련 제안** — 이 프로젝트는 Expo 미사용. `expo-*` 대안을 제시하지 않는다.
 - **넓히기 방향 스코프 인자 · `--track` 복수 지정**
@@ -518,9 +579,34 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 
 **수집 · 이식성**
 
-- [ ] 셸 호출이 0이다 — `pnpm`·`jq`·`date` 등 어떤 셸 명령도 실행하지 않는다
-- [ ] `allowed-tools`에 `Bash`가 없다
+- [ ] `Bash` 호출이 `node -e` registry 조회 1종을 벗어나지 않는다 — `pnpm`·`jq`·`date`·`cat`·`ls`·파이프·리다이렉트가 존재하지 않는다
 - [ ] `allowed-tools`에 `WebSearch`가 없다
+- [ ] `allowed-tools`에 `Glob`이 있다
+- [ ] full packument를 WebFetch로 읽어 `time`·버전 목록을 얻는 코드 경로가 존재하지 않는다 (절단 실측 반영)
+- [ ] `_npmOperationalInternal` 등 비공식 필드를 배포일 근거로 쓰지 않는다
+- [ ] `node -e`가 실패하면 soak·churn만 `확인 못 함`이 되고 대상이 리포트에서 빠지지 않으며 `⚠ 숙성 미확인`이 병기된다
+- [ ] `node`가 없는 환경에서도 게이트 1·2·5·6으로 권장이 산정된다
+
+**핸드오프 — `urgency`·`stale` (계약 6·7항)**
+
+- [ ] 정책 하한 항목의 🔴/🟠가 핸드오프 `urgency`에서만 나온다 — `deadline`으로 D-day를 계산하는 코드 경로가 존재하지 않는다
+- [ ] `urgency: 판정 불가` 항목이 등급 축이 아니라 ⚠ 블록으로 간다
+- [ ] `stale`이 붙은 항목의 하한·`current`·`urgency`가 그대로 적용된다
+- [ ] `stale` 항목이 있으면 헤더에 `(일부 항목 stale)`이 병기된다
+- [ ] 핸드오프 `schema_version`이 `shared/constants.md`의 값과 다르면 `스키마 불일치` degrade로 간다
+- [ ] 헤더의 핸드오프 생성일이 파일 레벨 `generated`에서 나온다
+
+**인자 문법**
+
+- [ ] bare `platform`과 `--track platform`이 **같은** 범위 안내로 처리된다
+- [ ] `platform` 외의 bare 토큰이 `--target`과 동일하게 해석된다
+- [ ] 유효하지 않은 bare 토큰이 빈 리포트가 아니라 안내문 + 유효 값 목록을 낸다
+
+**델타**
+
+- [ ] 델타가 양쪽 리포트에서 모두 조회된 대상에서만 계산된다
+- [ ] 직전 리포트가 좁힌 실행 산물일 때 미조회였던 대상이 `신규 gap`으로 오탐되지 않는다
+- [ ] 비교에서 제외된 대상 개수가 델타 줄에 보고된다
 - [ ] 대상 목록이 `package.json`의 `dependencies` 키에서만 산정되고 devDependencies가 포함되지 않는다
 - [ ] 설치된 정확 버전이 lockfile Read에서 나온다
 - [ ] 최신·`dist-tags`·`peerDependencies`·`time`·`deprecated`가 registry 응답에서 나오고 웹 검색 결과에서 나오지 않는다
@@ -627,7 +713,8 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 | 낡은 핸드오프는 신뢰할 수 없으니 임계값을 둔다 | 정책 하한은 오르기만 하므로 낡은 하한은 과소평가일 뿐이고, 안 쓰는 쪽이 낙관 편향이다 | `오래됨`을 상태로 만들지 않는다. 파싱되면 적용 + 생성일 병기. 날짜를 소유한 쪽이 판정한다 |
 | 정책 요구는 항상 RN 하한으로 번역된다 | `targetSdk`는 RN이 아니라 앱 `build.gradle`이 정한다 — 함수가 항상 성립하지 않는다 | 3결과 어휘. `하한 불요(프로젝트 설정 축)`는 정보 부재가 아니라 행동 지시라 ③과 자리를 나눈다 |
 | 번역 비용을 줄이려면 매핑표를 보유한다 | 표가 낡으면 환각 금지가 낡은 표를 근거로 삼는 걸 못 막는다 | 매 실행 노트 근거. 매핑표 미보유 |
-| currency는 Bash가 필요하다 (컨트래리언) | registry는 HTTP JSON이고 확정사항 6은 전송 수단이 아니라 출처를 말한다. `date -v`는 이미 리눅스에서 깨진다 | 셸 의존 0. `allowed-tools`에서 `Bash` 제거. 형제 스펙의 currency ✅가 사후 참이 됨 |
+| currency는 Bash가 필요하다 (컨트래리언) | registry는 HTTP JSON이고 확정사항 6은 전송 수단이 아니라 출처를 말한다. `date -v`는 이미 리눅스에서 깨진다 | 셸 의존 0. `allowed-tools`에서 `Bash` 제거. 형제 스펙의 currency ✅가 사후 참이 됨 — **2026-08-09 실측으로 부분 정정**: full packument WebFetch가 절단돼 배포일을 못 얻는다. `node -e` 1종만 되돌리고 `pnpm`·`jq`·`date` 제거는 유지 (§수집) |
+| WebFetch로 registry JSON을 받으면 원문 그대로 읽는다 (실측으로 드러난 숨은 가정) | WebFetch는 **작은 모델이 요약**해 돌려준다. 실측에서 그 모델이 ms 타임스탬프를 1년 5개월 틀리게 변환했다 | 큰 응답·날짜 산술은 WebFetch에 맡기지 않는다. 작고 단일 목적인 엔드포인트(dist-tags·version doc)만 WebFetch, 나머지는 `node -e`로 원문 확보 |
 | seed의 🔴🟠🟡⚪는 Track C를 잃어 무너진다 | 공급원을 다시 세면 강제성 축 양쪽에 실물이 있고, 핸드오프가 날짜 공급원을 되돌려준다 | 4단계 유지. platform-watch와 달리 강제성 축이 붕괴하지 않는다 |
 | 두 스킬 어휘가 다르면 정합성이 깨진다 | 등급 축과 상태 축은 다른 축이다 — 같은 기호를 같은 의미로 쓰면 충분하다 | 등급 4값 유지 + ⚠·✅를 의미까지 동일하게 차용. rehearsal의 "판정 3값 + 오염 플래그 직교"와 동형 |
 | currency → rehearsal도 핸드오프 파일이어야 한다 (심플리파이어) | 권장 버전은 soak·churn 산물이라 마감일보다 훨씬 빨리 썩는다. 사람용 리포트를 스키마로 겸용하면 리포트 개선이 rehearsal 회귀가 된다 | 파일 없음. 단일 복사 블록 + 생성 시각 주석. 신선도 판정을 새 스키마 없이 소비자로 넘김 |
@@ -643,7 +730,8 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 
 - **정본:** `seed/rn-currency-SKILL.md` — frontmatter(`name`/`description`/`user-invocable`/`argument-hint`/`allowed-tools`), 번호 절 구조, 서두 불릿 원칙, `references/*.md` 지연 로드 패턴을 그대로 따른다. §0~§5 구조는 유지하되 Track C 관련 문단과 Bash 블록이 제거된다.
 - **형제 스펙:** `.omc/specs/deep-interview-platform-watch.md`(핸드오프 계약·경로 규약·degrade 원칙·⚠✅ 기호), `.omc/specs/deep-interview-rn-rehearsal.md`(어휘 소수 고정 + 직교 플래그, 사유 구분 표기, 보존 상한, 단일 복붙 블록 형태).
-- `allowed-tools` 후보: **`Read Write WebFetch Agent Skill`** — `Bash`·`WebSearch` 불포함.
+- `allowed-tools`: **`Read Write Glob Bash WebFetch Agent Skill`** — `WebSearch` 불포함. `Bash`는 §수집의 `node -e` 1종 용도로 본문에서 잠근다.
+- **`references/sources.md` 신설** — SM(`react-native-best-practices`)·Callstack(`react-native-perf-guide`) skill이 없을 때의 폴백 문서 URL과, 릴리즈 노트 태그 URL 조립 규칙(모노레포·태그 접두사 변형)의 정본. **`WebSearch`가 없으므로 폴백은 "검색해서 찾는다"가 될 수 없다 — URL을 미리 알고 있어야 한다.**
 - 대상 프로젝트 전제: New Architecture (`newArchEnabled=true`, Hermes, Nitro Modules, Reanimated 4), **Expo 미사용**.
 - 외부 skill 우선순위: SM 라이브러리는 `react-native-best-practices`(SM) 1차, 성능 진단성 정보는 `react-native-perf-guide`(Callstack) 참고.
 
@@ -706,12 +794,14 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 
 ## 구현자에게 남기는 미확정 (설계 재량 — 인터뷰에서 다루지 않음)
 
-- **registry 응답 크기 대응.** 인기 패키지의 전체 packument는 수 MB다. WebFetch가 요약·절단하면 그 자체가 환각 표면이 된다. 완화 후보: 버전별 엔드포인트(`registry.npmjs.org/<pkg>/<version>` — 작고 `peerDependencies` 포함)로 후보 버전만 확인하고, `time`은 게이트 후보 구간만 쓰기 / abbreviated packument(`application/vnd.npm.install-v1+json`) 사용 가능 여부. **필요 필드(`dist-tags`·`versions[*].peerDependencies`·`time`·`versions[*].deprecated`)를 확보 못 하면 `확인 못 함`으로 가야 한다.**
 - lockfile 4종(pnpm/npm/yarn/bun) 중 어디까지 Read 지원할지 — `rehearsal`은 4종을 지원한다. 미지원 lockfile이면 설치 버전을 `package.json` 선언 범위로 대체하고 그 사실을 헤더에 표기할지.
-- 보존 상한 공유 상수의 물리적 위치(참조 파일 경로·키 이름)
-- soak 기본값(minor 14일 / patch 7일)의 조정 가능 여부
 - known issue 게이트에서 "우리가 쓰는 기능"을 판별하는 근거 범위 — 소스 grep은 advisory 경계 안이지만 비용이 크다
-- 릴리즈 노트 태그 URL 조립 규칙(모노레포·태그 접두사 변형)의 정본 위치
+
+> **해소됨 (2026-08-09 · 스펙 리뷰):**
+> **registry 응답 크기 대응** → 실측으로 확정됐다(§수집 — 실측 결과). full packument WebFetch는 **절단된다**. `dist-tags`는 전용 엔드포인트, `peerDependencies`·`deprecated`는 버전별 엔드포인트, `time`·버전 목록은 `node -e`. abbreviated packument는 WebFetch가 Accept 헤더를 못 실어 배제됐고 `time`도 없다.
+> **보존 상한 공유 상수의 물리적 위치** → `shared/constants.md`의 `report_retention_n` (`.omc/specs/plugin-shell.md` §2).
+> **soak 기본값의 조정 가능 여부** → 같은 파일의 `soak_minor_days`·`soak_patch_days`로 **조정 가능 확정**.
+> **릴리즈 노트 태그 URL 조립 규칙의 정본 위치** → `references/sources.md`.
 - `Agent` 분담 단위(대상별 / 트랙별)와 동시 실행 상한
 - `--target`에 lockstep 짝의 한쪽만 지정했을 때 세트 전체를 끌어올지 여부
 - 델타 줄의 정확한 필드 구성
@@ -736,7 +826,8 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 | Gate | core domain | id(1..6), descending_filter(true) | 6개 고정; 범위 안에서만 하강 |
 | SafeTarget | core domain | version, blocked_by_gate, release_date, unblock_date | Target당 0..1 |
 | LockstepSet | core domain | members, joint_verdict | 짝 하나가 걸리면 세트 전체 |
-| HandoffRead | supporting | path(문자열 상수), parsed, degrade_reason, generated_date | Run당 0..1; 신선도 판정 없음 |
+| HandoffRead | supporting | path(문자열 상수), parsed, degrade_reason, schema_version, generated_date, has_stale_entries | Run당 0..1; 신선도 판정 없음. `schema_version` 불일치 → degrade 2 |
+| UrgencyMapping | supporting | handoff_urgency(임박/여유/판정 불가) → grade(🔴/🟠/⚠) | 인터뷰 후 추가(계약 6항). **매핑만 한다 — D-day 계산 없음** |
 | TranslationOutcome | core domain | kind(하한 있음/하한 불요/확인 못 함), evidence_link, floor_version | 핸드오프 항목당 1 |
 | Grade | supporting | value(🔴🟠🟡⚪), axes(강제성×임박도) | 상태축·권장버전축과 직교 |
 | ReportBlock | supporting | kind(등급/⚠/✅/미조회), sort_axis | 4종 |
@@ -750,7 +841,8 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 | ScopeArgument | supporting | track(단일값), target, narrowing_only, combine(AND) | 제외분은 ReportBlock 4 |
 | ScopeRedirect | supporting | trigger(platform), message(범위 안내), command_line, lifetime(영구) | 리포트 생성하지 않음 |
 | ReportRetention | supporting | limit_n(12·공유 상수), pruned_count, functional_floor(2) | 청소가 아니라 기능 |
-| HostSupportMatrix | external system | os, supported(전 호스트), shell_dependency(0), websearch(0) | 선언이 아니라 구조적 사실 |
+| HostSupportMatrix | external system | os, supported(전 호스트), unix_util_dependency(0), shell_syntax(0), node_eval(1종), websearch(0) | 선언이 아니라 구조적 사실. 2026-08-09 실측 정정 — `shell_dependency(0)` → `node -e` 1종 |
+| RegistryProbe | supporting | kind(dist-tags/version-doc/node-eval), truncation_safe(bool) | 인터뷰 후 추가. full packument WebFetch는 **절단되므로 경로에서 제외** |
 
 ## Ontology Convergence
 
