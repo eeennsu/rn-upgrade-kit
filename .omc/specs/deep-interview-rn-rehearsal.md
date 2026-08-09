@@ -1,4 +1,4 @@
-# Deep Interview Spec: rn-rehearsal — RN 업그레이드 리허설 룸
+# Deep Interview Spec: rehearsal — RN 업그레이드 리허설 룸
 
 ## Metadata
 
@@ -14,13 +14,13 @@
 
 ## Clarity Breakdown
 
-| 차원 | 점수 | 가중치 | 가중 |
-|---|---|---|---|
-| Goal Clarity | 0.94 | 0.40 | 0.376 |
-| Constraint Clarity | 0.94 | 0.30 | 0.282 |
-| Success Criteria Clarity | 0.90 | 0.30 | 0.270 |
-| **Total Clarity** | | | **0.928** |
-| **Ambiguity** | | | **0.072** |
+| 차원                     | 점수 | 가중치 | 가중      |
+| ------------------------ | ---- | ------ | --------- |
+| Goal Clarity             | 0.94 | 0.40   | 0.376     |
+| Constraint Clarity       | 0.94 | 0.30   | 0.282     |
+| Success Criteria Clarity | 0.90 | 0.30   | 0.270     |
+| **Total Clarity**        |      |        | **0.928** |
+| **Ambiguity**            |      |        | **0.072** |
 
 ---
 
@@ -32,8 +32,8 @@
 
 리허설이 **모든 게이트를 통과한 경우에 한해**, 검증된 결과를 폐기하지 않고 전용 브랜치로 남기는 **채택(adopt) 종단 옵션**을 제공한다 (§채택). 채택도 사용자 작업 브랜치를 수정하지 않는다 — 머지는 사용자가 직접 실행한다.
 
-- **스킬명(가정):** `rn-rehearsal`. 3스킬 플러그인 `rn-version-manager`의 세 번째 — 나머지 둘은 `rn-platform-watch`, `rn-currency`(설계 완료).
-- **위치:** `rn-currency`가 "뭘로 올려야 하나"를 advisory로 산정한다면, 이 스킬은 그 권장 버전을 **실제로 돌려보는 실험실**이다. `rn-platform-watch`·`rn-currency`는 순수 advisory이고, 이 스킬만 게이트 통과 시 검증된 결과물을 브랜치로 넘긴다.
+- **스킬명:** `rehearsal`. 3스킬 플러그인 `rn-upgrade-kit`의 세 번째 — 나머지 둘은 `platform-watch`, `currency`(설계 완료).
+- **위치:** `currency`가 "뭘로 올려야 하나"를 advisory로 산정한다면, 이 스킬은 그 권장 버전을 **실제로 돌려보는 실험실**이다. `platform-watch`·`currency`는 순수 advisory이고, 이 스킬만 게이트 통과 시 검증된 결과물을 브랜치로 넘긴다.
 
 > **정정 이력:** §채택은 인터뷰 종료 후 추가됐다. 인터뷰는 "업그레이드를 실제 적용하는 기능은 만들지 않는다"를 확정 사항으로 물려받았으나, 이는 *별도 스킬 신설*에 대한 반대가 비목표로 과잉 일반화된 것이었다. 플러그인의 최종 목표에는 검증된 업그레이드의 실제 반영이 포함된다. 인터뷰 본문(라운드 1~7)과 그 결론은 모두 유효하며, 채택은 라운드 4(worktree 항상 폐기)와 충돌하지 않는다 — worktree는 여전히 폐기되고 커밋만 살아남는다.
 
@@ -43,12 +43,12 @@
 
 원안의 4티어 중 T4(iOS)는 **독립 티어에서 폐기**되고 T2의 플랫폼 축으로 접힌다. 이유: Windows 미지원 확정 이후 남은 호스트 축이 macOS(전체) / Linux(Android만) 둘뿐이라, iOS는 "더 깊은 단계"가 아니라 "다른 플랫폼"이다.
 
-| 티어 | 내용 | 플랫폼 축 |
-|---|---|---|
-| **T1** | worktree 생성 → PM 감지 → 의존성 설치 → 패치 재적용 → 타입체크 → 테스트 | 없음 (공통) |
-| **T2/android** | Gradle 빌드 → 에뮬레이터/기기 설치 → 부팅 → 로그 스캔 | android |
-| **T2/ios** | `pod install` → `xcodebuild` → 시뮬레이터 부팅 → 로그 스캔 | ios (macOS 호스트만) |
-| **T3/\<platform\>** | 스크린샷 수집 — **증거물 전용, 판정 근거 아님** | 부팅 성공한 플랫폼마다 |
+| 티어                | 내용                                                                    | 플랫폼 축              |
+| ------------------- | ----------------------------------------------------------------------- | ---------------------- |
+| **T1**              | worktree 생성 → PM 감지 → 의존성 설치 → 패치 재적용 → 타입체크 → 테스트 | 없음 (공통)            |
+| **T2/android**      | Gradle 빌드 → 에뮬레이터/기기 설치 → 부팅 → 로그 스캔                   | android                |
+| **T2/ios**          | `pod install` → `xcodebuild` → 시뮬레이터 부팅 → 로그 스캔              | ios (macOS 호스트만)   |
+| **T3/\<platform\>** | 스크린샷 수집 — **증거물 전용, 판정 근거 아님**                         | 부팅 성공한 플랫폼마다 |
 
 ### fail-fast 적용 범위
 
@@ -70,12 +70,12 @@
 
 ### 미실행 사유 (4종 — 반드시 구분 표기)
 
-| 사유 | 표기 | 발생 조건 |
-|---|---|---|
-| fail-fast | `미실행 (앞 티어 실패)` | 수직 상위 티어가 실패 |
-| 호스트 미지원 | `미실행 (macOS 필요)` / `미실행 (Android SDK 없음)` | 호스트 능력 부족 |
-| 사용자 지정 스코프 | `미실행 (사용자 지정 스코프)` | `--platform`으로 제외 |
-| 개입 필요로 중단 | `미실행 (패치 불완전으로 중단)` | 패치 hunk 실패 |
+| 사유               | 표기                                                | 발생 조건             |
+| ------------------ | --------------------------------------------------- | --------------------- |
+| fail-fast          | `미실행 (앞 티어 실패)`                             | 수직 상위 티어가 실패 |
+| 호스트 미지원      | `미실행 (macOS 필요)` / `미실행 (Android SDK 없음)` | 호스트 능력 부족      |
+| 사용자 지정 스코프 | `미실행 (사용자 지정 스코프)`                       | `--platform`으로 제외 |
+| 개입 필요로 중단   | `미실행 (패치 불완전으로 중단)`                     | 패치 hunk 실패        |
 
 **"요청 안 함"과 "못 함"은 다른 사유다.** 합치지 마라 — 합치면 리포트 독자가 "iOS를 안 본 게 내 선택이었나 환경 탓이었나"를 못 가린다.
 
@@ -97,11 +97,11 @@
 
 ## 호스트 지원 매트릭스
 
-| 호스트 | T1 | T2/android | T2/ios | T3 |
-|---|---|---|---|---|
-| **macOS** | ✅ | ✅ | ✅ | ✅ (부팅 성공한 플랫폼) |
-| **Linux** | ✅ | ✅ | `미실행 (macOS 필요)` | android만 |
-| **Windows** | **실행 거부** | — | — | — |
+| 호스트      | T1            | T2/android | T2/ios                | T3                      |
+| ----------- | ------------- | ---------- | --------------------- | ----------------------- |
+| **macOS**   | ✅            | ✅         | ✅                    | ✅ (부팅 성공한 플랫폼) |
+| **Linux**   | ✅            | ✅         | `미실행 (macOS 필요)` | android만               |
+| **Windows** | **실행 거부** | —          | —                     | —                       |
 
 ### Windows = 실행 거부 (판정 아님)
 
@@ -117,18 +117,51 @@
 
 ---
 
+## 인자 검증 (인터뷰 후 추가 — `currency` 라운드 6)
+
+목표 버전 세트는 **인자로만** 들어온다. 어떤 티어도 시작하기 전에 검증한다.
+
+### 검사 3종
+
+| # | 검사 | 실패 시 출력 |
+| - | ---- | ------------ |
+| 1 | 각 인자가 registry에 **존재하는 버전**인가 | `실행 거부 — 존재하지 않는 버전: <pkg>@<ver>` |
+| 2 | **프리릴리즈가 아닌가** (`-rc`·`-beta`·`-next`·`-canary`) | `실행 거부 — 프리릴리즈: <pkg>@<ver>` |
+| 3 | **lockstep 짝이 전부 왔나** (`react-native`↔`react`, Reanimated↔`react-native-worklets`, React Navigation 패키지군) | `실행 거부 — lockstep 짝 누락: <빠진 패키지>` |
+
+- **판정 아니라 실행 거부다.** Windows 거부와 같은 계열 — 티어가 시작되지 않았으므로 `실패`가 아니고, **리포트 파일도 생성하지 않는다.** 판정 어휘 3값은 그대로 유지된다.
+- **전달 방식과 무관하게 필요하다.** `currency`가 커맨드 블록을 출력하든 사용자가 손으로 치든 인자는 사람 손을 거쳐 들어온다. 파일 핸드오프가 없어서 생긴 비용이 아니다.
+- 짝 하나만 올리는 리허설은 **무의미하다** — `currency` §게이트 6의 *"짝 하나가 걸리면 세트 전체가 걸린 것"*과 같은 이유다. 반쯤 맞춘 세트로 T2까지 돌면 그 관측이 무엇을 뜻하는지 아무도 모른다.
+
+### 산정 시각 주석
+
+`currency` 리포트의 커맨드 블록에는 `# 산정 시각: YYYY-MM-DD` 주석이 붙는다. 그대로 복붙하면 함께 온다.
+
+- 주석이 오면 **실행 전에 경과일을 경고한다.** 거부가 아니라 경고다 — 낡은 타깃도 리허설 자체는 유효하다.
+- 리포트 헤더에도 남긴다: `타깃 산정: 2026-08-09 (21일 경과)`.
+- **주석이 없으면 경고하지 않는다** (손으로 친 경우). 없는 것을 실패로 만들지 않는다.
+- 근거: 파일 핸드오프가 없으므로 낡음을 알 길이 이 주석뿐이다. `currency`는 자기 권장 버전의 신선도를 판정할 주체가 아니다 — 권장 버전은 soak·churn 게이트 산물이라 마감일보다 훨씬 빨리 썩고, 판정 책임이 소비자인 이 스킬로 넘어온다.
+
+### `currency` 리포트를 파싱하지 않는다
+
+- 사람용 리포트를 기계 스키마로 겸용하면 **리포트 문구 개선이 이 스킬의 회귀**가 된다. 잘못된 결합 방향이다.
+- §Technical Context에 열려 있던 *"미지정 시 `currency` 리포트에서 읽는 경로를 열어둘 수 있다(설계 재량)"*는 **닫혔다.**
+- 인자가 없으면 실행 거부다. 타깃을 추측하지 않는다.
+
+---
+
 ## T1 — 상세
 
 ### 패키지 매니저 감지 (기계적)
 
 lockfile 기반 1회 감지. 4종 전부 지원.
 
-| lockfile | PM | 설치 | 패치 메커니즘 (우선순위) |
-|---|---|---|---|
-| `pnpm-lock.yaml` | pnpm | `pnpm install --frozen-lockfile` | `patches/` + `patchedDependencies` → `patch-package` |
-| `package-lock.json` | npm | `npm ci` | `patch-package` (postinstall) |
-| `yarn.lock` | yarn | `yarn install --immutable` | `.yarn/patches` + resolutions → `patch-package` |
-| `bun.lock` / `bun.lockb` | bun | `bun install --frozen-lockfile` | `patches/` + `patchedDependencies` → `patch-package` |
+| lockfile                 | PM   | 설치                             | 패치 메커니즘 (우선순위)                             |
+| ------------------------ | ---- | -------------------------------- | ---------------------------------------------------- |
+| `pnpm-lock.yaml`         | pnpm | `pnpm install --frozen-lockfile` | `patches/` + `patchedDependencies` → `patch-package` |
+| `package-lock.json`      | npm  | `npm ci`                         | `patch-package` (postinstall)                        |
+| `yarn.lock`              | yarn | `yarn install --immutable`       | `.yarn/patches` + resolutions → `patch-package`      |
+| `bun.lock` / `bun.lockb` | bun  | `bun install --frozen-lockfile`  | `patches/` + `patchedDependencies` → `patch-package` |
 
 - **PM 네이티브 메커니즘 우선.** `patches/` + `patch-package`는 폴백.
 - lockfile이 둘 이상이면 실행 거부 사유가 아니라 T1 실패로 처리하고 사유를 명시한다("PM 판별 불가: lockfile 2종 존재").
@@ -240,7 +273,7 @@ worktree 안에서 커밋  →  worktree 폐기  →  브랜치만 살아남음
 3. 조건부 베이스라인이 **측정되지 않았을 것** — 즉 업그레이드 후 타입체크·테스트가 처음부터 깨끗했을 것. 베이스라인이 돌았다는 건 검사가 한 번 실패했고 그게 `기존 부채`로 설명됐다는 뜻이다. 그 실행의 T1은 통과지만 **"기존 부채와 업그레이드 산물이 같은 파일에서 겹치지 않는다"는 보증은 없다** — 게이트 1로는 안 걸리므로 별도 게이트가 필요하다
 4. 사용자 명시 확인
 
-**하나라도 어긋나면 채택 옵션을 제시조차 하지 않는다.** "통과했지만 조건부"인 상태에서 적용을 권하면 이 스킬이 지켜온 *"통과 ≠ 안전"* 이 무너진다.
+**하나라도 어긋나면 채택 옵션을 제시조차 하지 않는다.** "통과했지만 조건부"인 상태에서 적용을 권하면 이 스킬이 지켜온 _"통과 ≠ 안전"_ 이 무너진다.
 
 `미실행`은 게이트를 막지 않되(호스트 제약·사용자 스코프는 실패가 아니다) 확인 문구에 **무엇이 검증되지 않았는지 명시**한다.
 
@@ -288,7 +321,7 @@ git merge rn-upgrade/0.86.2-a3f9c21
 
 ### 구조
 
-```
+````
 # RN 업그레이드 리허설 — <현재> → <목표>
 실행: <ISO 날짜> · 호스트: <macOS 15 / Linux> · PM: <pnpm> · 스코프: <전체 / --platform ios>
 
@@ -309,24 +342,29 @@ T3/ios     — 미실행 (앞 티어 실패)
 ```sh
 # --- T1 ---
 ...
-```
+````
 
 ## 채택
+
 게이트: 미충족(T2/ios 실패) — 채택 옵션 미제시
-  또는  충족 → 채택함: 브랜치 rn-upgrade/<target>-<base_sha> / 채택 안 함(사용자 선택)
+또는 충족 → 채택함: 브랜치 rn-upgrade/<target>-<base_sha> / 채택 안 함(사용자 선택)
 
 ← 채택한 경우에만 아래 출력
 검증 기준: <base_sha>
+
 > 이 브랜치는 <base_sha> 위에서 검증됐다. 그 이후 커밋이 있으면
 > 머지 결과는 검증된 트리가 아니다 — 재리허설을 권장한다.
+
 ```sh
 git log --oneline <base_sha>..HEAD   # 비어 있지 않으면 위 경고 적용
 git merge rn-upgrade/<target>-<base_sha>
 ```
 
 ## 정리
+
 worktree 폐기: 성공 / 실패(+수동 커맨드)
 artifacts: 보존 3개, 자동 정리 1개
+
 ```
 
 - **요약 한 줄을 플랫폼별로 분리한다.** 한 플랫폼 통과를 전체 통과로 접지 않는다.
@@ -354,6 +392,9 @@ artifacts: 보존 3개, 자동 정리 1개
 - **픽셀 diff / 시각 회귀 판정** — 스크린샷은 증거물 전용.
 - **CI 디스패치** — `gh workflow run`·폴링·리모트 push 전부 스킬 밖. README 문서로만 안내.
 - **Windows 지원** — 실행 거부.
+- **`currency` 리포트 파싱** — 목표 버전은 인자로만 받는다. 사람용 리포트를 기계 스키마로 겸용하지 않는다 (§인자 검증).
+- **타깃 추측** — 인자가 없으면 실행 거부다. 최신·권장을 스스로 산정하지 않는다(`currency` 소관).
+- **낡은 타깃 거부** — 산정 시각이 오래됐으면 경고만 한다. 낡은 타깃도 리허설 자체는 유효하다.
 - **worktree 보존·재사용** — 실패해도 폐기.
 - **성능 회귀·번들 사이즈·실기기 검증**
 - **"안전하다"는 결론** — 스킬은 관측만 낸다.
@@ -363,6 +404,13 @@ artifacts: 보존 3개, 자동 정리 1개
 ## Acceptance Criteria
 
 - [ ] Windows 호스트에서 실행 시 어떤 티어도 시작하지 않고 즉시 중단하며, **리포트 파일이 생성되지 않는다**
+- [ ] 존재하지 않는 버전을 인자로 주면 어떤 티어도 시작하지 않고 실행 거부되며 리포트 파일이 생성되지 않는다
+- [ ] 프리릴리즈 버전(`-rc`·`-beta`·`-next`·`-canary`)을 인자로 주면 실행 거부된다
+- [ ] lockstep 짝 중 하나만 인자로 주면 실행 거부되고 빠진 패키지명이 출력된다
+- [ ] 인자 검증 실패가 `실패` 판정이 아니라 실행 거부로 처리된다 (판정 어휘 3값 불변 검증)
+- [ ] `# 산정 시각` 주석이 있으면 경과일이 리포트 헤더에 출력되고, 주석이 없으면 경고가 출력되지 않는다
+- [ ] 산정 시각이 오래됐어도 실행이 거부되지 않는다 (경고만)
+- [ ] `currency` 리포트를 읽는 코드 경로가 존재하지 않으며, 인자 미지정 시 타깃을 추측하지 않고 실행 거부한다
 - [ ] Linux 호스트에서 `T2/ios`가 `미실행 (macOS 필요)`로, `--platform android` 지정 시 `T2/ios`가 `미실행 (사용자 지정 스코프)`로 — **서로 다른 문구**로 출력된다
 - [ ] `--platform`이 기본 스코프를 넓히는 방향으로는 동작하지 않는다 (넓히기 인자 부재 검증)
 - [ ] `T2/android` 실패 시에도 `T2/ios`가 실행된다 (수평 fail-fast 부재 검증)
@@ -415,14 +463,13 @@ artifacts: 보존 3개, 자동 정리 1개
 ## Technical Context
 
 - 자매 스킬 정본: `seed/rn-currency-SKILL.md` — frontmatter(`name`/`description`/`user-invocable`/`argument-hint`/`allowed-tools`), 번호 절 구조, 서두 불릿 원칙, `references/*.md` 지연 로드 패턴을 그대로 따른다.
-- `rn-currency`가 산정하는 **권장 버전(safe target)**이 이 스킬의 자연스러운 입력이다. 인자로 목표 버전을 직접 받되, 미지정 시 `rn-currency` 리포트에서 읽는 경로를 열어둘 수 있다(설계 재량).
+- `currency`가 산정하는 **권장 버전(safe target)**이 이 스킬의 자연스러운 입력이다. 전달은 파일이 아니라 `currency` 리포트의 **복사 가능한 단일 커맨드 블록**이고 사용자가 전송체다(`.rn-upgrade-kit/handoff/` 아래 currency 소유 파일은 없다). **목표 버전은 인자로만 받는다 — `currency` 리포트를 파싱하지 않는다** (§인자 검증). ~~미지정 시 리포트에서 읽는 경로를 열어둘 수 있다(설계 재량)~~는 `currency` 라운드 6에서 기각됐다.
 - 대상 프로젝트 전제: New Architecture (`newArchEnabled=true`, Hermes, Nitro Modules, Reanimated 4), **Expo 미사용**.
-- `rn-currency` §3의 lockstep 게이트(Reanimated ↔ `react-native-worklets`, `react-native` ↔ `react`)는 리허설 대상 버전 세트를 구성할 때 동일하게 적용된다.
+- `currency` §3의 lockstep 게이트(Reanimated ↔ `react-native-worklets`, `react-native` ↔ `react`)는 리허설 대상 버전 세트를 구성할 때 동일하게 적용된다.
 
 ## 구현자에게 남기는 미확정 (설계 재량 — 인터뷰에서 다루지 않음)
 
-- 스킬명 `rn-rehearsal` (가정)
-- 리포트·artifacts 경로 규칙 (제안: `.rn-rehearsal/reports/YYYY-MM-DD-<target>.md`, `.rn-rehearsal/artifacts/YYYY-MM-DD-<target>/`)
+- 리포트·artifacts 경로 규칙 (`.rn-upgrade-kit/rehearsal/reports/YYYY-MM-DD-<target>.md`, `.rn-upgrade-kit/rehearsal/artifacts/YYYY-MM-DD-<target>/` — 플러그인 공용 루트는 `deep-interview-platform-watch.md` §산출물·경로에서 확정)
 - `artifacts` 보존 개수 기본값 N=3
 - 부팅 생존 대기 시간 기본값 60s
 - 첫 프레임 렌더 신호의 정확한 관측 커맨드
@@ -453,6 +500,7 @@ artifacts: 보존 3개, 자동 정리 1개
 | PatchSet | supporting | entries, applied, failed_hunks | T1 단계; 실패 시 ContaminationFlag 발생 |
 | HostSupportMatrix | external system | os, android_capable, ios_capable, refuses(bool) | RehearsalRun 시작 전 1회 판별 |
 | PlatformScope | supporting | requested(narrowing only), effective | RehearsalRun에 부착; 제외분은 SkipReason으로 표기 |
+| TargetArgumentSet | core domain | entries(pkg@ver), lockstep_complete, prerelease_free, exists_in_registry, computed_at | 인터뷰 후 추가(`currency` 라운드 6). 티어 시작 **전** 1회 검증; 실패는 판정이 아니라 실행 거부 |
 | Emulator | external system | platform, device_id, boot_signal, log_stream | T2에서 사용 |
 | AdoptionOutcome | core domain | offered(bool), blocked_by_gate, adopted(bool), branch_name, base_sha, merge_command, unverified_notes | RehearsalRun당 0..1; Worktree 폐기 **전에** 커밋 생성; Report에 실림 |
 
@@ -469,6 +517,8 @@ artifacts: 보존 3개, 자동 정리 1개
 | 7 | 16 | 1 | 0 | 15 | 93.8% |
 
 라운드 6에서 유일한 엔티티 **변경**이 발생했다(Tier의 위상 재정의). 라운드 6·7 연속으로 코어 엔티티 무변경 — 도메인 모델 수렴.
+
+> **인터뷰 후 추가 (2026-08-09):** `currency` 라운드 6에서 `TargetArgumentSet`이 추가됐다. 위 표는 인터뷰 시점의 기록이라 고치지 않는다. 최종 엔티티 수는 16이 아니라 **17**이다. 추가 사유: 목표 버전이 파일이 아니라 **사람 손을 거친 인자**로 들어온다는 게 확정되면서, 인자 자체가 검증 대상 엔티티가 됐다. §채택 추가와 마찬가지로 인터뷰 본문의 결론과 충돌하지 않는다 — 검증은 T1 **앞**에서 일어나고 티어 모델·판정 어휘 3값은 그대로다.
 
 ---
 
@@ -513,3 +563,4 @@ artifacts: 보존 3개, 자동 정리 1개
 **모호도:** 15.8% → **7.2%** (임계치 통과)
 
 </details>
+```

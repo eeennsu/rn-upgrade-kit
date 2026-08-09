@@ -1,0 +1,825 @@
+# Deep Interview Spec: currency — RN 스택 최신성 · 권장 버전 산정
+
+## Metadata
+
+- Interview ID: `di-currency-20260809`
+- Rounds: 9
+- Final Ambiguity Score: **4.7%**
+- Type: greenfield (플러그인 신규 / 정본 `seed/rn-currency-SKILL.md`, 형제 스펙 `deep-interview-platform-watch.md`·`deep-interview-rn-rehearsal.md`)
+- Generated: 2026-08-09
+- Threshold: 0.20 (`--standard`)
+- Initial Context Summarized: no
+- Status: **PASSED**
+- 다음 단계: `plugin-dev:/create-plugin`. **autopilot·ralph·team 금지.**
+
+## Clarity Breakdown
+
+| 차원                     | 점수 | 가중치 | 가중      |
+| ------------------------ | ---- | ------ | --------- |
+| Goal Clarity             | 0.95 | 0.40   | 0.380     |
+| Constraint Clarity       | 0.96 | 0.30   | 0.288     |
+| Success Criteria Clarity | 0.95 | 0.30   | 0.285     |
+| **Total Clarity**        |      |        | **0.953** |
+| **Ambiguity**            |      |        | **0.047** |
+
+---
+
+## Goal
+
+`package.json` 실사용 의존성(Track A: RN 코어 · Track B: 주요 라이브러리)이 registry 최신 릴리즈 대비 얼마나 뒤처졌는지 확인하고, 대상마다 **최신과 별개로 권장 버전(safe target) 하나**를 §게이트로 산정해 우선순위 붙은 **advisory 리포트**를 낸다.
+
+리포트가 답하는 질문은 **"최신이 몇이냐"가 아니라 "지금 뭘로 올려야 하나"**다. 갓 나온 릴리즈는 회귀가 아직 안 드러난 상태다 — 최신을 그대로 권장하면 이 스킬은 남의 회귀를 우리 앱에 배달하는 파이프가 된다.
+
+- **스킬명:** `currency`. 3스킬 플러그인 `rn-upgrade-kit`의 두 번째. 나머지 둘은 `platform-watch`(상류·설계 완료), `rehearsal`(하류·설계 완료).
+- **위치:** `platform-watch`가 **날짜 축**에서 "언제까지 뭘 해야 하나"를 감사하고 `rehearsal`이 **실행 축**에서 "실제로 돌아가나"를 검증한다면, 이 스킬은 **registry 축**에서 "뭘로 올려야 하나"를 산정한다.
+- **Track C(플랫폼 정책)는 이 스킬에 없다.** `platform-watch`로 이관 완료. seed §1의 3트랙 중 A·B만 남는다.
+- **advisory 전용.** 코드·`package.json`·네이티브 설정·`.gitignore`를 어떤 경로로도 수정하지 않는다. 쓰기는 리포트 파일 1개뿐이다.
+- **환각 금지 (핵심 제약).** 최신성 주장은 registry 응답 또는 webfetch로 확인한 릴리즈 노트 링크가 근거다. 확인 못 한 항목은 `확인 못 함`으로 분리한다.
+- **게이트가 아니다.** 아무것도 막지 않는다.
+
+---
+
+## 정체성 — 두 축 (라운드 5)
+
+`platform-watch`는 등급을 `f(D-day, 충족 여부)` 순수 함수로 접었다. currency는 접지 않는다. **축이 둘이고 둘 다 실물이 있다.**
+
+```
+등급 축 (얼마나 급하냐)   : 🔴 🟠 🟡 ⚪   — 강제성 × 임박도
+상태 축 (점검 결과)       : ⚠ ✅          — 블록 표식
+권장 버전 축 (뭘로 올리나) : SafeTarget    — 등급과 독립
+```
+
+`rehearsal`의 *"판정 3값 + 오염 플래그 직교"*와 동형이다. 어휘는 6개지만 축은 셋이고, 어느 축도 다른 축을 덮지 않는다.
+
+### 등급 4단계가 살아남는 이유
+
+seed §2는 🔴·🟠의 주 공급원을 Track C로 지목했다. Track C 이관 후 공급원을 다시 세면:
+
+| 등급 | 잔존 공급원 | 복귀 공급원 |
+| --- | --- | --- |
+| 🔴 Urgent | 현재 버전의 알려진 크래시·보안 | 마감 임박 정책 하한 (핸드오프) |
+| 🟠 Deadline | deprecated·제거 예고 (registry `deprecated` + 노트) | 여유 있는 정책 하한 |
+| 🟡 Recommended | major 신버전·새 권장 패턴 (Track A/B 본진) | — |
+| ⚪ Optional | minor·patch (본진) | — |
+
+`platform-watch`에서 4단계가 무너진 사유는 *"추적 대상이 전부 강제라 강제성 축이 붕괴"*였다. currency는 강제성 축 양쪽에 실물이 있으므로 붕괴하지 않는다. **핸드오프가 🔴·🟠에 날짜 공급원을 되돌려준다** — Track C를 잃은 자리를 상류 스킬이 메운다.
+
+### `platform-watch`에서 빌려오는 것
+
+⚠·✅ 두 기호는 **의미까지 동일하게** 가져온다.
+
+- `⚠` = 확인 못 함 (사용자가 할 일이 있는 상태)
+- `✅` = 점검했고 할 일 없음
+
+이모지는 스캔용 시각 보조일 뿐 새 정보를 넣지 않는다. 🟡·⚪를 폐기하지 않는 이유는 currency에서 그 자리가 비어 있지 않기 때문이다.
+
+---
+
+## 점검 대상 — 2 트랙
+
+대상 목록은 **`package.json` 실사용분 기준**으로 산정한다. 하드코딩에 의존하지 않는다.
+
+| 트랙 | 대상(예시) | 최신 정보 1차 출처 |
+| --- | --- | --- |
+| **A. RN 코어** | `react-native` · `react` · New Arch(Fabric/Bridgeless/TurboModules/codegen) · Hermes | registry + reactnative.dev/blog · RN GitHub releases · Upgrade Helper |
+| **B. 주요 라이브러리** | Reanimated(+`react-native-worklets`) · Gesture Handler · `react-native-svg` · React Navigation · TanStack Query · Zustand · FlashList · LegendList · `@gorhom/bottom-sheet` · Tamagui · screens · safe-area-context · mmkv · keyboard-controller · permissions · Nitro Modules · Sentry · hot-updater | registry + 각 GitHub releases |
+
+- **Track A는 절반만 registry다.** `react-native`·`react`의 버전 숫자는 registry에 그대로 있다 — 이걸 웹 검색으로 다시 찾지 않는다. registry 밖인 건 **서사**뿐이다(그 버전에서 무엇이 강제됐나). Hermes·New Arch는 패키지가 아니라 RN 내장·플래그이므로 숫자조차 registry에 없다.
+- `@react-native/*`(codegen 등)는 devDependencies라 대상 밖이지만 RN 버전에 lockstep이라 독립 신호가 없다.
+- **SM(Software Mansion) 라이브러리**(Reanimated·Gesture Handler·SVG·worklets)의 정본 API·사실은 `react-native-best-practices`(SM) skill을 1차로 쓰고, 불일치·불명확 시 SM 공식 문서를 webfetch로 검증한다. skill이 없으면 SM 문서 webfetch 폴백.
+- **성능 진단성 정보**(FlashList·Hermes mmap·R8·16KB 정렬 등)는 `react-native-perf-guide`(Callstack) skill 관점을 참고한다.
+
+---
+
+## 수집 — 셸 의존 0 (라운드 4)
+
+**Bash를 쓰지 않는다.** seed §0·§3의 Bash 블록 3개(`pnpm outdated | jq` · `pnpm info peerDependencies` · `pnpm info time | jq`)와 `date -v-14d`가 전부 registry HTTP 1경로로 접힌다.
+
+| 재료 | 획득 경로 |
+| --- | --- |
+| 대상 목록 · 선언 범위 | `package.json` **Read** — `dependencies` 키만 읽으면 devDependencies가 자동 배제된다. seed의 `jq` `dependencyType` 필터가 불필요해진다 |
+| 설치된 정확 버전 | lockfile **Read** (`pnpm-lock.yaml` 등) |
+| 최신 · dist-tags · 프리릴리즈 여부 | `registry.npmjs.org/<pkg>` **WebFetch** |
+| peer 상한 재료 | 같은 응답의 `versions[*].peerDependencies` |
+| 배포일 (soak·churn 재료) | 같은 응답의 `time` |
+| deprecated 여부 | 같은 응답의 `versions[*].deprecated` |
+| 오늘 날짜 | **컨텍스트 현재 날짜** — `date` 호출 없음 |
+
+### 근거 — 이식성을 구조로 만든다
+
+- 확정사항 6("1차는 registry")은 **전송 수단이 아니라 출처**를 말한다. HTTP로 받은 registry 문서는 여전히 registry이고 웹 검색이 아니다.
+- seed의 `date -v-14d`는 BSD 전용이라 **리눅스에서 이미 깨진다**. `platform-watch`가 같은 전례를 근거로 셸을 배제했다.
+- `jq`·`pnpm` 설치 여부에 무관해지고 PM 종류에도 무관해진다.
+- 결과: `platform-watch` 스펙 §호스트 지원의 `currency = 전 호스트 ✅`가 **근거 없는 값에서 사후 참으로 바뀐다.**
+
+### 파급
+
+- `allowed-tools`: **`Read Write WebFetch Agent Skill`** — `Bash` 불포함, **`WebSearch`도 불포함**.
+  - `WebSearch` 제외 근거는 확정사항 6이다. "최신이 몇이냐"를 검색으로 찾지 않는다는 규칙을 도구 목록으로 강제한다 — `platform-watch`가 셸을 빼서 이식성을 구조화한 것과 같은 수법. (이 항목은 확정사항 6에서 파생됐고 인터뷰 라운드에서 별도 확인되지 않았다.)
+  - 릴리즈 노트 URL이 죽으면 대안 검색을 하지 않고 `확인 못 함`으로 간다.
+- soak 컷오프는 `컨텍스트 현재 날짜 − 14d/7d`로 만든다. 날짜는 ISO라 **문자열 비교로 충분**하다(`"2026-07-23" > "2026-07-17"`). 파싱·산술 하지 않는다.
+- `latest`가 stable 보증이 아니라는 seed 관측은 유지된다(실측 `@tamagui/lucide-icons` `latest = 2.0.0-rc.26`). `dist-tags`가 같은 응답에 있으므로 별도 조회가 사라진다.
+
+---
+
+## 범위 산정 — 하한·상한 (라운드 1)
+
+**§게이트보다 먼저, 범위를 확정한다.**
+
+```
+하한 = max(현재, 정책 하한)      ← 핸드오프 번역 산물. 없으면 현재
+상한 = 도달 가능 상한(peer ceiling)
+권장 = [하한, 상한] 안에서 게이트를 전부 통과하는 가장 높은 stable
+```
+
+### 하한은 게이트가 아니다 — 게이트 목록은 6개로 닫힌다
+
+§게이트 6개는 전부 **하강 필터**다("하나라도 걸리면 한 단계 내려 다시 건다"). 정책 하한은 반대 방향 제약이라 내려가면 더 위반된다. 7번째 게이트로 넣으면 하강 재시도 루프와 방향이 충돌해 예외 처리가 필요해진다.
+
+**범위 축에 두면 예외가 없다.** 게이트는 범위 안에서만 하강하고, 하한 미달 후보는 애초에 범위 밖이라 게이트를 보지도 않는다.
+
+### 하한 > 상한 — `도달 불가`
+
+범위가 공집합이면 리포트는 다음을 말한다:
+
+```
+🔴 [react-native] 현재 v0.81.1 → **권장: 산정 불가 — 도달 불가**
+   정책 하한 v0.83 (근거: <번역 근거 링크>)
+   도달 가능 상한 v0.82.x — <패키지명> peer `react-native: ">=0.79 <0.83"`이 잠금
+   마감이 있는데 갈 수 있는 버전이 없다. 상한을 푸는 게 선행 과제다.
+```
+
+- **`권장: 유지(현재)`와 구분한다.** 유지는 "지금은 올리지 마라"라는 판단이고, 도달 불가는 "판단할 범위가 없다"는 상태다. 같은 자리에 쓰면 사용자가 마감을 놓친다.
+- **상한을 잠근 패키지를 반드시 지목한다.** 지목이 없으면 사용자가 손댈 지점을 모른다.
+- 등급은 🔴다. 마감이 있고 경로가 없다.
+- seed의 *"상한이 RN에 잠긴 대상이 여럿이면 그 사실 자체가 리포트의 핵심 통찰(RN 업그레이드가 마스터 키)"*의 강화판이다 — 이 경우 마스터 키가 잠겨 있다.
+
+---
+
+## 핸드오프 — 독자 계약 (라운드 2·3)
+
+경로는 **문자열 상수 한 곳 고정**: `.rn-upgrade-kit/handoff/platform-requirements.md`. 소유자 `platform-watch`, 독자 `currency`. 단방향.
+
+### degrade — 2분기 (라운드 2)
+
+| 상태 | 동작 | 리포트 표기 |
+| --- | --- | --- |
+| 파일 없음 | 하한 없이 계산 | `플랫폼 하한 미반영 (파일 없음)` |
+| 스키마 불일치 | 하한 없이 계산 | `플랫폼 하한 미반영 (스키마 불일치)` |
+| 파싱됨 (낡음 여부 무관) | 하한 적용 | 헤더에 `핸드오프 <생성일>` 병기 |
+
+- **`오래됨`은 상태가 아니다.** 신선도 임계값 N을 발명하지 않는다 — currency에는 N을 고를 근거가 없다. 날짜를 소유한 쪽이 날짜를 판정한다(`platform-watch`가 리포트 보존 12개를 주간 실행 기준으로 정한 것과 같은 규칙).
+- **비대칭 근거:** 정책 하한은 시간이 갈수록 오르기만 한다. 낡은 하한은 **과소평가**일 뿐이지만 하한 부재는 마감 자체를 못 본다. 안 쓰는 쪽이 낙관 편향이다 — `platform-watch` §날짜 신뢰 모델이 죽인 편향과 같은 방향.
+- 어느 경우든 **대상은 리포트에서 사라지지 않는다.** 하한만 빠진다.
+
+### 번역 — 3결과 어휘 (라운드 3)
+
+정책 요구를 버전 하한으로 옮기는 건 **currency 몫**이다(확정사항 8). 재료(릴리즈 노트·registry·peer)를 가진 쪽이 currency이기 때문이다.
+
+**함정: `targetSdk`는 RN이 정하지 않는다.** 앱 `android/build.gradle`의 한 줄이다. RN은 그 값을 쓸 수 있게 하는 AGP·Gradle·Kotlin을 실어 나를 뿐이다. 따라서 "정책 요구 → 버전 하한"은 항상 성립하는 함수가 아니다.
+
+| 결과 | 조건 | 리포트 |
+| --- | --- | --- |
+| ① **하한 있음** | 노트·Upgrade Helper diff가 그 요구를 만족하는 최소 버전을 명시 | 하한 적용 + **근거 링크 필수** |
+| ② **하한 불요 (프로젝트 설정 축)** | 요구가 앱 설정 한 줄로 충족 가능 | 범위 불변 + `버전 하한 불요 — <설정 경로> 축` |
+| ③ **번역 확인 못 함** | 근거를 못 찾음 | 하한 만들지 않고 ⚠ 블록에 `번역 확인 못 함` |
+
+- **매핑표를 보유하지 않는다.** 보유하면 낡을 수 있고, 환각 금지 원칙이 낡은 표를 근거로 삼는 걸 막지 못한다. 매 실행 노트를 근거로 단다.
+- 결과 ②는 정보 부재가 아니라 **행동 지시**다. "이건 버전 문제가 아니라 설정 한 줄"이라는 결론은 사용자에게 유용하다. ③과 같은 자리에 두면 그 정보를 잃는다.
+- 결과 ①의 대상은 **RN에 한정되지 않는다.** 정책 요구가 라이브러리 하한을 만들 수도 있다(예: Play 결제 라이브러리 요구 → 결제 패키지 하한). 어휘를 늘리지 않고 대상만 일반화한다. (인터뷰에서 명시 확인되지 않은 파생 항목.)
+- 확정사항 8대로 핸드오프 스키마에 `rn_floor` 계열 필드는 **없다.** 필드가 있으면 채우려는 압력이 생긴다.
+
+### 계약 4항 (`platform-watch` 스펙 §핸드오프 계약과 대응)
+
+1. 이 파일을 읽어 §범위 산정의 **하한**으로 쓴다.
+2. 번역의 **근거 링크를 자기 리포트에 남긴다** — 환각 금지가 currency 쪽으로 상속된다.
+3. 번역 근거를 못 찾으면 하한을 만들지 말고 **`번역 확인 못 함`**으로 남긴다.
+4. 파일이 없으면 하한 없이 계산하고 **`플랫폼 하한 미반영`**을 적는다.
+
+**계약 5항 (라운드 7에서 추가):** 핸드오프의 `current` 필드는 currency 스냅샷 헤더의 `targetSdk`·`iOS min`의 **유일한 공급원**이다. currency는 그 값을 직접 파싱하지 않는다.
+
+---
+
+## 권장 버전 산정 — 게이트 6개 (seed §3 계승 · 불변)
+
+범위 `[하한, 상한]` 안에서 아래를 **전부** 통과하는 가장 높은 stable이 권장이다. 통과하는 게 하나도 없으면 권장 = 현재(유지)다.
+
+| # | 게이트 | 판정 |
+| --- | --- | --- |
+| 1 | **stable only** | `-rc`·`-beta`·`-next`·`-canary` 제외. `latest`가 프리릴리즈면 그 아래 최신 stable이 후보 |
+| 2 | **major 고정** | 권장의 상한은 현재와 같은 major 라인. major 점프의 비용은 우리 코드에 달렸고 이 스킬은 그걸 모른다 → 권장 버전이 아니라 🟡 항목으로 따로 낸다 |
+| 3 | **soak(숙성)** | 배포 후 경과일이 minor 14일 · patch 7일 미만이면 이르다. 미달이면 그 전 stable로 내린다 |
+| 4 | **churn 없음** | 그 버전 직후 며칠 새 패치가 연달아 나왔으면 아직 회귀 사냥 중이다. 마지막 패치가 soak를 채울 때까지 라인 전체 보류 |
+| 5 | **known issue 0** | 노트에 revert·hotfix 예고·"do not upgrade", 이슈 트래커에 **우리가 쓰는 기능**의 크래시 → 고쳐진 버전이 나올 때까지 보류. 우리가 안 쓰는 기능의 이슈는 게이트가 아니다 |
+| 6 | **lockstep 동반** | 짝이 있는 패키지는 세트로만 권장한다(Reanimated↔`react-native-worklets`, `react-native`↔`react`, React Navigation 패키지군). **짝 하나가 걸리면 세트 전체가 걸린 것** |
+
+- **soak 면제 — 보안 픽스·크래시 픽스.** 안 올리는 쪽이 더 위험한 경우다. 면제했으면 면제라고 쓴다.
+- **권장 = 현재**일 수 있다. "gap은 있지만 지금은 올리지 마라"는 유효한 결론이다 — 대상을 빼지 말고 `권장: 유지(현재)`로 남긴다.
+- **권장 < 최신이면 사유를 반드시 적는다** — 어느 게이트에 걸렸나 + **언제 풀리나**(soak면 해제 날짜, churn·known issue면 기다리는 대상).
+- **등급과 권장 버전은 별개 축이다.** 🔴이어도 권장이 `유지`일 수 있고(고칠 버전이 아직 없음), ⚪여도 권장 승격이 뜬다.
+- Track A도 같은 게이트를 받는다. RN은 lockstep 반경이 가장 넓다 — **RN 권장 버전을 먼저 확정하고 나머지를 그 위에서 계산한다.**
+
+### 조회 순서 (seed §2 계승)
+
+- **1차 (registry)**: `현재 → 최신 → peer 상한`을 확정한다. 최신 = 현재인 대상은 gap 0이므로 2차 대상이 아니다.
+- **2차 (릴리즈 노트)**: gap이 있는 대상만, **검색이 아니라 정확한 태그 URL로 직행 fetch**한다(`github.com/<org>/<repo>/releases/tag/<ver>`). 읽을 범위는 버전 델타로 정해진다. 패치 수준이라 ⚪가 확정된 대상은 2차를 생략해도 된다.
+- **노트를 읽을 때 게이트 재료를 같이 건진다.** revert·hotfix 예고·"do not upgrade"·후속 패치 언급은 그 자리에서 메모한다.
+- **병렬화**: 1차는 대상당 registry 응답 1개이므로 `Agent`에 분담한다(seed의 "Bash 한 콜"이 사라졌으므로 위임 손익이 바뀐다). 2차 노트 fetch와 Track A 서사 조회도 분담하고, 메인은 취합·게이트 판정·리포트를 맡는다.
+  - `subagent_type`은 **쓰기 도구가 적은 것**을 고른다: `oh-my-claudecode:document-specialist` → 없으면 `general-purpose`.
+  - 각 서브에이전트 프롬프트에 **반드시** 넣는다:
+    - **read-only 못박기**: "`package.json`·네이티브 설정·소스를 수정하지 마라. 파일 수정 도구와 쓰기 명령 금지. 조회 결과만 반환하라."
+    - **조회 범위 잠금**: "너는 오직 `<대상>`만 조회한다. 다른 대상은 무시하라."
+    - **반환 형식**: `[대상] 현재 vX → 최신 vY | gap 분류 | 영향 | 관측: <배포일·후속 패치·revert/known issue> | 근거: <링크>` 한 줄씩. 실패·불명확은 `확인 못 함: <대상> — <사유>`로 분리. 근거 링크 없는 최신성 주장은 반환 금지.
+    - **판정 금지**: "권장 버전은 Z다"라고 결론 내지 마라 — 게이트 해석은 메인 몫이다. 대상마다 다른 에이전트가 각자 기준을 세우면 리포트의 권장 버전이 서로 다른 잣대로 나온다.
+
+### gap 분류 → 기본 등급
+
+| 분류 | 기본 등급 |
+| --- | --- |
+| known issue (현재 버전의 크래시·보안) | 🔴 |
+| 마감 임박 정책 하한 | 🔴 |
+| deprecated·제거 예정 | 🟠 |
+| 여유 있는 정책 하한 | 🟠 |
+| breaking change (major 신버전) · 새 권장 패턴 | 🟡 |
+| minor · patch | ⚪ |
+
+실제 영향으로 조정하되 근거를 남긴다.
+
+---
+
+## 스냅샷 헤더 · 네이티브 설정 (라운드 7)
+
+**currency는 네이티브 설정 파싱 규칙을 갖지 않는다.**
+
+| 헤더 필드 | 출처 |
+| --- | --- |
+| RN · React 버전 | `package.json` + lockfile |
+| `targetSdk` · iOS min | **핸드오프 `current` 필드** |
+| New Arch · Hermes | `gradle.properties` 두 줄 직접 Read |
+
+### 근거 — 압력을 관리하지 말고 경로를 없앤다
+
+파싱 규칙 공유는 **약속**이라 어긋날 수 있다. 핸드오프의 현재값을 재사용하면 두 스킬이 다른 값을 말할 경로가 **구조적으로 없다.** `platform-watch` 라운드 10에서 핸드오프 스키마에 `rn_floor` 필드를 두지 않은 것과 같은 수법이다.
+
+헤더 스냅샷은 게이트 판정에 쓰이지 않으므로 비었을 때의 손실도 작다.
+
+### 부재 표기 — 값만 비우지 않는다
+
+```
+스냅샷: RN 0.81.1 · React 19.1.0 · New Arch on · targetSdk — (핸드오프 없음) · iOS min — (핸드오프 없음)
+```
+
+"읽기 실패"와 "안 읽음"이 구분돼야 한다. `platform-watch`의 *"항목은 목록에서 사라지지 않는다, 자리를 옮길 뿐이다"*와 동형.
+
+### boolean 충돌 — `newArchEnabled` · `hermesEnabled`
+
+`platform-watch`의 *"가장 낮은 값 기준"* 규칙은 boolean에 적용되지 않는다. flavor·CI env override로 값이 갈리면:
+
+1. **모두 병기한다** (경로별로 나열).
+2. 판정은 **`확인 못 함`**으로 둔다. 보수 방향이다 — `false`로 가정하면 New Arch 강제 항목을 놓치고, `true`로 가정하면 없는 전제 위에서 권장한다.
+
+**degrade:** New Arch 상태가 `확인 못 함`이면 New Arch 전제에 걸린 gap 항목은 **등급 축에 올리지 않고 ⚠ 블록으로 보낸다** — `New Arch 상태 확인 못 함 — 해당 항목 적용 여부 미판정`.
+
+**확정사항 7("이 프로젝트는 New Architecture 기반")은 스펙 전제이고 `gradle.properties`는 관측이다. 전제로 관측을 덮지 않는다.** 둘이 갈리면 병기하고 `확인 못 함`으로 둔다.
+
+---
+
+## rehearsal 간선 — 파일 없음 · 커맨드 출력 (라운드 6)
+
+**두 번째 핸드오프 파일을 만들지 않는다.** currency 리포트가 `rehearsal` 호출 라인을 **복사 가능한 단일 블록**으로 출력하고, 사용자가 전송체가 된다.
+
+```
+## 다음 단계
+확정된 권장 세트를 그대로 리허설하려면:
+
+​```
+# 산정 시각: 2026-08-09
+/rn-upgrade-kit:rehearsal react-native@0.83.4 react@19.2.0 \
+                          react-native-reanimated@4.3.3 \
+                          react-native-worklets@0.7.2
+​```
+```
+
+### 근거
+
+- **파일을 만들면 신선도 문제가 딸려온다.** 권장 버전은 soak·churn 게이트 산물이라 **마감일보다 훨씬 빨리 썩는다** — 관리가 핸드오프보다 까다롭다.
+- **사람용 리포트를 기계 스키마로 겸용하지 않는다.** 겸용하면 리포트 문구 개선이 `rehearsal` 회귀가 된다 — 잘못된 결합 방향이다.
+- 이 플러그인의 확립된 문법이다: `rehearsal`은 머지 커맨드를 출력하고, `platform-watch`는 `.gitignore` 한 줄을 제시한다. 세 번째·네 번째 적용.
+
+### 규칙
+
+| # | 규칙 | 근거 |
+| --- | --- | --- |
+| a | **lockstep 세트 전체**를 넣는다 | 게이트 6 — 짝 하나가 빠지면 리허설이 무의미해진다 |
+| b | **생성 시각을 주석으로 박는다** | 파일이 없으니 `rehearsal`이 낡음을 알 길이 그것뿐이다. 신선도 문제를 새 스키마 없이 소비자로 넘긴다 |
+| c | 권장이 `유지`·`도달 불가`인 대상은 **커맨드에서 뺀다** | 안 올릴 걸 리허설하지 않는다 |
+| d | **단일 블록 하나** | 여러 줄로 흩어지면 복붙 오타가 실제로 난다. `rehearsal`의 "POSIX 단일 복붙 재현 블록"과 형태를 맞춘다 |
+
+`rehearsal` 쪽 대응(인자 검증 · 생성 시각 경고)은 §형제 스펙에 반영해야 할 변경에 있다.
+
+---
+
+## 스코프 인자 (라운드 8)
+
+`--track core|lib` · `--target <pkg>` — **좁히기 전용.**
+
+- 기본값은 항상 전체다. **넓히는 방향의 인자는 두지 않는다.**
+- **`--track`은 단일값만 받는다.** 복수 지정을 허용하면 `--track lib,platform` 같은 입력에서 부분 실행 + 부분 안내라는 혼합 동작이 생긴다. 단일이 "인자는 빼기만 한다"는 성질과 더 잘 맞는다.
+- 두 인자를 동시에 주면 **AND(교집합)**다. 공집합이면 빈 리포트가 아니라 `지정 스코프에 해당 대상 없음` + **유효한 값 목록**을 낸다.
+- 제외된 트랙·대상은 조용히 빠지지 않고 **`미조회 (사용자 지정 스코프)`** 블록에 남는다.
+- **인자는 이 둘로 닫는다.** `--since`·`--format`·`--json` 계열은 범위 밖이다.
+
+### `--platform` 이름 충돌 회피
+
+seed의 `platform` 스코프와 `platform-watch`의 `--platform android|ios`는 **같은 단어에 다른 의미**다. `--track`으로 개명해 한 플러그인 안에서 같은 플래그가 두 뜻을 갖는 상황을 없앤다.
+
+### `platform` — 범위 안내 (수명 영구)
+
+`platform`을 받되 **실행하지 않고 안내 후 종료**한다. 리포트 파일을 생성하지 않는다.
+
+```
+$ /rn-upgrade-kit:currency platform
+
+platform 추적은 platform-watch가 담당한다.
+
+  /rn-upgrade-kit:platform-watch
+
+리포트를 생성하지 않았다.
+```
+
+- **안내의 대상은 seed 사용자 마이그레이션이 아니라 신규 사용자 발견성이다.** `currency`(최신성)라는 이름 때문에 플랫폼 정책을 여기서 찾는 건 자연스러운 오해이고, 원래 스킬이 실제로 그 일을 했으므로 근거도 있다. **수명은 영구다.**
+- 문구는 **범위 안내**로 쓴다. 이관 문구("~로 옮겨졌다")는 언젠가 지울 것처럼 읽혀 유지보수 판단을 흐린다. 과거 이력이 아니라 현재 구조를 말한다.
+- 안내에 **실행 가능한 커맨드 라인**을 포함한다.
+- 조용히 지우면 `/currency platform`이 패키지명으로 해석돼 빈 결과가 나온다 — `platform-watch` §스코프 인자가 이미 죽인 실패 모양이다.
+
+---
+
+## 산출물 · 경로 · 보존 (라운드 9)
+
+```
+.rn-upgrade-kit/
+  platform-watch/…
+  handoff/
+    platform-requirements.md   ← 소유: platform-watch / 독자: currency
+  currency/
+    reports/YYYY-MM-DD.md      ← 날짜별 누적, 보존 상한 12
+  rehearsal/…
+```
+
+- **쓰기는 리포트 파일 1개뿐이다.** 상태 파일 없음 — 델타 표기는 직전 리포트 파일 자체를 읽어서 한다.
+- **파일명은 `YYYY-MM-DD.md`.** seed `report-format.md`의 `<YY.MM.DD>.md`(`26.07.30.md`)를 폐기하고 `platform-watch`와 통일한다. 한 플러그인에 두 규칙을 두지 않는다.
+- **날짜는 컨텍스트 현재 날짜 단일 소스에서 파생한다.** 파일명과 본문 헤더가 같은 값에서 나와야 한다 — seed에 어긋난 실측 사례가 있다(파일명 `26.07.30` · 본문 `2026-07-26`). **rename으로 날짜를 갱신하지 않는다.** 갱신하려면 다시 실행해 새로 쓴다.
+- **같은 날 재실행이면 덮어쓴다.** 시각 suffix를 붙이면 보존 상한 계산이 "12일"이 아니라 "12파일"로 흔들린다. 스코프를 좁혀 돌렸어도 파일을 쪼개지 않는다 — 헤더의 스코프 줄이 그 사실을 담는다.
+- **`.gitignore`를 수정하지 않는다.** README에 붙여넣을 한 줄(`.rn-upgrade-kit/`)만 제시한다.
+
+### 보존 상한 N=12
+
+- `platform-watch`와 **같은 값·같은 정리 보고 한 줄**. 같은 매체(마크다운 수 KB)이므로 성격이 같다.
+- `rehearsal`의 N=3은 매체가 다르므로(수십 MB) **성격에서 파생된 정당한 차이**다.
+- **N은 조정 가능한 값으로 한 곳에** 둔다. 두 advisory 스킬이 같은 상수를 참조해 한쪽만 바뀌는 드리프트를 막는다(`platform-watch`의 등급 임계일 90을 참조 파일에 둔 것과 같은 처리).
+- **삭제는 조용히 하지 않는다.** 몇 개를 지웠는지 리포트 말미에 한 줄. 사용자가 사라진 파일을 찾다 헤매지 않게 한다.
+
+### 보존은 청소가 아니라 기능이다
+
+`platform-watch`는 델타를 `state.json`에서 뽑지만 currency는 **직전 리포트 파일 자체**를 델타 표기용으로 읽는다. **N=1이면 델타 줄이 영구히 빈다.** 상한에는 기능적 하한 2가 있다.
+
+- 직전 리포트는 **표기 전용**이다: 새로 생긴 gap · 해소된 gap · 등급이 바뀐 항목 · **지난번 `유지`가 이번에 승격으로 풀렸는지**(soak 만료·회귀 픽스 도착)를 헤더 아래 한 줄로.
+- **판정 근거로 재활용하지 않는다.** 지난 리포트는 stale이고 근거는 이번 실행의 registry·노트 조회에서 다시 나와야 한다. (`platform-watch` §상태가 판정에 새어드는 통로 차단과 동형.)
+- 직전 리포트가 없으면 델타 줄만 생략되고 리포트는 정상 산출된다.
+
+---
+
+## 호스트 지원
+
+| 호스트 | platform-watch | currency | rehearsal |
+| --- | --- | --- | --- |
+| macOS | ✅ | ✅ | ✅ |
+| Linux | ✅ | ✅ | android만 |
+| Windows | ✅ | ✅ | **실행 거부** |
+
+- currency의 ✅는 **선언이 아니라 구조적 사실**이다: 셸 호출 0, 네이티브 실행 경로 0. 파일 접근은 Read/Write 도구만.
+- `rehearsal`의 거부 사유는 "Windows"가 아니라 **"네이티브 빌드 실행"**이다. 원칙(*검증 못 한 실행 경로를 사실로 쓰지 않는다*)은 같고 적용 결과만 다르다.
+- README 지원 매트릭스에 **거부 사유까지** 적는다 — "rehearsal: POSIX 전용 — 네이티브 빌드를 실제 실행하기 때문", "platform-watch·currency: 전 호스트 — 조회·파일 읽기만".
+
+---
+
+## degrade 경로 — 7개 동형
+
+**원칙: 대상은 목록에서 사라지지 않는다. 자리를 옮길 뿐이다.** (`platform-watch`에서 계승)
+
+| # | 조건 | 결과 | 리포트 위치 |
+| - | --- | --- | --- |
+| 1 | 핸드오프 파일 없음 | 하한 없이 계산 + `플랫폼 하한 미반영 (파일 없음)` | 헤더 |
+| 2 | 핸드오프 스키마 불일치 | 하한 없이 계산 + `플랫폼 하한 미반영 (스키마 불일치)` | 헤더 |
+| 3 | 번역 근거 없음 | 하한 만들지 않음 + `번역 확인 못 함` | ⚠ 블록 |
+| 4 | registry 도달 실패 · 노트 불명확 | `확인 못 함 — <사유>` | ⚠ 블록 |
+| 5 | New Arch 플래그 충돌·부재 | 병기 + `확인 못 함`, 관련 gap은 등급 축 밖 | ⚠ 블록 |
+| 6 | 범위 공집합 (하한 > 상한) | `권장: 산정 불가 — 도달 불가` + 잠근 패키지 지목 | 🔴 |
+| 7 | 사용자 스코프 제외 | `미조회 (사용자 지정 스코프)` | 별도 블록 |
+| 8 | 직전 리포트 없음 | 델타 줄만 생략, 리포트 정상 산출 | — |
+
+3·4·5는 같은 ⚠ 블록에 가되 **사용자가 할 일로 갈라 적는다**. 7은 할 일이 없으므로 ⚠와 섞지 않는다.
+
+---
+
+## 리포트
+
+### 구조
+
+````
+# RN 최신성 점검 — 2026-08-09
+스코프: 전체 (Track A·B, 대상 34개) · 핸드오프 2026-08-02 · 직전 실행 2026-08-02
+스냅샷: RN 0.81.1 · React 19.1.0 · New Arch on · Hermes on · targetSdk 35 · iOS min 15.1
+권장 요약: 승격 6건 · 유지 4건(soak 1 / churn 1 / RN상한 2) · major 점프 3건 · 도달 불가 1건
+델타: 신규 gap 2 · 해소 1 · 등급 상향 1 · 유지 해제 1 (reanimated soak 만료)
+
+## 🔴 Urgent
+- [react-native + react] 현재 0.81.1/19.1.0 → **권장: 산정 불가 — 도달 불가**
+  정책 하한 0.83 (16KB page size · 근거: <노트 링크>)
+  도달 가능 상한 0.82.x — react-native-foo peer `">=0.79 <0.83"`이 잠금
+  마감이 있는데 갈 수 있는 버전이 없다. 상한을 푸는 게 선행 과제다.
+
+## 🟠 Deadline
+- [react-native-bar] 현재 3.1.0 → **권장 3.4.2** | 최신 3.4.2 (=최신)
+  gap: deprecated — `useLegacyFoo`가 4.0에서 제거 예정
+  **기한: v4.0** | 영향: 3곳 사용 | 근거: <링크>
+
+## 🟡 Recommended
+- [tanstack-query] 현재 5.x → 최신 6.0.1 | major 점프 — 권장 대상 아님(게이트 2)
+  이득: … | 마이그레이션 가이드: <링크>
+
+## ⚪ Optional
+- [zustand] 현재 5.0.2 → **권장 5.0.4** | 최신 5.0.4 (=최신) | patch | 근거: <링크>
+
+## ⚠ 확인 못 함
+- [react-native-baz] — 릴리즈 노트 태그 URL 404 (registry 최신 2.3.0은 확인됨)
+  → 근거 없이 등급을 매기지 않는다
+- [play/billing] — 번역 확인 못 함 (정책 요구 → 패키지 하한 근거 미발견)
+  → 하한 미적용
+
+## ✅ 점검함 · gap 없음
+zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-screens ⋯ (18개)
+
+## 미조회 (사용자 지정 스코프)
+(없음)
+
+## 다음 단계
+​```
+# 산정 시각: 2026-08-09
+/rn-upgrade-kit:rehearsal react-native-bar@3.4.2 zustand@5.0.4
+​```
+
+## 정리
+리포트 보존 12개, 자동 정리 1개
+````
+
+### 규칙
+
+- **0건인 등급 섹션은 통째로 생략**한다. 빈 헤더를 남기지 않는다.
+- **`⚠ 확인 못 함`은 0건이어도 `없음`으로 남긴다.** 조회가 전부 성공했다는 사실 자체가 정보이고, 생략하면 "빠뜨린 것"과 구분되지 않는다.
+- **`✅` 블록은 슬러그 나열 한 줄로 압축한다.** "점검했는데 gap 0"과 "안 봤음"이 구분돼야 한다 — 스코프 인자가 있으므로 이 구분이 실제로 필요하다.
+- 권장 = 최신이면 `→ **권장 vZ** (=최신)`로 축약한다. 권장 = 현재면 `→ **유지(현재)**` + 사유. **어느 쪽이든 사유 자리를 비우지 않는다.**
+- **lockstep 세트는 한 줄에 묶는다**(`[Reanimated + worklets] 4.3.1/0.7.0 → 권장 4.3.3/0.7.2`). 따로 쓰면 짝 하나만 올리는 사고가 난다.
+- 근거 링크 없는 최신성 주장은 리포트에 실리지 않는다.
+- **쓰기는 메인만, `Write` 1회.** 서브에이전트는 read-only — 조회 결과만 반환한다.
+
+### 참조 파일
+
+- `references/report-format.md` — 조회가 끝난 뒤에만 Read. 위 포맷·저장 규칙의 정본.
+- `references/cadence.md` — **다음 실행 시점을 정할 때만** Read.
+
+---
+
+## Non-Goals (명시적 비목표)
+
+- **플랫폼 정책 추적 (Track C)** — `platform-watch` 소관. `--track platform`을 받지만 실행하지 않고 안내만 한다.
+- **정책 요구의 마감일 판정** — 날짜 축은 `platform-watch`. currency는 요구를 버전 하한으로 번역만 한다.
+- **핸드오프 신선도 판정** — 날짜를 소유한 쪽이 판정한다. `오래됨` 상태를 만들지 않는다.
+- **코드·`package.json`·네이티브 설정·`.gitignore` 수정** — advisory 전용. 쓰기는 리포트 1개.
+- **업그레이드 실행** — `rehearsal` 소관.
+- **두 번째 핸드오프 파일 (`recommended-targets.md` 등)** — 권장 버전은 커맨드 블록으로 넘긴다.
+- **currency 리포트의 기계 판독 계약화** — `rehearsal`이 리포트를 파싱하지 않는다.
+- **네이티브 설정 파싱 규칙 보유** — `targetSdk`·iOS min은 핸드오프에서 온다. 직접 읽는 건 `newArchEnabled`·`hermesEnabled` 둘뿐.
+- **정책↔버전 매핑표 보유** — 매 실행 노트를 근거로 단다.
+- **셸 호출** — `pnpm`·`jq`·`date` 포함. Read/Write/WebFetch 도구만.
+- **웹 검색** — `WebSearch`를 `allowed-tools`에 두지 않는다. "최신이 몇이냐"를 검색으로 찾지 않는다.
+- **Expo 관련 제안** — 이 프로젝트는 Expo 미사용. `expo-*` 대안을 제시하지 않는다.
+- **넓히기 방향 스코프 인자 · `--track` 복수 지정**
+- **`--since`·`--format`·`--json` 등 추가 인자**
+- **직전 리포트를 판정 근거로 재활용** — 표기 전용.
+- **상태 파일** — 델타는 직전 리포트에서 뽑는다.
+- **호스트 제한** — 전 호스트 지원.
+- **게이트 동작** — 아무것도 막지 않는다.
+- **프로젝트 결정·컨벤션 판단** — Rules 소관.
+
+---
+
+## Acceptance Criteria
+
+**수집 · 이식성**
+
+- [ ] 셸 호출이 0이다 — `pnpm`·`jq`·`date` 등 어떤 셸 명령도 실행하지 않는다
+- [ ] `allowed-tools`에 `Bash`가 없다
+- [ ] `allowed-tools`에 `WebSearch`가 없다
+- [ ] 대상 목록이 `package.json`의 `dependencies` 키에서만 산정되고 devDependencies가 포함되지 않는다
+- [ ] 설치된 정확 버전이 lockfile Read에서 나온다
+- [ ] 최신·`dist-tags`·`peerDependencies`·`time`·`deprecated`가 registry 응답에서 나오고 웹 검색 결과에서 나오지 않는다
+- [ ] soak 컷오프가 컨텍스트 현재 날짜에서 계산되고 날짜 비교가 ISO 문자열 비교다
+- [ ] `latest`가 프리릴리즈인 패키지에서 그 아래 최신 stable이 후보가 된다
+- [ ] Windows 호스트에서 정상 실행되고 리포트가 산출된다
+
+**범위 · 하한**
+
+- [ ] 게이트 목록이 6개이며 정책 하한이 게이트에 포함되지 않는다
+- [ ] 권장 후보 탐색이 `[하한, 상한]` 범위 안에서만 하강한다
+- [ ] 하한 > 상한이면 `권장: 유지(현재)`가 아니라 `산정 불가 — 도달 불가`가 출력된다
+- [ ] 도달 불가 항목에 상한을 잠근 패키지와 그 peer 범위가 명시된다
+- [ ] 도달 불가 항목의 등급이 🔴다
+
+**핸드오프**
+
+- [ ] 핸드오프 파일이 없으면 하한 없이 계산되고 `플랫폼 하한 미반영 (파일 없음)`이 출력된다
+- [ ] 스키마 불일치 시 `플랫폼 하한 미반영 (스키마 불일치)`로 사유가 구분되어 출력된다
+- [ ] 핸드오프가 오래됐다는 이유로 하한이 무시되지 않는다 (신선도 임계값 코드 경로 부재)
+- [ ] 헤더에 핸드오프 생성일이 병기된다
+- [ ] 번역 결과가 `하한 있음`·`하한 불요`·`번역 확인 못 함` 3값을 벗어나지 않는다
+- [ ] `하한 있음` 항목에 근거 링크가 존재한다 — 링크 없는 하한이 적용되지 않는다
+- [ ] `하한 불요` 항목이 `번역 확인 못 함`과 다른 자리에 출력된다
+- [ ] 정책↔버전 매핑표 파일이 존재하지 않는다
+- [ ] 어느 degrade 경로에서도 대상이 리포트에서 사라지지 않는다
+
+**게이트 · 권장 버전**
+
+- [ ] 프리릴리즈가 권장 버전으로 선택되지 않는다
+- [ ] major 점프가 권장 버전이 아니라 🟡 항목으로 분리된다
+- [ ] soak 미달 버전이 권장되지 않고 해제 날짜가 사유에 적힌다
+- [ ] churn 중인 라인이 보류되고 기다리는 대상이 사유에 적힌다
+- [ ] lockstep 짝 하나가 걸리면 세트 전체가 걸린다
+- [ ] lockstep 세트가 리포트 한 줄에 묶여 출력된다
+- [ ] `권장 = 현재`인 대상이 리포트에서 빠지지 않고 `유지(현재)` + 사유로 남는다
+- [ ] `권장 < 최신`인 모든 항목에 어느 게이트에 걸렸는지와 언제 풀리는지가 적힌다
+- [ ] soak 면제 시 면제 사실이 리포트에 적힌다
+- [ ] RN 권장 버전이 다른 대상의 상한 계산보다 먼저 확정된다
+
+**등급 · 리포트 블록**
+
+- [ ] 등급 어휘가 🔴🟠🟡⚪ 4값을 벗어나지 않는다
+- [ ] ⚠·✅가 등급이 아니라 블록 표식으로 쓰이며 등급 섹션에 섞이지 않는다
+- [ ] 0건인 등급 섹션이 출력되지 않는다
+- [ ] `⚠ 확인 못 함`이 0건이어도 `없음`으로 출력된다
+- [ ] `✅ 점검함 · gap 없음` 블록이 존재하며 슬러그 나열로 압축된다
+- [ ] 근거 링크 없는 최신성 주장이 리포트에 존재하지 않는다
+- [ ] ⚠ 항목이 사유별(도달 실패 / 번역 확인 못 함 / New Arch 미판정)로 구분되어 출력된다
+
+**스냅샷 · 네이티브**
+
+- [ ] `targetSdk`·iOS min이 핸드오프 `current` 필드에서만 나온다 — 네이티브 설정 직접 파싱 경로가 존재하지 않는다
+- [ ] 핸드오프가 없으면 헤더의 해당 값이 사유와 함께 `— (핸드오프 없음)`으로 출력된다
+- [ ] currency가 직접 읽는 네이티브 값이 `newArchEnabled`·`hermesEnabled` 둘로 한정된다
+- [ ] 두 플래그가 경로별로 갈리면 병기되고 판정이 `확인 못 함`이 된다
+- [ ] New Arch가 `확인 못 함`일 때 관련 gap 항목이 등급 축이 아니라 ⚠ 블록으로 간다
+- [ ] 확정사항 7의 전제가 관측을 덮어쓰지 않는다
+
+**rehearsal 간선**
+
+- [ ] `.rn-upgrade-kit/handoff/` 아래에 currency가 소유하는 파일이 생성되지 않는다
+- [ ] 리포트에 rehearsal 호출 라인이 단일 복사 블록으로 출력된다
+- [ ] 그 블록에 산정 시각 주석이 포함된다
+- [ ] 그 블록에 lockstep 세트 전체가 포함된다 — 짝 하나만 실리지 않는다
+- [ ] 권장이 `유지`·`도달 불가`인 대상이 그 블록에 실리지 않는다
+
+**스코프 인자**
+
+- [ ] `--track`이 단일값만 받는다
+- [ ] `--track`·`--target`이 기본 스코프를 넓히는 방향으로 동작하지 않는다
+- [ ] 두 인자를 동시에 주면 AND(교집합)로 동작한다
+- [ ] 교집합이 공집합이면 빈 리포트가 아니라 안내문 + 유효 값 목록이 출력된다
+- [ ] 제외된 트랙·대상이 `미조회 (사용자 지정 스코프)`로 명시된다
+- [ ] `platform` 지정 시 리포트 파일이 생성되지 않고 범위 안내 + 실행 가능한 커맨드 라인이 출력된다
+- [ ] 안내 문구가 이관 이력이 아니라 현재 구조를 서술한다
+- [ ] `--since`·`--format`·`--json` 인자가 존재하지 않는다
+
+**산출물**
+
+- [ ] 쓰기가 리포트 파일 1개로 제한된다
+- [ ] 실행 후 `git status`에 소스·`package.json`·네이티브 설정·`.gitignore` 변경이 없다
+- [ ] 리포트 경로가 `.rn-upgrade-kit/currency/reports/YYYY-MM-DD.md`다
+- [ ] 파일명과 본문 헤더 날짜가 같은 값에서 파생된다
+- [ ] 같은 날 재실행 시 파일이 덮어써지고 시각 suffix가 붙지 않는다
+- [ ] 보존 상한을 초과하면 자동 정리되고 정리 개수가 리포트에 보고된다
+- [ ] 보존 상한이 스킬 본문에 하드코딩되지 않고 조정 가능한 한 곳에 있으며 `platform-watch`와 같은 상수를 참조한다
+- [ ] 직전 리포트가 델타 표기에만 쓰이고 어떤 판정에도 입력으로 쓰이지 않는다
+- [ ] 직전 리포트가 없어도 리포트가 정상 산출되고 델타 줄만 생략된다
+- [ ] 상태 파일(`state.json` 등)이 생성되지 않는다
+
+**서브에이전트**
+
+- [ ] 서브에이전트 프롬프트에 read-only 못박기·조회 범위 잠금·반환 형식·판정 금지가 전부 포함된다
+- [ ] 서브에이전트가 권장 버전을 결론 내지 않는다 — 게이트 판정이 메인에서만 일어난다
+
+---
+
+## Assumptions Exposed & Resolved
+
+| 가정 | 도전 | 결론 |
+| --- | --- | --- |
+| 정책 하한은 게이트 목록에 추가하면 된다 | 게이트 6개는 전부 하강 필터인데 하한은 반대 방향이라 재시도 루프와 충돌한다 | 범위 축으로 분리. 게이트 목록은 6개로 닫힘. 범위 공집합은 `도달 불가` 전용 어휘 |
+| 낡은 핸드오프는 신뢰할 수 없으니 임계값을 둔다 | 정책 하한은 오르기만 하므로 낡은 하한은 과소평가일 뿐이고, 안 쓰는 쪽이 낙관 편향이다 | `오래됨`을 상태로 만들지 않는다. 파싱되면 적용 + 생성일 병기. 날짜를 소유한 쪽이 판정한다 |
+| 정책 요구는 항상 RN 하한으로 번역된다 | `targetSdk`는 RN이 아니라 앱 `build.gradle`이 정한다 — 함수가 항상 성립하지 않는다 | 3결과 어휘. `하한 불요(프로젝트 설정 축)`는 정보 부재가 아니라 행동 지시라 ③과 자리를 나눈다 |
+| 번역 비용을 줄이려면 매핑표를 보유한다 | 표가 낡으면 환각 금지가 낡은 표를 근거로 삼는 걸 못 막는다 | 매 실행 노트 근거. 매핑표 미보유 |
+| currency는 Bash가 필요하다 (컨트래리언) | registry는 HTTP JSON이고 확정사항 6은 전송 수단이 아니라 출처를 말한다. `date -v`는 이미 리눅스에서 깨진다 | 셸 의존 0. `allowed-tools`에서 `Bash` 제거. 형제 스펙의 currency ✅가 사후 참이 됨 |
+| seed의 🔴🟠🟡⚪는 Track C를 잃어 무너진다 | 공급원을 다시 세면 강제성 축 양쪽에 실물이 있고, 핸드오프가 날짜 공급원을 되돌려준다 | 4단계 유지. platform-watch와 달리 강제성 축이 붕괴하지 않는다 |
+| 두 스킬 어휘가 다르면 정합성이 깨진다 | 등급 축과 상태 축은 다른 축이다 — 같은 기호를 같은 의미로 쓰면 충분하다 | 등급 4값 유지 + ⚠·✅를 의미까지 동일하게 차용. rehearsal의 "판정 3값 + 오염 플래그 직교"와 동형 |
+| currency → rehearsal도 핸드오프 파일이어야 한다 (심플리파이어) | 권장 버전은 soak·churn 산물이라 마감일보다 훨씬 빨리 썩는다. 사람용 리포트를 스키마로 겸용하면 리포트 개선이 rehearsal 회귀가 된다 | 파일 없음. 단일 복사 블록 + 생성 시각 주석. 신선도 판정을 새 스키마 없이 소비자로 넘김 |
+| 네이티브 설정 읽기 규칙을 두 스킬이 공유한다 (platform-watch 라운드 4a) | 규칙 공유는 약속이라 어긋날 수 있다. 핸드오프 `current`를 재사용하면 다른 값을 말할 경로가 구조적으로 없다 | 공유 참조 파일 **철회**. `targetSdk`·iOS min은 핸드오프에서, 플래그 2개만 직접 Read. `rn_floor` 필드를 안 둔 것과 같은 수법 |
+| New Arch는 확정사항 7이 보장하니 관측이 필요 없다 | 확정사항은 스펙 전제고 `gradle.properties`는 관측이다 | 전제로 관측을 덮지 않는다. 충돌·부재 시 병기 + `확인 못 함`, 관련 gap은 등급 축 밖 |
+| 없어진 `platform` 인자는 마이그레이션 안내다 | 대상은 seed 사용자가 아니라 신규 사용자 발견성이다 — `currency`라는 이름 때문에 정책을 여기서 찾는 건 자연스러운 오해다 | 수명 영구. 문구를 이관 이력이 아니라 범위 안내로. 실행 가능한 커맨드 포함 |
+| 보존 상한은 디스크 청소다 | currency는 델타를 직전 리포트 파일에서 뽑는다 — N=1이면 델타가 영구히 빈다 | 상한에 기능적 하한 2가 있다. N=12는 platform-watch와 공유 상수, rehearsal N=3은 매체 차이에서 파생된 정당한 차이 |
+| 리포트 크기가 작으니 상한이 없어도 된다 | 크기는 성격이 아니다 — 형제 스킬 둘이 모두 상한을 둔 이유와 충돌한다 | N=12 + 정리 개수 보고 한 줄 |
+
+---
+
+## Technical Context
+
+- **정본:** `seed/rn-currency-SKILL.md` — frontmatter(`name`/`description`/`user-invocable`/`argument-hint`/`allowed-tools`), 번호 절 구조, 서두 불릿 원칙, `references/*.md` 지연 로드 패턴을 그대로 따른다. §0~§5 구조는 유지하되 Track C 관련 문단과 Bash 블록이 제거된다.
+- **형제 스펙:** `.omc/specs/deep-interview-platform-watch.md`(핸드오프 계약·경로 규약·degrade 원칙·⚠✅ 기호), `.omc/specs/deep-interview-rn-rehearsal.md`(어휘 소수 고정 + 직교 플래그, 사유 구분 표기, 보존 상한, 단일 복붙 블록 형태).
+- `allowed-tools` 후보: **`Read Write WebFetch Agent Skill`** — `Bash`·`WebSearch` 불포함.
+- 대상 프로젝트 전제: New Architecture (`newArchEnabled=true`, Hermes, Nitro Modules, Reanimated 4), **Expo 미사용**.
+- 외부 skill 우선순위: SM 라이브러리는 `react-native-best-practices`(SM) 1차, 성능 진단성 정보는 `react-native-perf-guide`(Callstack) 참고.
+
+### 참조 파일 포팅 시 필요한 수정
+
+`seed/references/report-format.md`:
+
+1. `date +%F`(Bash) 제거 → 컨텍스트 현재 날짜
+2. 파일명 `<YY.MM.DD>.md` → `YYYY-MM-DD.md`
+3. 저장 경로 `.claude/skills/rn-currency/reports/` → `.rn-upgrade-kit/currency/reports/`
+4. 헤더 스코프 줄 `core/lib/platform` → `core/lib`
+5. `⚠ 확인 못 함` · `✅ 점검함 · gap 없음` · `미조회` 블록 추가
+6. rehearsal 커맨드 블록 · 보존 상한 정리 줄 추가
+7. 스냅샷 헤더의 `targetSdk`·`iOS min` 출처를 핸드오프로 명기
+
+`seed/references/cadence.md`:
+
+1. `platform — 2월·6월 고정` 항목 제거 → `platform-watch` 소관임을 한 줄로 안내
+2. `/rn-currency <대상>` → `/rn-upgrade-kit:currency --target <대상>`
+3. "§0이 registry 1콜이라 실행이 싸다"의 근거 갱신 — 대상당 registry 응답 + Agent 분담
+
+---
+
+## 형제 스펙에 반영해야 할 변경 — **8건 전부 적용 완료 (2026-08-09)**
+
+인터뷰 종료 시점에는 목록만 남겼고, 사용자 확인 후 8건 전부 적용됐다. 아래는 적용된 내용의 기록이다.
+
+`platform-watch` 쪽 대응 기록은 그 스펙 §형제 스펙에 반영해야 할 변경 3번 표에, `rehearsal` 쪽은 §인자 검증 절과 온톨로지 정정 노트에 있다.
+
+### `.omc/specs/deep-interview-platform-watch.md`
+
+1. **§현재값 읽기 — "읽기 규칙은 플러그인 공유 참조 파일" 절 철회** (라운드 7a)
+   - `references/native-config-read.md`를 만들지 않는다. 이 스펙의 §스냅샷 헤더가 그 안을 대체한다.
+   - 철회 사유를 남긴다: *규칙 공유는 약속이라 어긋날 수 있지만, currency가 핸드오프 `current`를 재사용하면 두 스킬이 다른 값을 말할 경로가 구조적으로 없다.*
+   - 딸린 정리: Acceptance Criteria의 "파싱 규칙이 `platform-watch` 본문이 아니라 공유 참조 파일에만 존재한다"를 **본문에 자족적으로 존재한다**로 수정 / 온톨로지 `NativeConfigRead` 제거 / §구현자 미확정의 `references/native-config-read.md` 항목 제거.
+   - **파싱 규칙 자체(모두 병기 + 가장 낮은 값)는 `platform-watch` 스펙 안에 그대로 남는다.** 삭제 대상은 공유 계약뿐이다.
+   - 두 스펙에 상충하는 지시가 남으면 구현 때 예측 불가로 해소된다 — 이 항목의 우선순위가 가장 높다.
+2. **§구현자 미확정 — 같은 날 두 번 실행 시 파일명 규칙을 `덮어쓰기`로 확정** (라운드 9c)
+   - 적용 전에는 `덮어쓰기 / 시각 suffix`로 열려 있었다. 시각 suffix는 보존 상한 계산을 "12일"이 아니라 "12파일"로 흔든다.
+3. **§산출물 — 리포트 보존 상한 N=12를 currency와 공유 상수로** (라운드 9a)
+   - 한쪽만 바뀌는 드리프트를 막는다.
+4. **§호스트 지원 — currency 행에 근거 문장 추가** (라운드 4)
+   - 현재 표의 `currency = 전 호스트 ✅`는 근거 없이 적힌 값이었다. currency도 셸 의존 0이라는 사실이 그 값을 사후 참으로 만든다. 표에 사유를 병기해 `rehearsal`의 거부 사유와 대칭을 이룬다.
+5. **§핸드오프 계약 — `current` 필드의 역할 강화** (라운드 7)
+   - `current`가 currency 스냅샷 헤더의 **유일한 공급원**임을 명기한다. 현재 스펙은 `current`를 platform-watch 자신의 충족 판정용으로만 서술한다.
+   - §형제 스펙에 반영해야 할 변경 2번(`currency` 스킬 스펙 미적용)을 **적용 완료**로 갱신하되, 그 안의 "네이티브 설정 읽기 공유 참조 파일 채택"은 1번에 따라 철회 표기.
+
+### `.omc/specs/deep-interview-rn-rehearsal.md`
+
+6. **인자 검증 규칙 추가** (라운드 6c)
+   - 실행 전 검증: 존재하는 stable인가 · lockstep 짝이 다 왔나 · 프리릴리즈 아닌가.
+   - 이건 "파일이 없어서 생기는 비용"이 아니다. 사용자가 손으로 칠 수도 있으니 **전달 방식과 무관하게 어차피 필요하다.**
+7. **생성 시각 주석 소비 규칙 추가** (라운드 6b)
+   - currency 커맨드 블록의 `# 산정 시각:` 주석을 읽어 오래됐으면 실행 전 경고한다. 파일이 없으므로 낡음을 알 길이 그것뿐이다.
+8. **Technical Context 423번 줄의 열린 재량을 닫는다** (라운드 6)
+   - 적용 전: *"미지정 시 `currency` 리포트에서 읽는 경로를 열어둘 수 있다(설계 재량)"*.
+   - 변경: **리포트 파싱 금지.** 사람용 리포트를 기계 스키마로 겸용하면 리포트 문구 개선이 `rehearsal` 회귀가 된다.
+
+---
+
+## 구현자에게 남기는 미확정 (설계 재량 — 인터뷰에서 다루지 않음)
+
+- **registry 응답 크기 대응.** 인기 패키지의 전체 packument는 수 MB다. WebFetch가 요약·절단하면 그 자체가 환각 표면이 된다. 완화 후보: 버전별 엔드포인트(`registry.npmjs.org/<pkg>/<version>` — 작고 `peerDependencies` 포함)로 후보 버전만 확인하고, `time`은 게이트 후보 구간만 쓰기 / abbreviated packument(`application/vnd.npm.install-v1+json`) 사용 가능 여부. **필요 필드(`dist-tags`·`versions[*].peerDependencies`·`time`·`versions[*].deprecated`)를 확보 못 하면 `확인 못 함`으로 가야 한다.**
+- lockfile 4종(pnpm/npm/yarn/bun) 중 어디까지 Read 지원할지 — `rehearsal`은 4종을 지원한다. 미지원 lockfile이면 설치 버전을 `package.json` 선언 범위로 대체하고 그 사실을 헤더에 표기할지.
+- 보존 상한 공유 상수의 물리적 위치(참조 파일 경로·키 이름)
+- soak 기본값(minor 14일 / patch 7일)의 조정 가능 여부
+- known issue 게이트에서 "우리가 쓰는 기능"을 판별하는 근거 범위 — 소스 grep은 advisory 경계 안이지만 비용이 크다
+- 릴리즈 노트 태그 URL 조립 규칙(모노레포·태그 접두사 변형)의 정본 위치
+- `Agent` 분담 단위(대상별 / 트랙별)와 동시 실행 상한
+- `--target`에 lockstep 짝의 한쪽만 지정했을 때 세트 전체를 끌어올지 여부
+- 델타 줄의 정확한 필드 구성
+- 리포트 `✅` 블록의 압축 임계(몇 개부터 한 줄로 접을지)
+
+---
+
+## Ontology (Key Entities)
+
+| 엔티티 | 타입 | 필드 | 관계 |
+| --- | --- | --- | --- |
+| CurrencyRun | core domain | run_date, host, scope, handoff_state | produces one Report; produces one RehearsalInvocation |
+| Track | core domain | id(A core / B lib), targets | Track C 부재 |
+| Target | core domain | name, current_version, declared_range, track | belongs to Track |
+| RegistrySnapshot | supporting | latest, dist_tags, versions, time_map, deprecated | Target당 1; HTTP 응답 1개에서 전부 |
+| RegistryEndpoint | external system | url, transport(HTTP/WebFetch), required_fields | 셸 경유 없음 |
+| Lockfile | supporting | kind, installed_versions | 설치 버전 단일 출처 |
+| PeerCeiling | supporting | version, locked_by | Target에 부착 |
+| PolicyFloor | core domain | version, source(handoff), translation | 0..1; 없으면 하한 = 현재 |
+| VersionRange | core domain | floor, ceiling, empty(bool) | 게이트보다 **먼저** 확정 |
+| UnreachableState | core domain | blocking_package, floor_evidence, ceiling_evidence | VersionRange.empty일 때만; 등급 🔴 |
+| Gate | core domain | id(1..6), descending_filter(true) | 6개 고정; 범위 안에서만 하강 |
+| SafeTarget | core domain | version, blocked_by_gate, release_date, unblock_date | Target당 0..1 |
+| LockstepSet | core domain | members, joint_verdict | 짝 하나가 걸리면 세트 전체 |
+| HandoffRead | supporting | path(문자열 상수), parsed, degrade_reason, generated_date | Run당 0..1; 신선도 판정 없음 |
+| TranslationOutcome | core domain | kind(하한 있음/하한 불요/확인 못 함), evidence_link, floor_version | 핸드오프 항목당 1 |
+| Grade | supporting | value(🔴🟠🟡⚪), axes(강제성×임박도) | 상태축·권장버전축과 직교 |
+| ReportBlock | supporting | kind(등급/⚠/✅/미조회), sort_axis | 4종 |
+| VerifiedCleanItem | supporting | target, checked(true) | ✅ 블록; 슬러그 나열로 압축 |
+| UnverifiedItem | core domain | target, reason(도달실패/번역/New Arch) | ⚠ 블록; 0건이어도 `없음` |
+| Report | core domain | path, header, blocks, delta_line, retention_note | Run당 정확히 1개; 유일한 쓰기 |
+| DeltaLine | supporting | prior_report_path, new_gaps, resolved_gaps, grade_changes, hold_released | **표기 전용, 판정 근거 아님**; 직전 리포트 없으면 생략 |
+| SnapshotHeader | supporting | rn, react, new_arch, hermes, target_sdk, ios_min, source, missing_reason | targetSdk·iOS min의 source = handoff |
+| FlagConflict | supporting | entries, resolution(확인 못 함) | boolean이라 "가장 낮은 값" 불가 |
+| RehearsalInvocation | core domain | lockstep_set, generated_at, single_block, excludes_holds | 파일 아님 — Report 본문의 복사 블록 |
+| ScopeArgument | supporting | track(단일값), target, narrowing_only, combine(AND) | 제외분은 ReportBlock 4 |
+| ScopeRedirect | supporting | trigger(platform), message(범위 안내), command_line, lifetime(영구) | 리포트 생성하지 않음 |
+| ReportRetention | supporting | limit_n(12·공유 상수), pruned_count, functional_floor(2) | 청소가 아니라 기능 |
+| HostSupportMatrix | external system | os, supported(전 호스트), shell_dependency(0), websearch(0) | 선언이 아니라 구조적 사실 |
+
+## Ontology Convergence
+
+| 라운드 | 엔티티 수 | 신규 | 변경 | 안정 | 안정도 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 15 | 15 | – | – | N/A |
+| 2 | 17 | 2 | 0 | 15 | 88.2% |
+| 3 | 18 | 1 | 1 (TranslationEvidence → TranslationOutcome 필드로 흡수) | 16 | 94.4% |
+| 4 | 20 | 2 | 0 | 18 | 90.0% |
+| 5 | 22 | 2 | 1 (Grade: 독립 판정 → 축 선언) | 19 | 90.9% |
+| 6 | 23 | 1 | 0 | 22 | 95.7% |
+| 7 | 25 | 2 | 0 | 23 | 92.0% |
+| 8 | 27 | 2 | 0 | 25 | 92.6% |
+| 9 | 28 | 1 | 1 (Report: 보존 상한과 델타 표기의 결합) | 26 | **96.4%** |
+
+라운드 9에서 코어 엔티티 무변경 — 도메인 모델 수렴. 변경 3건은 모두 **위상 재정의**였고 개념 소멸은 없었다(라운드 3 TranslationEvidence의 필드 강등, 라운드 5 Grade의 축 선언, 라운드 9 Report와 ReportRetention의 결합).
+
+`DeltaLine`은 seed `report-format.md`에서 계승되어 라운드 1부터 암묵적으로 존재했고 라운드 9에서 명시적으로 명명됐다.
+
+---
+
+## Interview Transcript
+
+<details>
+<summary>전체 Q&A (9 라운드)</summary>
+
+### 라운드 1 — 타깃: 성공기준
+**Q:** 정책 하한을 §3 게이트 7번으로 넣나, §0 peer ceiling 옆 범위 축으로 두나? 하한 > 상한 충돌 시 리포트가 뭐라고 말하나?
+**A:** 범위 축. §0에서 `max(현재, 정책하한) ≤ 권장 ≤ peer상한`을 먼저 확정하고 게이트 6개는 그 안에서만 하강 판정. 공집합이면 `도달 불가` 전용 표기 + 상한을 잠근 패키지 지목.
+**모호도:** 39% → 31% (목표 0.70→0.75, 제약 0.65→0.68, 기준 0.45→0.62)
+
+### 라운드 2 — 타깃: 성공기준
+**Q:** 핸드오프 파일이 없을 때 / 오래됐을 때 / 스키마가 안 맞을 때 각각 무엇을 출력하나?
+**A:** 2분기. 파싱되면 무조건 하한 적용 + 생성일 병기, 미반영은 `없음`·`스키마 불일치` 둘뿐. 신선도 임계값을 발명하지 않는다 — currency에는 N을 고를 근거가 없다.
+**모호도:** 31% → 25.6%
+
+### 라운드 3 — 타깃: 성공기준
+**Q:** 정책 요구를 버전 하한으로 번역하는 절차와 결과 어휘를 어떻게 잡나? (`targetSdk`는 RN이 아니라 앱 `build.gradle`이 정한다)
+**A:** 릴리즈 노트·Upgrade Helper 근거 + 3결과 어휘(하한 있음 / 하한 불요 — 프로젝트 설정 축 / 번역 확인 못 함). 매핑표 미보유 — 보유하면 낡을 수 있고 환각 금지가 낡은 표를 근거로 삼는 걸 못 막는다.
+**모호도:** 25.6% → 21.8%
+
+### 라운드 4 — 컨트래리언 모드 · 타깃: 제약
+**Q:** currency가 Bash를 써야 한다는 게 정말 요구사항인가? registry는 HTTP JSON이고 확정사항 6은 전송 수단이 아니라 출처를 말한다.
+**A:** 셸 의존 0. `Bash` 제거. `jq` 불필요(JSON 직독), `date` 불필요(컨텍스트 날짜), PM 종류 무관. 대가로 설치 버전을 lockfile/`package.json`에서 읽고 패키지당 fetch가 늘어난다(Agent 분담).
+**모호도:** 21.8% → 20.9%
+
+### 라운드 5 — 타깃: 성공기준
+**Q:** 등급 어휘를 어떻게 확정하고 리포트를 몇 블록으로 가르나? platform-watch는 강제성 축 붕괴로 4단계를 접었다.
+**A:** 등급 4값 유지 + ⚠·✅ 블록 추가. 축을 둘로 선언 — 🔴🟠🟡⚪는 등급(강제성×임박도), ✅⚠는 블록 표식(점검 결과). 이모지 의미는 platform-watch와 정확히 일치. rehearsal의 "판정 3값 + 오염 플래그 직교"와 동형. currency는 강제성 축 양쪽에 실물이 있어 붕괴하지 않는다.
+**모호도:** 20.9% → 18.4% (임계치 통과, 미결 4개 남아 계속)
+
+### 라운드 6 — 심플리파이어 모드 · 타깃: 목표
+**Q:** currency가 산정한 권장 버전이 rehearsal에 어떻게 전달되나? 간선이 파일이어야 하나?
+**A:** 파일 없음 + 커맨드 출력. 근거 — 두 번째 핸드오프는 신선도 문제를 가진 파일을 하나 더 만드는데 권장 버전은 soak·churn 산물이라 마감일보다 훨씬 빨리 썩는다. 리포트 직접 파싱은 사람용 리포트를 기계 스키마로 겸용해 리포트 개선이 rehearsal 회귀가 되는 잘못된 결합 방향. 추가 — (a) lockstep 세트 전체 포함, 권장 `유지`는 제외 (b) 생성 시각을 주석으로 박아 rehearsal이 낡음을 판정 (c) rehearsal에 인자 검증 규칙 추가(전달 방식과 무관하게 어차피 필요) (d) 단일 복사 블록.
+**모호도:** 18.4% → 12.4%
+
+### 라운드 7 — 타깃: 제약
+**Q:** currency가 네이티브 설정을 어떻게 읽나? 공유 참조 파일을 어디 두고 누가 소유하나?
+**A:** 핸드오프 `current` 재사용 + 플래그 2줄만 직접 Read. 근거 — 파싱 규칙 공유는 "약속"이라 어긋날 수 있지만 핸드오프 현재값을 재사용하면 두 스킬이 다른 값을 말할 경로가 구조적으로 없다. `rn_floor` 필드를 안 둔 것과 같은 수법 — 압력을 관리하지 말고 경로를 없앤다. 추가 — (a) platform-watch의 공유 참조 파일 채택을 **철회**하고 사유를 남길 것(상충 지시가 남으면 구현 때 예측 불가로 해소된다) (b) 헤더 부재 표기에 사유 병기 (c) boolean 충돌은 "가장 낮은 값"이 적용 안 되므로 병기 + `확인 못 함`, New Arch 감지 degrade도 함께 정의.
+**모호도:** 12.4% → 9.2%
+
+### 라운드 8 — 타깃: 제약
+**Q:** 스코프 인자를 어떻게 잡고 없어진 `platform`을 어떻게 처리하나? (`--platform`은 platform-watch에서 다른 뜻이다)
+**A:** `--track`으로 개명 + `platform`은 받되 안내 후 종료. 근거 — 안내 대상이 seed 사용자 마이그레이션이 아니라 **신규 사용자 발견성**이라 수명이 영구다. 추가 — (a) 문구를 이관 안내가 아니라 범위 안내로(이관 문구는 언젠가 지울 것처럼 읽혀 유지보수 판단을 흐린다) (b) 실행 가능한 커맨드 라인 포함 (c) `--track` 단일값만 (d) 좁히기 전용·기본 전체·제외분 명시·AND 교집합·공집합이면 유효 값 목록.
+**모호도:** 9.2% → 7.3%
+
+### 라운드 9 — 타깃: 제약
+**Q:** 리포트 보존 상한과 파일명 규칙을 어떻게 잡나? (파일명 규칙 불일치 + `date +%F` 사망 + 보존이 델타 기능에 걸림)
+**A:** N=12 · platform-watch와 동일. 근거 — 상한 없음은 "크기가 작다"가 근거인데 크기는 성격이 아니고, N=6은 커버 기간을 문제로 잡았으나 보존 목적은 기간 커버가 아니라 직전 실행 비교와 최근 판단 이력이다. rehearsal의 N=3은 매체가 달라 성격에서 파생된 정당한 차이. 추가 — (a) N을 조정 가능한 공유 상수로 (b) 삭제 개수를 리포트 말미에 한 줄 (c) 같은 날 두 번 실행은 덮어쓰기로 명시(시각 suffix는 상한 계산을 "12일"이 아니라 "12파일"로 흔든다), platform-watch에도 같은 규칙이 있는지 확인해 맞출 것.
+**모호도:** 7.3% → **4.7%**
+
+</details>
