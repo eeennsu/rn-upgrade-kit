@@ -1,0 +1,159 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1786256539168,
+  "projectRoot": "C:\\Users\\xxx99\\Documents\\GitHub\\portfolio\\rn-upgrade-kit",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "seed": {
+      "path": "seed",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1786256539127,
+      "keyFiles": [
+        "rn-currency-SKILL.md"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "seed\\rn-currency-SKILL.md",
+      "accessCount": 5,
+      "lastAccessed": 1786271606287,
+      "type": "file"
+    },
+    {
+      "path": "seed\\references\\report-format.md",
+      "accessCount": 3,
+      "lastAccessed": 1786271611266,
+      "type": "file"
+    },
+    {
+      "path": "seed\\references\\cadence.md",
+      "accessCount": 2,
+      "lastAccessed": 1786264243207,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 1,
+      "lastAccessed": 1786258359840,
+      "type": "directory"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 1,
+      "lastAccessed": 1786258367147,
+      "type": "file"
+    },
+    {
+      "path": ".claude-plugin\\plugin.json",
+      "accessCount": 1,
+      "lastAccessed": 1786281040341,
+      "type": "file"
+    },
+    {
+      "path": "shared\\constants.md",
+      "accessCount": 1,
+      "lastAccessed": 1786281061781,
+      "type": "file"
+    },
+    {
+      "path": "skills\\platform-watch\\SKILL.md",
+      "accessCount": 1,
+      "lastAccessed": 1786281135997,
+      "type": "file"
+    },
+    {
+      "path": "skills\\platform-watch\\references\\watch-targets.md",
+      "accessCount": 1,
+      "lastAccessed": 1786281175649,
+      "type": "file"
+    },
+    {
+      "path": "skills\\platform-watch\\references\\report-format.md",
+      "accessCount": 1,
+      "lastAccessed": 1786281214436,
+      "type": "file"
+    },
+    {
+      "path": "skills\\currency\\SKILL.md",
+      "accessCount": 1,
+      "lastAccessed": 1786281326198,
+      "type": "file"
+    },
+    {
+      "path": "skills\\currency\\references\\report-format.md",
+      "accessCount": 1,
+      "lastAccessed": 1786281367994,
+      "type": "file"
+    },
+    {
+      "path": "skills\\currency\\references\\cadence.md",
+      "accessCount": 1,
+      "lastAccessed": 1786281383586,
+      "type": "file"
+    },
+    {
+      "path": "skills\\currency\\references\\sources.md",
+      "accessCount": 1,
+      "lastAccessed": 1786281410455,
+      "type": "file"
+    },
+    {
+      "path": "skills\\rehearsal\\SKILL.md",
+      "accessCount": 1,
+      "lastAccessed": 1786281495896,
+      "type": "file"
+    },
+    {
+      "path": "skills\\rehearsal\\references\\report-format.md",
+      "accessCount": 1,
+      "lastAccessed": 1786281539827,
+      "type": "file"
+    },
+    {
+      "path": "skills\\rehearsal\\references\\log-patterns.md",
+      "accessCount": 1,
+      "lastAccessed": 1786281569142,
+      "type": "file"
+    },
+    {
+      "path": "skills\\platform-watch\\references\\cadence.md",
+      "accessCount": 1,
+      "lastAccessed": 1786281583182,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1786281621756,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
