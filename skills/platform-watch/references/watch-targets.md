@@ -10,7 +10,7 @@
 | `platform` | ✔ | `android` \| `ios`. **`--platform` 필터가 읽는 값.** 슬러그 접두사에서 추론하지 않는다 — `play/*`가 안 풀린다 |
 | `요구 항목` | ✔ | 무엇을 얼마로 맞춰야 하나 |
 | `1차 URL` | ✔ | 공식 정책 본문 |
-| `2차 URL` | ✔ | **요건은 독립성.** 1차의 미러나 같은 사이트 하위 경로면 같은 개편에 함께 죽어서 이중화가 아니다 — **다른 호스트 또는 다른 성격의 공식 페이지**여야 한다 |
+| `2차 URL` | ✔ | **요건은 독립성.** 1차의 미러나 같은 사이트 하위 경로면 같은 개편에 함께 죽어서 이중화가 아니다 — **다른 호스트 또는 다른 성격의 공식 페이지**여야 한다. **공식 문서가 한 호스트에 몰린 공급자(Apple)는 "다른 호스트"가 불가능하다.** 이때는 **다른 성격의 페이지**로 요건을 만족시키되, **여러 항목이 같은 2차 URL을 공유하지 않는다** — 공유하면 페이지 하나가 죽을 때 항목 여럿의 이중화가 동시에 사라져 요건이 막으려던 것이 그대로 일어난다 |
 | `현재값 읽기 지시` | ✔ | 프로젝트 어디를 어떻게 읽나 |
 | `등급 임계일` | ✖ | 미지정 시 `../../../shared/constants.md`의 `grade_threshold_days` |
 
@@ -38,8 +38,8 @@ URL을 추가·수정할 때 **2차의 독립성 요건을 반드시 지켜라.*
 
 - **platform:** ios
 - **요구:** Apple 최소 배포 타깃
-- **1차:** https://developer.apple.com/support/xcode/
-- **2차:** https://developer.apple.com/news/
+- **1차:** https://developer.apple.com/news/upcoming-requirements/
+- **2차:** https://developer.apple.com/support/xcode/
 - **현재값:** `ios/Podfile`의 `platform :ios, 'X.Y'` + `ios/*.xcodeproj/project.pbxproj`의 `IPHONEOS_DEPLOYMENT_TARGET` + `ios/*.xcconfig`. 셋이 갈리면 전부 병기, 가장 낮은 값 기준 판정.
 
 ### `ios/min-xcode`
@@ -47,7 +47,7 @@ URL을 추가·수정할 때 **2차의 독립성 요건을 반드시 지켜라.*
 - **platform:** ios
 - **요구:** 심사 제출용 최소 Xcode / SDK 버전
 - **1차:** https://developer.apple.com/support/xcode/
-- **2차:** https://developer.apple.com/news/
+- **2차:** https://developer.apple.com/news/upcoming-requirements/
 - **현재값:** repo 안에서 읽을 수 있는 건 CI 설정(`.github/workflows/*.yml`의 `xcode-version`)뿐이다. 없으면 `현재값 확인 못 함 (경로 부재)` — **로컬 Xcode 버전을 셸로 확인하지 않는다.**
 
 ### `ios/privacyinfo-required`
@@ -55,7 +55,7 @@ URL을 추가·수정할 때 **2차의 독립성 요건을 반드시 지켜라.*
 - **platform:** ios
 - **요구:** `PrivacyInfo.xcprivacy` 존재
 - **1차:** https://developer.apple.com/documentation/bundleresources/privacy-manifest-files
-- **2차:** https://developer.apple.com/news/
+- **2차:** https://developer.apple.com/support/third-party-SDK-requirements/
 - **현재값:** `Glob`으로 `ios/**/PrivacyInfo.xcprivacy` 탐색. **존재 여부가 곧 현재값이다** — 있으면 충족, 없으면 미충족. 탐색 자체가 불가능한 경우에만 `확인 못 함`.
 
 ### `play/billing`
@@ -77,3 +77,5 @@ URL을 추가·수정할 때 **2차의 독립성 요건을 반드시 지켜라.*
 ## 초기 목록의 한계
 
 **위 URL은 실측되지 않았다.** 첫 실행에서 1차·2차가 죽어 있으면 §소스 도달의 수리 루프(`URL 이동 의심` → 이 파일 수정 → `--target`으로 해당 항목만 재확인)를 타라. 그게 이 파일이 스킬 본문 밖에 있는 이유다.
+
+위 항목 스키마 표의 **단일 호스트 공급자 예외** 규칙은 URL을 실측해 고칠 때도 지켜야 한다 — **2차를 고를 때 이미 다른 항목이 쓰는 페이지인지 먼저 본다.**

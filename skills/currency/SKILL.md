@@ -12,7 +12,7 @@ allowed-tools: Read Write Glob Bash WebFetch Agent Skill
 
 - **advisory 전용.** 아무것도 막지 않는다. 코드·`package.json`·네이티브 설정·`.gitignore`를 수정하지 않는다. 쓰기는 §6 리포트 파일 1개뿐이다.
 - **환각 금지 (핵심 제약).** 최신성 주장은 registry 응답 또는 webfetch로 확인한 릴리즈 노트 링크가 근거다. 확인 못 한 항목은 `확인 못 함`으로 분리한다.
-- **대상은 목록에서 사라지지 않는다. 자리를 옮길 뿐이다.** §7 degrade 8경로가 전부 이 원칙에서 나온다.
+- **대상은 목록에서 사라지지 않는다. 자리를 옮길 뿐이다.** §7 degrade 10경로가 전부 이 원칙에서 나온다.
 - **플랫폼 정책(Track C)은 이 스킬에 없다.** `platform-watch` 소관이다 — `platform` 인자는 받되 안내만 한다(§5).
 
 ## 0. 인자 문법
@@ -22,16 +22,23 @@ allowed-tools: Read Write Glob Bash WebFetch Agent Skill
 | `platform` (bare) 또는 `--track platform` | §5 범위 안내 후 **종료**. 리포트를 생성하지 않는다 |
 | `--track core\|lib` | 트랙 좁히기. **단일값만** 받는다 |
 | `--target <pkg>` · bare `<pkg>` | 대상 좁히기. 둘은 같은 뜻이다 |
+| `--target <pkg>`가 lockstep 짝의 한쪽 | **세트 전체가 조회 대상**이 된다 — 아래 |
 | 유효하지 않은 bare 토큰 | `지정 스코프에 해당 대상 없음` + 유효 값 목록 |
 
 - **기본값은 항상 전체다. 넓히는 방향의 인자는 두지 않는다.**
 - 두 인자를 동시에 주면 **AND(교집합)**. 공집합이면 빈 리포트가 아니라 안내문 + 유효 값 목록.
 - 제외된 트랙·대상은 조용히 빠지지 않고 `미조회 (사용자 지정 스코프)` 블록에 남는다.
+- **`--target`이 lockstep 세트의 한쪽만 가리키면 세트 전체를 조회한다.** 넓히기가 아니다 — §4 게이트 6이 *"짝 하나가 걸리면 세트 전체가 걸린 것"*이라 **짝을 안 보면 게이트 6을 판정할 수 없다.** 인자는 좁히기 전용이되 **lockstep 세트 경계에서 반올림한다.**
+- 자동 포함분은 조용히 늘리지 않고 헤더 스코프 줄에 명시한다: `--target react-native-reanimated (+lockstep: react-native-worklets)`.
 - **인자는 이 둘로 닫는다.** `--since`·`--format`·`--json`은 범위 밖이다.
 
 ## 1. 점검 대상 — 2 트랙
 
 대상 목록은 **`package.json`의 `dependencies` 키에서 산정한다.** 하드코딩하지 않는다 — `dependencies`만 읽으면 devDependencies(eslint·babel·jest·`@types`)가 자동 배제된다.
+
+- **Track A는 `react-native`·`react` 둘로 닫힌다.** Hermes·New Arch는 패키지가 아니라 RN 내장·플래그라 `dependencies`에 없다.
+- **나머지 `dependencies` 전부가 Track B다.** 아래 표의 B 열은 **예시이지 목록이 아니다** — "하드코딩하지 않는다"는 건 이 말이다. 새 라이브러리가 들어와도 이 파일을 고칠 일이 없어야 한다.
+- `--track`의 유효 값은 `core`·`lib` 둘뿐이다.
 
 | 트랙 | 대상(예시) | 1차 출처 |
 | --- | --- | --- |
@@ -73,6 +80,8 @@ node -e "fetch('https://registry.npmjs.org/react-native-worklets').then(r=>r.jso
 - **`node`는 새 의존이 아니다** — 대상이 RN 프로젝트이므로 항상 있다. 호스트·PM 무관, Windows Git Bash에서도 돈다.
 - **다른 셸 사용은 전부 금지**: `pnpm`·`jq`·`date`·`cat`·`ls`·파이프·리다이렉트. 날짜 비교는 ISO 문자열 비교로 충분하다(`"2026-07-23" > "2026-07-17"`) — 파싱·산술 하지 마라.
 - **degrade:** `node -e`가 실패하면 그 대상의 **soak·churn 게이트만** `확인 못 함`으로 두고 나머지 게이트(1·2·5·6)로 산정한다. 대상을 빼지 말고 권장 줄에 `⚠ 숙성 미확인`을 병기한다 — 근거 없이 "충분히 익었다"고 말하지 않는다.
+- **degrade — lockfile:** 4종(`pnpm-lock.yaml`·`package-lock.json`·`yarn.lock`·`bun.lock`/`bun.lockb`)이 하나도 없거나 **둘 이상이라 판별 불가**면 설치 버전을 `package.json`의 **선언 범위**로 대체한다. 헤더에 `설치 버전 미확정 (lockfile 없음 / 미지원: <파일명> / 2종 존재)`을 적고, 대상마다 권장 줄에 `⚠ 설치 버전 미확정`을 병기한다. **대상을 리포트에서 빼지 않는다.**
+- 선언 범위(`^5.0.2`)는 정확한 설치 버전이 아니다. **gap은 범위 하단 기준으로 보수적으로 잡는다** — 상단으로 잡으면 이미 최신인 것처럼 보여 놓친다. §날짜/버전 판정의 낙관 편향 금지와 같은 방향이다.
 
 ### 조회 순서
 
@@ -176,9 +185,11 @@ node -e "fetch('https://registry.npmjs.org/react-native-worklets').then(r=>r.jso
 | --- | --- |
 | RN · React 버전 | `package.json` + lockfile |
 | `targetSdk` · iOS min | **핸드오프 `current` 필드** — 직접 파싱하지 않는다 |
-| New Arch · Hermes | `android/gradle.properties` 두 줄 직접 Read |
+| New Arch · Hermes | `newArchEnabled`·`hermesEnabled` — `Glob`으로 `gradle.properties` 전부 + CI 워크플로 override 탐색 |
 
 - 핸드오프가 없으면 값을 비우지 말고 **사유를 병기한다**: `targetSdk — (핸드오프 없음)`. "읽기 실패"와 "안 읽음"은 구분돼야 한다.
+- **읽는 경로는 하나가 아니다.** `Glob`으로 `android/gradle.properties`·`gradle.properties`·flavor별 오버라이드 파일을 전부 찾고, `.github/workflows/*.yml`의 `-PnewArchEnabled`·`ORG_GRADLE_PROJECT_newArchEnabled` 문자열도 본다. **한 경로만 읽으면 충돌이 관측되지 않아 §7 degrade 5가 사문화된다.**
+- **런타임 env는 판정 대상이 아니다.** repo 안에서 읽을 수 있는 것만 읽고, 그래서 판정이 안 서면 `확인 못 함`이다 — 못 본 것을 없는 것으로 세지 않는다.
 - **boolean 충돌은 "가장 낮은 값" 규칙이 적용되지 않는다.** `newArchEnabled`·`hermesEnabled`가 flavor·CI env로 갈리면 **모두 병기하고 판정은 `확인 못 함`**으로 둔다 — `false`로 가정하면 New Arch 강제 항목을 놓치고 `true`로 가정하면 없는 전제 위에서 권장한다.
 - **degrade:** New Arch가 `확인 못 함`이면 New Arch 전제에 걸린 gap 항목을 **등급 축에 올리지 않고 ⚠ 블록으로** 보낸다.
 - **"이 프로젝트는 New Architecture 기반"은 전제이고 `gradle.properties`는 관측이다. 전제로 관측을 덮지 마라.**
@@ -202,7 +213,7 @@ platform 추적은 platform-watch가 담당한다.
 
 - **쓰기는 메인만, `Write` 1회.** 서브에이전트는 read-only다.
 
-## 7. degrade — 8경로
+## 7. degrade — 10경로
 
 | # | 조건 | 결과 | 위치 |
 | - | --- | --- | --- |
@@ -213,7 +224,9 @@ platform 추적은 platform-watch가 담당한다.
 | 5 | New Arch 플래그 충돌·부재 | 병기 + `확인 못 함`, 관련 gap은 등급 축 밖 | ⚠ 블록 |
 | 6 | 범위 공집합 (하한 > 상한) | `산정 불가 — 도달 불가` + 잠근 패키지 지목 | 🔴 |
 | 7 | 사용자 스코프 제외 | `미조회 (사용자 지정 스코프)` | 별도 블록 |
-| 8 | `node -e` 실패 (배포일 미확보) | soak·churn만 `확인 못 함` + `⚠ 숙성 미확인` | 제자리 |
+| 8 | **직전 리포트 없음** | 델타 줄만 생략, 리포트 정상 산출 | — |
+| 9 | `node -e` 실패 (배포일 미확보) | soak·churn만 `확인 못 함` + `⚠ 숙성 미확인` | 제자리 |
+| 10 | **lockfile 부재·미지원·2종** | 선언 범위로 대체 + `⚠ 설치 버전 미확정` | 제자리 |
 
 3·4·5는 같은 ⚠ 블록에 가되 **사용자가 할 일로 갈라 적는다**. 7은 할 일이 없으므로 ⚠와 섞지 않는다.
 

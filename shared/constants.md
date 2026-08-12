@@ -18,6 +18,7 @@
 | `target_staleness_warn_days` | `14` | rehearsal (산정 시각 경과 경고) |
 | `boot_survival_seconds` | `60` | rehearsal (T2 통과 조건 1) |
 | `url_candidate_limit` | `3` | platform-watch (URL 이동 의심 후보) |
+| `enum_promotion_min_count` | `2` | platform-watch (`[미분류]` enum 승격 후보 제안) |
 
 ## 왜 여기 있나
 

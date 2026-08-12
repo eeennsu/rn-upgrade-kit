@@ -462,7 +462,7 @@ platform 추적은 platform-watch가 담당한다.
 
 ---
 
-## degrade 경로 — 7개 동형
+## degrade 경로 — 8개 동형
 
 **원칙: 대상은 목록에서 사라지지 않는다. 자리를 옮길 뿐이다.** (`platform-watch`에서 계승)
 
@@ -478,6 +478,8 @@ platform 추적은 platform-watch가 담당한다.
 | 8 | 직전 리포트 없음 | 델타 줄만 생략, 리포트 정상 산출 | — |
 
 3·4·5는 같은 ⚠ 블록에 가되 **사용자가 할 일로 갈라 적는다**. 7은 할 일이 없으므로 ⚠와 섞지 않는다.
+
+> **구현 정정 (2026-08-12):** 구현의 degrade 표는 **10경로**다 — 위 8개에 `node -e` 실패(soak·churn만 `확인 못 함`)와 lockfile 부재·미지원·2종이 더해진다. 위 표의 번호는 그대로 보존된다.
 
 ---
 
@@ -794,7 +796,7 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 
 ## 구현자에게 남기는 미확정 (설계 재량 — 인터뷰에서 다루지 않음)
 
-- lockfile 4종(pnpm/npm/yarn/bun) 중 어디까지 Read 지원할지 — `rehearsal`은 4종을 지원한다. 미지원 lockfile이면 설치 버전을 `package.json` 선언 범위로 대체하고 그 사실을 헤더에 표기할지.
+- ~~lockfile 4종(pnpm/npm/yarn/bun) 중 어디까지 Read 지원할지 — `rehearsal`은 4종을 지원한다. 미지원 lockfile이면 설치 버전을 `package.json` 선언 범위로 대체하고 그 사실을 헤더에 표기할지.~~ → **해소됨 (2026-08-12 · 아래)**
 - known issue 게이트에서 "우리가 쓰는 기능"을 판별하는 근거 범위 — 소스 grep은 advisory 경계 안이지만 비용이 크다
 
 > **해소됨 (2026-08-09 · 스펙 리뷰):**
@@ -802,8 +804,13 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 > **보존 상한 공유 상수의 물리적 위치** → `shared/constants.md`의 `report_retention_n` (`.omc/specs/plugin-shell.md` §2).
 > **soak 기본값의 조정 가능 여부** → 같은 파일의 `soak_minor_days`·`soak_patch_days`로 **조정 가능 확정**.
 > **릴리즈 노트 태그 URL 조립 규칙의 정본 위치** → `references/sources.md`.
+
+> **해소됨 (2026-08-12 · 구현 감사):**
+> **lockfile 4종 밖·부재 대응** → 설치 버전을 `package.json` **선언 범위**로 대체하고 헤더에 `설치 버전 미확정 (사유)`을 적는다. 대상마다 `⚠ 설치 버전 미확정`을 병기하고 **gap은 범위 하단 기준**으로 보수적으로 잡는다 — 상단으로 잡으면 이미 최신인 것처럼 보여 놓친다. lockfile 2종 존재도 같은 경로다(`rehearsal`이 T1 실패로 처리하는 것과 달리 advisory는 멈추지 않는다). degrade 10번.
+> **`--target`에 lockstep 짝 한쪽만 지정** → **세트 전체를 조회한다.** 넓히기가 아니다 — 게이트 6이 *"짝 하나가 걸리면 세트 전체가 걸린 것"*이라 **짝을 안 보면 게이트 6을 판정할 수 없다.** 인자는 좁히기 전용이되 **lockstep 세트 경계에서 반올림한다.** 자동 포함분은 헤더 스코프 줄에 명시한다. 닫지 않으면 리포트의 rehearsal 커맨드 블록 규칙 a(세트 전체 포함)를 충족할 수 없고, 그 블록이 `rehearsal` 인자 검증 3에서 `실행 거부 — lockstep 짝 누락`으로 끝난다.
+> **Track 귀속 규칙** (인터뷰·스펙 양쪽에 없던 구멍) → **Track A는 `react-native`·`react` 둘로 닫힌다.** Hermes·New Arch는 패키지가 아니라 RN 내장·플래그다. **나머지 `dependencies` 전부가 Track B다** — §점검 대상 표의 B 열은 예시이지 목록이 아니고, *"하드코딩하지 않는다"*는 그 말이다. `--track` 유효 값은 `core`·`lib` 둘뿐.
 - `Agent` 분담 단위(대상별 / 트랙별)와 동시 실행 상한
-- `--target`에 lockstep 짝의 한쪽만 지정했을 때 세트 전체를 끌어올지 여부
+- ~~`--target`에 lockstep 짝의 한쪽만 지정했을 때 세트 전체를 끌어올지 여부~~ → **해소됨 (2026-08-12 · 위)**
 - 델타 줄의 정확한 필드 구성
 - 리포트 `✅` 블록의 압축 임계(몇 개부터 한 줄로 접을지)
 
