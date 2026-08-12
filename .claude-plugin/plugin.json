@@ -1,0 +1,8 @@
+{
+  "name": "rn-upgrade-kit",
+  "version": "0.1.0",
+  "description": "React Native 업그레이드 3종 세트 — 플랫폼 정책 마감 감사(platform-watch), 패키지 최신성·권장 버전 산정(currency), 격리 worktree 리허설·채택(rehearsal). 앞 둘은 advisory, 마지막만 게이트 통과 시 전용 브랜치를 남긴다.",
+  "author": {
+    "name": "eeennsu"
+  }
+}
