@@ -1,9 +1,1 @@
-# OMC 런타임 산물 — 세션마다 바뀐다. 이력에 남길 가치가 없다.
-.omc/state/
-.omc/sessions/
-.omc/logs/
-.omc/project-memory.json
-.omc/notepad.md
-
-# .omc/specs/ 는 설계 정본이므로 트래킹한다.
-# .omc/plans/ · .omc/research/ 도 산출물이라 두고 본다 — 필요해지면 여기에 추가.
+.omc
