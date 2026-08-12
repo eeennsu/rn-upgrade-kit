@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"git checkout -b spec/currency-design && git add .omc/specs/deep-interview-currency.md .omc/specs/deep-interview-platform-watch.md .omc/specs/deep-interview-rn-rehearsal.md CLAUDE.md seed/r...",
-  "error": "Exit code 129\nSwitched to a new branch 'spec/currency-design'\nwarning: in the working copy of '.omc/specs/deep-interview-rn-rehearsal.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of '.omc/specs/deep-interview-currency.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of '.omc/specs/deep-interview-platform-watch.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'CLAUD...",
-  "timestamp": "2026-08-09T11:10:15.570Z",
-  "retry_count": 1
-}
