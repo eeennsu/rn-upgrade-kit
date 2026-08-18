@@ -1,0 +1,66 @@
+{
+  "title": "rn-upgrade-kit 스펙 대조 감사 수렴",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "라운드 0 — audit-2026-08-12.md 15건 재검증",
+      "passes": false,
+      "acceptanceCriteria": [
+        "15건 각각에 대해 현재 파일 상태를 읽고 '반영됨/오진/미해결' 중 하나로 판정한다",
+        "각 판정에 현재 트리의 file:line 증거를 붙인다 (감사 문서의 옛 line 번호가 아니라 현재 번호)",
+        "판정 결과가 docs/audit-ledger.md에 15행으로 기록된다"
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "docs/audit-ledger.md 신설 — append-only 판정 원장",
+      "passes": false,
+      "acceptanceCriteria": [
+        "docs/audit-ledger.md가 존재하고 컬럼 id/근거(file:line + 스펙 인용)/상태를 가진다",
+        "라운드 0의 15건이 A-01..A-15로 기록된다",
+        "이미 판정된 항목의 재발견을 막기 위해 각 행에 '판정 라운드' 표기가 있다"
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "라운드 1+ — .omc/specs 대비 skills/** 전수 대조",
+      "passes": false,
+      "acceptanceCriteria": [
+        ".omc/specs/*.md 4개 전부를 읽고 skills/**/SKILL.md + references/*.md 전부와 대조한다",
+        "발견 각 건에 (a) 구현 file:line (b) 스펙 file:line + 원문 인용 을 붙인다",
+        "스펙 인용을 못 붙이는 건은 폐기하고, 폐기했다는 사실만 남긴다 (문서화하지 않음)",
+        "shared/constants.md·shared/lockstep-sets.md의 상수 값이 skills/** 어디에도 복제되지 않았는지 grep으로 확인한다"
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "살아남은 발견 수정 반영",
+      "passes": false,
+      "acceptanceCriteria": [
+        "ledger에 OPEN으로 올라간 각 건이 파일 수정으로 CLOSED가 되거나, 못 고치는 사유와 함께 WONTFIX가 된다",
+        "수정 후 git diff로 변경 지점이 ledger 행과 1:1 대응한다",
+        "스펙에 없는 신규 기능·문체 취향·리팩터링은 diff에 들어가지 않는다"
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "리뷰어 독립 재점검",
+      "passes": false,
+      "acceptanceCriteria": [
+        "별도 컨텍스트의 리뷰어 에이전트가 ledger + diff를 스펙 원본과 대조해 검증한다",
+        "리뷰어가 반려하면 반려 사유를 ledger에 새 행으로 append하고 수정한다",
+        "자가 승인 없음 — 승인 주체가 리뷰어 에이전트임이 기록된다"
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "수렴 판정",
+      "passes": false,
+      "acceptanceCriteria": [
+        "한 라운드에서 스펙 인용 가능한 신규 발견이 0건임을 ledger에 기록하고 종료하거나",
+        "5라운드에 도달했으면 미해결 잔여를 ledger 말미에 나열하고 종료한다",
+        "종료 시점의 라운드 수와 총 발견/반영 건수가 ledger 헤더에 적혀 있다"
+      ]
+    }
+  ]
+}
