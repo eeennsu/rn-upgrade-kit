@@ -18,7 +18,9 @@ rn-upgrade-kit/
     platform-watch/
       SKILL.md
       references/
-        watch-targets.md          ← enum 정본 (슬러그·URL·읽기 지시·platform)
+        watch-targets.md          ← enum 정본 (슬러그·platform·URL 2단·교차·실측·읽기 지시)
+        report-format.md          ← 리포트 4블록 · state.json 스키마 · 핸드오프 스키마 정본
+        cadence.md                ← 실행 타이밍 (`deep-interview-platform-watch.md` §미확정)
     currency/
       SKILL.md
       references/
@@ -29,6 +31,7 @@ rn-upgrade-kit/
       SKILL.md
       references/
         log-patterns.md           ← T2 로그 스캔 패턴 정본
+        report-format.md          ← 리포트 구조 · 경로/`<target>` · 재현 블록 · 채택 절 정본
   shared/
     constants.md                  ← 3스킬 공용 상수 (중립 지대)
     lockstep-sets.md              ← 짝으로만 올려야 하는 패키지 집합 (신설 — 2026-08-18)
@@ -72,6 +75,7 @@ rn-upgrade-kit/
 | `target_staleness_warn_days` | `14` | rehearsal (`# 산정 시각` 경과 경고) | 권장 버전은 soak·churn 산물이라 빨리 썩는다. 거부가 아니라 경고 |
 | `boot_survival_seconds` | `60` | rehearsal (T2 통과 조건 1) | rehearsal §T2 |
 | `url_candidate_limit` | `3` | platform-watch (URL 이동 의심 후보) | platform-watch 라운드 5c |
+| `enum_promotion_min_count` | `2` | platform-watch (`[미분류]` enum 승격 후보 제안) | `deep-interview-platform-watch.md` §미확정 해소(2026-08-12). 1회 관측은 우연일 수 있고 그걸로 참조 파일을 고치라고 하면 제안이 소음이 된다 — **소음이면 사용자가 올릴 수 있어야 하므로 상수다.** 소비자가 하나뿐인데도 여기 있는 건 `grade_threshold_days`와 같은 이유다 |
 | `worktree_path_template` | `/tmp/rn-rehearsal-<target>-<base_sha7>` | rehearsal (worktree 생성 경로) | 신설 2026-08-18. 경로가 재현 블록·수동 정리 커맨드·충돌 판정 **세 곳에 동시에** 박힌다 — 참조 파일 예시에만 있으면 예시가 사실상의 정본이 되고, 예시를 고칠 때 나머지 둘이 안 따라온다. `<base_sha7>`은 같은 타깃을 **다른 base에서** 돌릴 때의 충돌을 없앤다 |
 | `step_timeout_install_seconds` | `1800` | rehearsal (T1 의존성 설치) | 신설 2026-08-18 |
 | `step_timeout_check_seconds` | `900` | rehearsal (T1 타입체크·테스트) | 신설 2026-08-18 |

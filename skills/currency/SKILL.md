@@ -128,6 +128,8 @@ node -e "fetch('https://registry.npmjs.org/react-native-worklets').then(r=>r.jso
 
 경로는 `../../shared/constants.md`의 `handoff_path`. **소유자는 `platform-watch`, 독자는 이 스킬. 단방향이다.**
 
+**기대 스키마 버전도 같은 파일의 `handoff_schema_version`에서 온다.** 파일 앞머리의 `schema_version`을 그 값과 비교한다 — **숫자를 본문에 적거나 "1이겠지"로 때우지 마라.** 기대값을 이쪽이 지어내면 생산자가 스키마를 올렸을 때 불일치가 안 잡히고, `스키마 불일치` degrade가 영영 안 뜬다. 상수를 못 읽어 비교 자체가 불가능하면 degrade 12로 가고 **스키마 판정만** `확인 못 함`으로 둔다 — 하한은 그대로 적용한다. 못 읽은 것을 불일치로 취급하지 않는다.
+
 | 상태 | 동작 | 리포트 표기 |
 | --- | --- | --- |
 | 파일 없음 | 하한 없이 계산 | `플랫폼 하한 미반영 (파일 없음)` |
