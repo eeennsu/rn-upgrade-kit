@@ -1,6 +1,6 @@
 # currency — 출처 · URL 조립 규칙
 
-`WebSearch`가 `allowed-tools`에 없다. **폴백은 "검색해서 찾는다"가 될 수 없다 — URL을 미리 알고 있어야 한다.** 이 파일이 그 목록이다.
+`WebSearch`는 `SKILL.md`의 `disallowed-tools`가 도구 풀에서 **실제로 빼둔** 도구다(`allowed-tools`에 없다는 사실만으로는 아무것도 막히지 않는다 — 그 필드는 승인 스킵이지 제한이 아니다). **그래서 폴백이 "검색해서 찾는다"가 될 수 없다 — URL을 미리 알고 있어야 한다.** 이 파일이 그 목록이다.
 
 ## 1. registry 엔드포인트
 
@@ -41,6 +41,8 @@
 | `@sentry/react-native` | `getsentry/sentry-react-native` | `<ver>` |
 
 **repo 주소를 모르는 패키지**는 registry 버전 문서의 `repository.url`에서 가져온다 — 추측하지 마라.
+
+**위 표는 태그 URL 조립용이지 lockstep 정의가 아니다.** 같은 repo에 있다는 사실과 짝으로만 올려야 한다는 사실은 다르다 — **lockstep 세트의 정본은 `../../../shared/lockstep-sets.md` 하나뿐**이고 게이트 6은 그 파일만 읽는다. 이 표를 세트 목록으로 겸용하면 모노레포 항목이 전부 lockstep으로 오해되고, 표에 없는 짝은 짝이 아닌 것으로 오해된다.
 
 ## 3. Track A 서사 출처
 

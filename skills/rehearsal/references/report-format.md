@@ -28,13 +28,18 @@ RN 우선인 이유: RN은 lockstep 반경이 가장 넓고 리허설의 사실�
 
 `artifacts/`는 최근 N개만 보존한다. N = `../../../shared/constants.md`의 `artifact_retention_n`. **정리한 개수를 리포트 말미에 한 줄로 보고한다.**
 
+**여기서만 자동 정리를 쓴다.** 자매 두 스킬(`platform-watch`·`currency`)은 같은 자리에서 수동 정리 커맨드만 내는데, 그 둘에는 파일 삭제 수단이 없기 때문이다. 이 스킬은 `Bash`에 용도 제한이 없으므로 실제로 지우고 지운 개수를 보고할 수 있다 — **세 스킬이 달라지는 게 맞다. 도구가 다르다.**
+
+쓰기 자체가 실패했을 때는 `../SKILL.md` §8의 «산출물 쓰기 실패»를 따른다.
+
 ## 구조
 
 ````
 # RN 업그레이드 리허설 — <현재> → <목표 세트 전체>
 실행: <ISO 날짜> · 호스트: <macOS 15 / Linux> · PM: <pnpm> · 스코프: <전체 / --platform ios>
 타깃 산정: 2026-08-09 (21일 경과)          ← 산정 시각 주석이 온 경우에만
-base: a3f9c21
+검증 기준: a3f9c21 (작업 트리 clean)
+베이스라인: 미측정
 
 ## 요약
 T1         — 통과
@@ -64,8 +69,8 @@ xcodebuild 실패 — 발췌:
 ## 재현
 ```sh
 # --- T1 ---
-git worktree add /tmp/rn-rehearsal-0.83.4 a3f9c21
-cd /tmp/rn-rehearsal-0.83.4
+git worktree add /tmp/rn-rehearsal-0.83.4-a3f9c21 a3f9c21
+cd /tmp/rn-rehearsal-0.83.4-a3f9c21
 pnpm add react-native@0.83.4 react@19.2.0
 pnpm install --frozen-lockfile
 pnpm tsc --noEmit
@@ -79,7 +84,7 @@ cd ios && pod install
 xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator
 
 # --- 정리 ---
-cd - && git worktree remove --force /tmp/rn-rehearsal-0.83.4
+cd - && git worktree remove --force /tmp/rn-rehearsal-0.83.4-a3f9c21
 ```
 
 ## 채택
@@ -92,8 +97,25 @@ artifacts: 보존 3개, 자동 정리 1개
 
 > 위 예시의 `3`은 값이 아니라 예시다 — 실제 보존 개수는 `../../../shared/constants.md`의 `artifact_retention_n`에서 온다.
 
+> 위 경로는 값이 아니라 예시다 — 실제 경로는 `../../../shared/constants.md`의 `worktree_path_template`에서 온다.
+
 - **요약 한 줄을 플랫폼별로 분리한다.** 한 플랫폼 통과를 전체 통과로 접지 않는다.
 - 실패 상세는 **발췌문**으로 인용한다(상위 N줄). 전체 로그는 `artifacts/`에 있고 **경로만 적는다.**
+
+### 헤더 — 항상 싣는 줄과 조건부 줄
+
+| 줄 | 조건 |
+| --- | --- |
+| `검증 기준: <base_sha> (작업 트리 clean)` 또는 `(작업 트리 dirty — 검증에 미포함: <경로 목록>)` | **항상** |
+| `베이스라인: 미측정` 또는 `베이스라인: 측정됨 (<사유>)` | **항상** |
+| `타깃 산정: <날짜> (<N>일 경과)` | 산정 시각 주석이 온 경우에만 |
+| `인자 검증 1 미실행 (registry 조회 실패)` | `node -e` 실패 시 |
+| `인자 검증 3 미실행 (lockstep 목록 도달 실패)` | `shared/lockstep-sets.md` 도달 실패 시 |
+| `artifacts 쓰기 실패: <사유> — 전체 로그 없음` | `artifacts/` 쓰기 실패 시 |
+| `기존 worktree 디렉토리 삭제: <경로>` | 고아 디렉토리를 지우고 진행한 경우 |
+
+- **`검증 기준`과 `베이스라인`은 조건부가 아니다.** 앞은 "무엇을 검증했나"의 정의고, 뒤는 채택 게이트 3의 유일한 사후 감사 근거다(`../SKILL.md` §6). 조건부로 두면 줄이 없을 때가 "clean이라서 생략"인지 "안 봐서 생략"인지 구분되지 않는다.
+- `인자 검증 1` · `인자 검증 3` · `artifacts 쓰기 실패` 세 줄은 **degrade의 흔적**이다(`../SKILL.md` §8). 줄이 없으면 degrade가 없었다는 뜻이어야 하므로 **degrade가 있었는데 안 적는 경우가 있어서는 안 된다** — 조용히 열화된 리허설은 정상 실행과 구분되지 않는다.
 
 ## 재현 커맨드 시퀀스
 
@@ -105,6 +127,8 @@ artifacts: 보존 3개, 자동 정리 1개
 4. **셸은 POSIX 고정.** 감지·분기 없음.
 5. 블록 말미에 정리 커맨드를 포함한다.
 6. **채택한 실행이면 커밋·브랜치 생성 커맨드도 블록에 싣는다** — 정리 커맨드 **앞**에. 채택은 재현 가능해야 한다. 채택하지 않은 실행에는 넣지 않는다(3번의 연장 — 안 돌린 커맨드를 싣지 않는다).
+7. **`timeout` 래퍼를 두르지 않는다.** 단계 상한은 스킬이 건 것이지 사용자가 친 커맨드의 일부가 아니다 — 두르면 3번이 깨진다. 대신 **타임아웃으로 끝난 단계에만** 그 줄 위에 `# 이 단계는 <상수명> 초과로 중단됐다` 주석 한 줄을 단다. 블록은 그 줄에서 끝난다(2번).
+8. **worktree 경로는 `../../../shared/constants.md`의 `worktree_path_template`에서 온다.** 블록에 직접 적힌 경로를 정본으로 삼지 마라 — 재현 블록·수동 정리 커맨드·충돌 판정이 같은 값을 봐야 한다.
 
 ## 채택 절 — 출력 형태
 
@@ -121,7 +145,8 @@ artifacts: 보존 3개, 자동 정리 1개
 ## 채택
 채택함: rn-upgrade/0.83.4-a3f9c21
 미검증: T2/ios · T3/ios (미실행 — macOS 필요)
-검증 기준: a3f9c21
+검증 기준: a3f9c21 (작업 트리 clean)
+베이스라인: 미측정
 
 > 이 브랜치는 a3f9c21 위에서 검증됐다. 그 이후 커밋이 있으면
 > 머지 결과는 검증된 트리가 아니다 — 재리허설을 권장한다.
@@ -136,6 +161,24 @@ git merge rn-upgrade/0.83.4-a3f9c21
 
 - **머지 커맨드를 단독으로 출력하지 마라.** 항상 `git log <base_sha>..HEAD` 선행 확인과 한 블록이다.
 - **base 신선도 경고문은 base가 최신이어도 항상 출력한다.**
+- **`베이스라인` 줄은 채택 절에도 헤더에도 싣는다.** 중복이 아니라 이중화다 — 채택 절만 읽고 넘기는 독자와 헤더만 보는 독자가 둘 다 게이트 3 근거를 본다.
+
+### 채택 커밋 메시지
+
+```
+rn-upgrade: react-native 0.82.1 → 0.83.4 (rehearsal 통과)
+
+검증 기준: a3f9c21 (작업 트리 clean)
+세트: react-native@0.83.4 react@19.2.0
+검증 티어: T1 통과 · T2/android 통과 · T3/android 통과
+미검증: T2/ios · T3/ios (미실행 — macOS 필요)
+베이스라인: 미측정
+```
+
+> 위 예시의 버전·SHA·티어 결과는 값이 아니라 예시다 — 실제 값은 그 실행에서 온다.
+
+- **`베이스라인`을 커밋 메시지에 싣는 이유**: 채택 후 worktree는 폐기되고 리포트는 같은 타깃 재실행에서 덮어쓰이며 `artifacts/`는 보존 상한에 밀린다. **커밋만 남는다** — 채택 게이트 3(*"조건부 베이스라인이 측정되지 않았을 것"*)의 통과 근거를 나중에 확인할 수 있는 유일한 자리다.
+- **`미검증`도 함께 싣는다.** 브랜치명은 타깃과 base만 주장하지 어디까지 봤는지는 말하지 않는다 — 몇 달 뒤 이 브랜치를 머지하는 사람이 iOS가 안 돌았다는 걸 리포트 없이 알 수 있어야 한다.
 
 ## worktree 폐기 실패
 
@@ -143,8 +186,12 @@ git merge rn-upgrade/0.83.4-a3f9c21
 ## 정리
 worktree 폐기: 실패 — Gradle 데몬이 파일을 잡고 있음
 수동 정리:
-  git worktree remove --force /tmp/rn-rehearsal-0.83.4
+  git worktree remove --force /tmp/rn-rehearsal-0.83.4-a3f9c21
   git worktree prune
 ```
 
+> 위 경로는 값이 아니라 예시다 — 실제 경로는 `../../../shared/constants.md`의 `worktree_path_template`에서 온다.
+
 **조용히 넘기면 "항상 폐기"라는 계약이 거짓말이 되고 누적 문제가 그대로 돌아온다.**
+
+이 상태를 다음 실행이 마주쳤을 때의 처리(고아 디렉토리 삭제 / 등록돼 있으면 실행 거부)는 `../SKILL.md` §5에 있다 — **폐기 실패의 뒤처리는 리포트 형식이 아니라 실행 규칙이다.**

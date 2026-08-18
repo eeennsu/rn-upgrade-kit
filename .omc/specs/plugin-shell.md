@@ -31,6 +31,7 @@ rn-upgrade-kit/
         log-patterns.md           ← T2 로그 스캔 패턴 정본
   shared/
     constants.md                  ← 3스킬 공용 상수 (중립 지대)
+    lockstep-sets.md              ← 짝으로만 올려야 하는 패키지 집합 (신설 — 2026-08-18)
   README.md
 ```
 
@@ -41,6 +42,19 @@ rn-upgrade-kit/
 - 스킬 본문에서 상대 경로로 참조한다: `../../shared/constants.md`.
 - `skills/` 하위에 두지 않는다 — 그 아래 디렉터리는 스킬로 해석된다.
 - **하드코딩 금지 대상:** 아래 표의 모든 값. 스킬 본문에 숫자를 적지 않고 이 파일을 Read한다.
+
+### `shared/lockstep-sets.md` — 두 번째 공유물 (신설 · 2026-08-18)
+
+**짝으로만 올려야 하는 패키지 집합의 정본.** `currency` 게이트 6과 `rehearsal` 인자 검증 3이 **같은 목록을 봐야** 하므로 상수와 같은 중립 지대에 있다 — 양쪽 스킬에 각각 적으면 한쪽만 늘어나고, 그러면 `currency`가 권장한 세트를 `rehearsal`이 `짝 누락`으로 거부하거나 그 반대가 된다. `handoff_path`를 한 곳에 고정한 논리와 같다.
+
+- **확정 세트**(게이트 6의 판정 근거)와 **잠정 후보**(감지 규칙 3신호 → 제안만)를 2단으로 가른다. 감지가 휴리스틱이라 오탐이 있고, 오탐으로 실행을 거부하면 사용자에게 우회 수단이 없기 때문이다.
+- 도달 실패 처리는 이 파일이 직접 정의한다 — `currency`는 게이트 6만 `확인 못 함`, `rehearsal`은 인자 검증 3만 미실행. **양쪽 다 조용히 통과시키지 않는다.**
+
+### `shared/constants.md` — «이 파일에 도달하는 법» 절 (신설 · 2026-08-18)
+
+**상대경로 해석 기준이 스킬 파일 위치라는 보장이 없다** — 호출 시점의 작업 디렉토리는 사용자 RN 프로젝트다. 그래서 상수 파일 자신이 도달 절차를 정의한다: 첫 Read 실패 시 **`Glob`으로 `**/rn-upgrade-kit/shared/constants.md` 폴백**, 둘 다 실패하면 **숫자를 지어내지 말고** 세 스킬 공통의 `상수 도달 실패` degrade로 간다.
+
+> **추정 기본값 금지가 이 절의 핵심이다.** 이 파일의 존재 이유가 *"한쪽만 바뀌는 드리프트 방지"*인데, 못 읽었을 때 "흔한 기본값"으로 때우면 드리프트를 막는 대신 **만들어낸다.** 범위는 보존 상한·등급 임계일·soak 일수·타임아웃·`boot_survival_seconds` 전부다.
 
 ---
 
@@ -58,7 +72,13 @@ rn-upgrade-kit/
 | `target_staleness_warn_days` | `14` | rehearsal (`# 산정 시각` 경과 경고) | 권장 버전은 soak·churn 산물이라 빨리 썩는다. 거부가 아니라 경고 |
 | `boot_survival_seconds` | `60` | rehearsal (T2 통과 조건 1) | rehearsal §T2 |
 | `url_candidate_limit` | `3` | platform-watch (URL 이동 의심 후보) | platform-watch 라운드 5c |
+| `worktree_path_template` | `/tmp/rn-rehearsal-<target>-<base_sha7>` | rehearsal (worktree 생성 경로) | 신설 2026-08-18. 경로가 재현 블록·수동 정리 커맨드·충돌 판정 **세 곳에 동시에** 박힌다 — 참조 파일 예시에만 있으면 예시가 사실상의 정본이 되고, 예시를 고칠 때 나머지 둘이 안 따라온다. `<base_sha7>`은 같은 타깃을 **다른 base에서** 돌릴 때의 충돌을 없앤다 |
+| `step_timeout_install_seconds` | `1800` | rehearsal (T1 의존성 설치) | 신설 2026-08-18 |
+| `step_timeout_check_seconds` | `900` | rehearsal (T1 타입체크·테스트) | 신설 2026-08-18 |
+| `step_timeout_build_seconds` | `2700` | rehearsal (T2 네이티브 빌드 · `pod install`) | 신설 2026-08-18 |
+| `step_timeout_boot_seconds` | `600` | rehearsal (T2 부팅 + 로그 스캔) | 신설 2026-08-18 |
 
+- **타임아웃이 티어가 아니라 단계 단위인 이유**는 멈추는 지점이 단계마다 다르기 때문이다. Gradle 빌드의 45분과 `pod install`이 네트워크에서 멈춘 45분은 같은 상한을 쓸 수 없다. **`boot_survival_seconds`(통과 조건)와 `step_timeout_boot_seconds`(상한)를 같게 만들면 "60초 생존"을 관측할 시간 자체가 없다** — 둘은 다른 축이다.
 - **값 변경은 이 파일 한 곳에서만.** 스킬 본문·`references/*`에 같은 숫자를 복제하지 않는다.
 - `grade_threshold_days`는 `platform-watch`만 소비한다. currency는 그 값을 다시 계산하지 않고 핸드오프 `urgency` 필드를 읽는다 (§A2 — `deep-interview-currency.md` §핸드오프).
 
@@ -152,7 +172,18 @@ platform-watch  ──파일──▶  currency  ──커맨드 블록──▶
 
 ## 5. 미해결 위임 (구현 재량)
 
-- `references/watch-targets.md`의 enum 초기 URL 실측 — 스펙은 슬러그만 확정했다
+- ~~`references/watch-targets.md`의 enum 초기 URL 실측 — 스펙은 슬러그만 확정했다~~ → **해소됨 (2026-08-18 · URL 14개 전수 조회.** 2차 URL 2개가 404였고, 그 결과로 `실측`·`교차` 필드와 2차 독립성 3단계가 스키마에 들어갔다 — `.omc/specs/deep-interview-platform-watch.md` §2단 URL)
 - `references/log-patterns.md`의 T2 로그 패턴 목록
 - `references/sources.md`의 SM·Callstack 문서 URL과 릴리즈 노트 태그 URL 조립 규칙(모노레포 접두사 변형)
 - `shared/constants.md`의 물리 포맷(마크다운 표 / YAML frontmatter) — 스킬이 Read해서 값을 뽑을 수 있으면 된다
+
+---
+
+## 구현 감사 반영 — 2026-08-18
+
+`docs/audit-2026-08-12.md`가 이 파일의 소관(공유물·플러그인 레벨 규약)에서 연 구멍들이다. 위 §1·§2·§5의 해당 자리도 같이 고쳐 뒀다.
+
+- **`shared/lockstep-sets.md`를 신설한다.** 근거: **두 스킬이 같은 목록을 봐야 하는 두 번째 공유물**이 생겼다 — `currency` 게이트 6과 `rehearsal` 인자 검증 3. `shared/`가 존재하는 이유(*"둘 이상의 스킬이 같은 값을 봐야 하는 값은 어느 스킬 폴더에 넣어도 남의 집"*)가 숫자에만 적용될 이유가 없다. 목록이 두 곳이면 한쪽만 늘어나고, 그러면 `currency`가 권장한 세트를 `rehearsal`이 `짝 누락`으로 거부한다. 확정 세트만 판정 근거이고 감지 규칙이 잡은 잠정 후보는 제안까지만 간다 — 휴리스틱 오탐이 실행 거부가 되면 우회 수단이 없다.
+- **`shared/constants.md`에 «이 파일에 도달하는 법» 절을 신설한다.** 근거: 이 스펙은 *"스킬 본문에서 상대 경로로 참조한다"*고만 적고 **그 상대경로가 무엇 기준으로 풀리는지 확인하지 않았다.** 호출 시점의 작업 디렉토리는 사용자 RN 프로젝트다. 도달 실패 시 `Glob` 폴백, 둘 다 실패하면 `상수 도달 실패` degrade로 가고 **추정 기본값을 쓰지 않는다** — 드리프트를 막으려고 둔 파일이 못 읽혔을 때 "흔한 값"으로 때우면 드리프트를 대신 만들어낸다.
+- **상수 5개를 신설한다** — `worktree_path_template` · `step_timeout_{install,check,build,boot}_seconds`. worktree 경로는 **재현 블록·수동 정리 커맨드·충돌 판정 세 곳에 동시에** 박히므로 참조 파일 예시에 두면 예시가 사실상의 정본이 된다. 타임아웃이 단계 단위인 건 멈추는 지점이 단계마다 다르기 때문이고, `boot_survival_seconds`(통과 조건)와 `step_timeout_boot_seconds`(상한)는 **다른 축이라 같은 값이 될 수 없다.**
+- **`allowed-tools`는 제한 수단이 아니다 — 감사 #8은 절반이 기각, 절반이 승격이다.** 공식 문서 확인: *"It does not restrict which tools are available: every tool remains callable"* (https://code.claude.com/docs/en/skills «Pre-approve tools for a skill»). 구분자는 **공백·콤마·YAML 리스트 전부 유효**하므로 *"공백 구분이라 파싱이 깨져 제한이 무효화된다"*는 우려는 **기각**이다. 대신 더 큰 문제가 드러났다 — **파싱이 되든 안 되든 그 필드는 원래 아무것도 막지 않는다.** 세 스펙이 *"규칙을 도구 목록으로 강제한다"*고 적은 자리가 **전부 명목뿐이었고**, 실제 강제 수단은 `disallowed-tools`다. 구현은 `platform-watch`에 `Bash Edit`, `currency`에 `WebSearch Edit`을 신설해 그 자리를 메웠다. **"목록에 없으니 못 쓴다"를 근거로 설계를 세우지 마라** — 그 문장 위에 세운 제약은 전부 무근거다.
