@@ -38,7 +38,7 @@ RN 우선인 이유: RN은 lockstep 반경이 가장 넓고 리허설의 사실�
 # RN 업그레이드 리허설 — <현재> → <목표 세트 전체>
 실행: <ISO 날짜> · 호스트: <macOS 15 / Linux> · PM: <pnpm> · 스코프: <전체 / --platform ios>
 타깃 산정: 2026-08-09 (21일 경과)          ← 산정 시각 주석이 온 경우에만
-검증 기준: a3f9c21 (작업 트리 clean)
+검증 기준: a3f9c21e4b8d7f0a2c5e9b1d6f3a8c4e7b0d2f59 (작업 트리 clean)
 베이스라인: 미측정
 
 ## 요약
@@ -69,7 +69,7 @@ xcodebuild 실패 — 발췌:
 ## 재현
 ```sh
 # --- T1 ---
-git worktree add /tmp/rn-rehearsal-0.83.4-a3f9c21 a3f9c21
+git worktree add /tmp/rn-rehearsal-0.83.4-a3f9c21 a3f9c21e4b8d7f0a2c5e9b1d6f3a8c4e7b0d2f59
 cd /tmp/rn-rehearsal-0.83.4-a3f9c21
 pnpm add react-native@0.83.4 react@19.2.0
 pnpm install --frozen-lockfile
@@ -114,6 +114,7 @@ artifacts: 보존 3개, 자동 정리 1개
 | `artifacts 쓰기 실패: <사유> — 전체 로그 없음` | `artifacts/` 쓰기 실패 시 |
 | `기존 worktree 디렉토리 삭제: <경로>` | 고아 디렉토리를 지우고 진행한 경우 |
 
+- **`base_sha` 표기 자릿수는 자리마다 다르다.** 리포트 **본문**에 값으로 싣는 자리(`검증 기준` 줄 · 채택 절 · 채택 커밋 메시지 · base 신선도 경고문 · 재현 블록의 git 인자)는 **전체 SHA**다. **브랜치명과 worktree 경로만 7자리**이고 그건 `../../../shared/constants.md`의 `worktree_path_template`이 `<base_sha7>`로 못박은 값이다. 섞으면 사후 감사에서 *"이 브랜치가 검증한 커밋"*을 짧은 해시로만 알게 되는데, 리포트는 몇 달 뒤에 읽히고 **짧은 해시는 레포가 커지면 충돌한다.**
 - **`검증 기준`과 `베이스라인`은 조건부가 아니다.** 앞은 "무엇을 검증했나"의 정의고, 뒤는 채택 게이트 3의 유일한 사후 감사 근거다(`../SKILL.md` §6). 조건부로 두면 줄이 없을 때가 "clean이라서 생략"인지 "안 봐서 생략"인지 구분되지 않는다.
 - `인자 검증 1` · `인자 검증 3` · `artifacts 쓰기 실패` 세 줄은 **degrade의 흔적**이다(`../SKILL.md` §8). 줄이 없으면 degrade가 없었다는 뜻이어야 하므로 **degrade가 있었는데 안 적는 경우가 있어서는 안 된다** — 조용히 열화된 리허설은 정상 실행과 구분되지 않는다.
 
@@ -145,14 +146,14 @@ artifacts: 보존 3개, 자동 정리 1개
 ## 채택
 채택함: rn-upgrade/0.83.4-a3f9c21
 미검증: T2/ios · T3/ios (미실행 — macOS 필요)
-검증 기준: a3f9c21 (작업 트리 clean)
+검증 기준: a3f9c21e4b8d7f0a2c5e9b1d6f3a8c4e7b0d2f59 (작업 트리 clean)
 베이스라인: 미측정
 
-> 이 브랜치는 a3f9c21 위에서 검증됐다. 그 이후 커밋이 있으면
+> 이 브랜치는 a3f9c21e4b8d7f0a2c5e9b1d6f3a8c4e7b0d2f59 위에서 검증됐다. 그 이후 커밋이 있으면
 > 머지 결과는 검증된 트리가 아니다 — 재리허설을 권장한다.
 
 ```sh
-git log --oneline a3f9c21..HEAD   # 비어 있지 않으면 위 경고 적용
+git log --oneline a3f9c21e4b8d7f0a2c5e9b1d6f3a8c4e7b0d2f59..HEAD   # 비어 있지 않으면 위 경고 적용
 git merge rn-upgrade/0.83.4-a3f9c21
 ```
 ````
@@ -168,14 +169,14 @@ git merge rn-upgrade/0.83.4-a3f9c21
 ```
 rn-upgrade: react-native 0.82.1 → 0.83.4 (rehearsal 통과)
 
-검증 기준: a3f9c21 (작업 트리 clean)
+검증 기준: a3f9c21e4b8d7f0a2c5e9b1d6f3a8c4e7b0d2f59 (작업 트리 clean)
 세트: react-native@0.83.4 react@19.2.0
 검증 티어: T1 통과 · T2/android 통과 · T3/android 통과
 미검증: T2/ios · T3/ios (미실행 — macOS 필요)
 베이스라인: 미측정
 ```
 
-> 위 예시의 버전·SHA·티어 결과는 값이 아니라 예시다 — 실제 값은 그 실행에서 온다.
+> 위 예시의 버전·SHA·티어 결과는 값이 아니라 예시다 — 실제 값은 그 실행에서 온다. **브랜치명의 `a3f9c21`과 본문의 전체 SHA는 같은 커밋이다** — 자릿수 규칙은 위 «헤더» 절에 있다.
 
 - **`베이스라인`을 커밋 메시지에 싣는 이유**: 채택 후 worktree는 폐기되고 리포트는 같은 타깃 재실행에서 덮어쓰이며 `artifacts/`는 보존 상한에 밀린다. **커밋만 남는다** — 채택 게이트 3(*"조건부 베이스라인이 측정되지 않았을 것"*)의 통과 근거를 나중에 확인할 수 있는 유일한 자리다.
 - **`미검증`도 함께 싣는다.** 브랜치명은 타깃과 base만 주장하지 어디까지 봤는지는 말하지 않는다 — 몇 달 뒤 이 브랜치를 머지하는 사람이 iOS가 안 돌았다는 걸 리포트 없이 알 수 있어야 한다.

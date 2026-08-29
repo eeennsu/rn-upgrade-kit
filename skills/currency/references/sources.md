@@ -6,9 +6,9 @@
 
 | 목적 | URL | 도구 |
 | --- | --- | --- |
-| `latest`·dist-tags·프리릴리즈 판별 | `https://registry.npmjs.org/-/package/<pkg>/dist-tags` | WebFetch |
-| peer 상한 · `deprecated` | `https://registry.npmjs.org/<pkg>/<ver>` | WebFetch |
-| 버전 목록 · 배포일 | `https://registry.npmjs.org/<pkg>` | **`node -e`만** |
+| `latest`·dist-tags·프리릴리즈 판별 | `https://registry.npmjs.org/<pkg>` | **`node -e` 출력의 dist-tags 행** — 실패 시 폴백: `https://registry.npmjs.org/-/package/<pkg>/dist-tags` WebFetch |
+| peer 상한 · `deprecated` | `https://registry.npmjs.org/<pkg>` | **같은 `node -e` 출력** — 실패 시 폴백: `https://registry.npmjs.org/<pkg>/<ver>` WebFetch |
+| 버전 목록 · 배포일 | `https://registry.npmjs.org/<pkg>` | **`node -e`만 — 폴백 없음** |
 
 - 스코프 패키지는 URL 인코딩한다: `@gorhom/bottom-sheet` → `@gorhom%2Fbottom-sheet`.
 - **full packument를 WebFetch로 읽지 마라** — 절단된다(SKILL.md §2 실측).

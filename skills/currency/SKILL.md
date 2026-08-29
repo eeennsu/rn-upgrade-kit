@@ -71,10 +71,12 @@ disallowed-tools: WebSearch Edit
 | --- | --- |
 | 대상 목록 · 선언 범위 | `package.json` **Read** |
 | 설치된 정확 버전 | lockfile **Read** (`Glob`으로 4종 중 존재하는 것 탐지) |
-| `latest` · dist-tags · 프리릴리즈 여부 | `registry.npmjs.org/-/package/<pkg>/dist-tags` **WebFetch** |
-| peer 상한 · `deprecated` | `registry.npmjs.org/<pkg>/<ver>` **WebFetch** |
-| 버전 목록 · 배포일 (soak·churn 재료) | **`node -e` 1줄** — 아래 |
+| `latest` · dist-tags · 프리릴리즈 여부 | **`node -e` 1줄 출력의 dist-tags 행** — 실패 시 폴백: `registry.npmjs.org/-/package/<pkg>/dist-tags` **WebFetch** |
+| peer 상한(요구 RN 범위) · `deprecated` | **같은 `node -e` 출력의 열** — 실패 시 폴백: `registry.npmjs.org/<pkg>/<ver>` **WebFetch** |
+| 버전 목록 · 배포일 (soak·churn 재료) | **`node -e` 1줄** — 아래. **폴백 없음** |
 | 오늘 날짜 | **컨텍스트 현재 날짜** — `date` 호출 없음 |
+
+**판정 재료는 원문 채널이 정본이다.** `latest`·peer 범위·`deprecated`는 전부 게이트 판정 재료인데 WebFetch는 요약 채널이라 semver 범위 문자열 하나가 오요약되면 peer ceiling이 조용히 틀린다 — 아래 실측이 잡은 날짜 오변환과 같은 유형이다. full packument는 `node -e` 안에 raw로 이미 와 있으므로 **추가 왕복 0으로** 같은 출력에서 뽑는다. WebFetch 두 엔드포인트는 `node -e` 실패 시 폴백으로만 쓴다.
 
 ### full packument를 WebFetch로 읽지 마라
 
@@ -85,16 +87,19 @@ disallowed-tools: WebSearch Edit
 ### `node -e` — 유일하게 허용되는 Bash 용도
 
 ```sh
-node -e "fetch('https://registry.npmjs.org/react-native-worklets').then(r=>r.json()).then(d=>{const t=d.time;Object.keys(d.versions).filter(v=>!/-/.test(v)).slice(-10).forEach(v=>console.log(v,t[v].slice(0,10),d.versions[v].deprecated?'DEPRECATED':''))})"
+node -e "fetch('https://registry.npmjs.org/react-native-worklets').then(r=>r.json()).then(d=>{console.log('dist-tags',JSON.stringify(d['dist-tags']));const t=d.time;Object.keys(d.versions).filter(v=>!/-/.test(v)).slice(-10).forEach(v=>{const m=d.versions[v];console.log(v,t[v].slice(0,10),(m.peerDependencies&&m.peerDependencies['react-native'])||'-',m.deprecated?'DEPRECATED':'')})})"
 ```
 
+출력: 첫 줄이 dist-tags 원문(JSON), 이후 줄마다 `버전 · 배포일 · peer RN 범위(없으면 -) · DEPRECATED 여부`.
+
 - **한 줄로 쓴다. `$`와 백틱을 넣지 마라.** 둘은 PowerShell과 POSIX 셸이 서로 다른 시점에 확장하는 문자라, 들어가는 순간 커맨드가 셸마다 다른 것이 된다.
-- **실측(2026-08-18 · Windows 11): 위 한 줄은 PowerShell 5.1과 Git Bash에서 같은 출력을 낸다.** 개행이 들어간 여러 줄 형태도 이 환경에서는 돌았다 — 개행 자체가 깨뜨린다는 근거는 없다. 한 줄로 고정하는 건 **셸이 인자를 어떻게 넘기느냐에 덜 기대게 하려는 것**이지 관측된 실패를 피하려는 게 아니다. 근거 없는 이유를 붙이지 마라.
+- **실측(2026-08-29 · Windows 11): 위 한 줄은 PowerShell 5.1과 Git Bash에서 바이트 단위로 같은 출력을 낸다.** 개행이 들어간 여러 줄 형태도 앞선 실측(2026-08-18)에서 돌았다 — 개행 자체가 깨뜨린다는 근거는 없다. 한 줄로 고정하는 건 **셸이 인자를 어떻게 넘기느냐에 덜 기대게 하려는 것**이지 관측된 실패를 피하려는 게 아니다. 근거 없는 이유를 붙이지 마라.
 - 대상 패키지만 바꿔서 그대로 쓴다. **로직을 손보지 마라** — 손보는 순간 위 실측이 무효가 된다.
 - **Bash 출력은 원문 그대로 온다** — 요약 모델을 경유하지 않는다. 이게 이 예외의 유일한 근거다.
 - **`node`는 새 의존이 아니다** — 대상이 RN 프로젝트이므로 항상 있다. 호스트·PM 무관이고 **bash·PowerShell 양쪽에서 같은 출력이 나오는 것까지 실측했다.**
 - **다른 셸 사용은 전부 금지**: `pnpm`·`jq`·`date`·`cat`·`ls`·파이프·리다이렉트. 날짜 비교는 ISO 문자열 비교로 충분하다(`"2026-07-23" > "2026-07-17"`) — 파싱·산술 하지 마라.
-- **degrade — 부분 실패:** `node -e`가 **일부 대상에서** 실패하면 그 대상의 **soak·churn 게이트만** `확인 못 함`으로 두고 나머지 게이트(1·2·5·6)로 산정한다. 대상을 빼지 말고 권장 줄에 `⚠ 숙성 미확인`을 병기한다 — 근거 없이 "충분히 익었다"고 말하지 않는다.
+- **degrade — 부분 실패:** `node -e`가 **일부 대상에서** 실패하면 그 대상의 **soak·churn 게이트만** `확인 못 함`으로 두고 나머지 게이트(1·2·5·6)로 산정한다. 그 대상의 `latest`·peer·`deprecated`는 §2 표의 WebFetch 폴백으로 채운다 — 배포일만은 폴백이 없다(full packument 절단). 대상을 빼지 말고 권장 줄에 `⚠ 숙성 미확인`을 병기한다 — 근거 없이 "충분히 익었다"고 말하지 않는다.
+- **후보 버전이 출력 범위 밖이면 같은 처리다.** 라인 병행 패키지(4.3.x·4.4.x·4.5.x 혼재 — 실측: worklets 0.9.x~0.12.x 혼재)에서는 후보의 배포일이 마지막 10개 밖으로 밀릴 수 있다. 그 대상의 soak·churn을 `확인 못 함` + `⚠ 숙성 미확인`으로 두지, **범위를 늘리려고 원라이너를 고치지 마라** — 로직을 손보면 실측이 무효가 된다.
 - **degrade — 전면 실패:** `node -e`가 **전 대상에서** 실패하면(셸 인용 깨짐·`node` 부재·네트워크 차단) 대상마다 붙는 `⚠ 숙성 미확인` 외에 **헤더에 고정 문구를 싣는다**: `soak·churn 게이트 전면 미확인 (node -e 실행 실패) — 게이트 2개가 판정에서 빠졌다`.
 - **부분과 전면을 같은 표기로 뭉개지 마라.** 대상마다 붙는 ⚠는 개별 대상의 사정처럼 읽힌다 — 게이트 6개 중 2개가 통째로 죽은 리포트가 정상 리포트와 **겉보기에 같아지는** 자리가 여기다. 헤더 문구가 그 차이를 드러내는 유일한 수단이다.
 - **dist-tags에 `latest`가 없으면** 최신을 `확인 못 함`으로 두고 **대상은 남긴다.** 버전 목록의 마지막 항목을 최신으로 대신 쓰지 마라 — 퍼블리셔가 태깅하지 않은 것과 배포 순서는 다른 사실이다.
@@ -128,17 +133,18 @@ node -e "fetch('https://registry.npmjs.org/react-native-worklets').then(r=>r.jso
 
 경로는 `../../shared/constants.md`의 `handoff_path`. **소유자는 `platform-watch`, 독자는 이 스킬. 단방향이다.**
 
-**기대 스키마 버전도 같은 파일의 `handoff_schema_version`에서 온다.** 파일 앞머리의 `schema_version`을 그 값과 비교한다 — **숫자를 본문에 적거나 "1이겠지"로 때우지 마라.** 기대값을 이쪽이 지어내면 생산자가 스키마를 올렸을 때 불일치가 안 잡히고, `스키마 불일치` degrade가 영영 안 뜬다. 상수를 못 읽어 비교 자체가 불가능하면 degrade 12로 가고 **스키마 판정만** `확인 못 함`으로 둔다 — 하한은 그대로 적용한다. 못 읽은 것을 불일치로 취급하지 않는다.
+**기대 스키마 버전도 같은 파일의 `handoff_schema_version`에서 온다.** 파일 앞머리의 `schema_version`을 그 값과 비교한다 — **숫자를 본문에 적거나 "1이겠지"로 때우지 마라.** 기대값을 이쪽이 지어내면 생산자가 스키마를 올렸을 때 불일치가 안 잡히고, `스키마 불일치` degrade가 영영 안 뜬다. 상수를 못 읽으면 `handoff_schema_version`뿐 아니라 **`handoff_path`도 못 읽으므로 핸드오프 자체를 열 수 없다.** 이때는 degrade 12로 가고 하한 없이 계산하되, 사유를 파일 부재와 구분해 `플랫폼 하한 미반영 (핸드오프 경로 미상 — 상수 도달 실패)`로 적는다. **경로를 지어내지 마라** — 지어낸 자리에서 못 찾은 것을 파일 부재로 보고하면 생산자가 정상 기록한 갱신을 영영 못 본다. 못 읽은 것을 불일치로 취급하지 않는다.
 
 | 상태 | 동작 | 리포트 표기 |
 | --- | --- | --- |
 | 파일 없음 | 하한 없이 계산 | `플랫폼 하한 미반영 (파일 없음)` |
+| **상수 도달 실패** (degrade 12 — `handoff_path` 미상) | 하한 없이 계산 | `플랫폼 하한 미반영 (핸드오프 경로 미상 — 상수 도달 실패)` |
 | `schema_version` 불일치 | 하한 없이 계산 | `플랫폼 하한 미반영 (스키마 불일치)` |
 | 파일은 있으나 **그 항목이 아직 조회된 적 없음** | 그 항목만 하한 없이 계산 | `(핸드오프 미조회 항목)` |
 | 파일은 있고 그 항목이 **`stale`** | 하한 적용 | `(핸드오프 stale — <날짜>)` |
 | 파싱됨 (낡음 여부 무관) | 하한 적용 | 헤더에 `핸드오프 <generated>` 병기 |
 
-- **항목 부재는 파일 부재와 다르다.** `platform-watch --platform ios`를 처음 돌리면 파일은 있고 `android/*` 항목만 없다 — 파일 부재로 접으면 사용자가 `platform-watch`를 다시 돌려야 한다는 사실을 놓친다. **세 표기는 사용자가 할 일이 각각 다르다**: `(핸드오프 없음)`은 platform-watch 최초 실행, `(핸드오프 미조회 항목)`은 그 플랫폼으로 한 번 더 실행, `(핸드오프 stale — <날짜>)`은 값이 있으니 급하지 않다.
+- **항목 부재는 파일 부재와 다르다.** `platform-watch --platform ios`를 처음 돌리면 파일은 있고 `android/*` 항목만 없다 — 파일 부재로 접으면 사용자가 `platform-watch`를 다시 돌려야 한다는 사실을 놓친다. **네 표기는 사용자가 할 일이 각각 다르다**: `(핸드오프 없음)`은 platform-watch 최초 실행, `(핸드오프 미조회 항목)`은 그 플랫폼으로 한 번 더 실행, `(핸드오프 stale — <날짜>)`은 값이 있으니 급하지 않다, `(핸드오프 경로 미상 — 상수 도달 실패)`는 **`platform-watch`를 다시 돌릴 일이 아니라 상수 도달을 고칠 일이다** — 생산자는 정상인데 독자가 파일 자리를 모르는 상태다.
 - **`platform-watch`가 미조회 항목을 고정 표기로 실어 보내면 그 표기를 그대로 옮기고 사유를 병기한다.** 값을 지어내지 마라 — 읽는 쪽이 채우면 두 스킬이 다른 값을 말하게 되고, 핸드오프가 단방향인 이유가 사라진다.
 - **`오래됨`은 상태가 아니다.** 신선도 임계값을 발명하지 마라 — 이 스킬에는 N을 고를 근거가 없다. **정책 하한은 시간이 갈수록 오르기만 하므로 낡은 하한은 과소평가일 뿐이지만, 하한 부재는 마감 자체를 못 본다.** 안 쓰는 쪽이 낙관 편향이다.
 - **`stale`이 붙은 항목도 그대로 쓴다.** 헤더에 `(일부 항목 stale)`을 병기한다.
@@ -167,6 +173,8 @@ node -e "fetch('https://registry.npmjs.org/react-native-worklets').then(r=>r.jso
 | `임박` | 🔴 |
 | `여유` | 🟠 |
 | `판정 불가` | 등급 축 밖 → ⚠ 블록 `마감 임박도 판정 불가 (platform-watch)` |
+
+- **예외 하나 — 기한 경과.** `deadline`(저정밀이면 그 정렬 초일)이 컨텍스트 오늘보다 과거이고 `status`가 미충족이면, `urgency` 값과 무관하게 **🔴 + `기한 경과 — platform-watch 재실행 권장`**을 병기한다. D-day 산술이 아니다 — ISO 문자열 비교(soak 컷오프와 같은 허용 산술)이고 임계일도 안 쓴다. 이 예외가 없으면 stale 핸드오프에서 **이미 지난 마감이 🟠 여유로 나간다** — 낙관 편향 금지 위반이다.
 
 ## 4. 게이트 6개 — 최신 ≠ 권장
 
@@ -197,6 +205,7 @@ node -e "fetch('https://registry.npmjs.org/react-native-worklets').then(r=>r.jso
 | --- | --- |
 | known issue (현재 버전의 크래시·보안) | 🔴 |
 | 마감 임박 정책 하한 (`urgency: 임박`) | 🔴 |
+| 기한 경과 정책 하한 (`deadline` < 오늘 · 미충족) | 🔴 + `기한 경과` 병기 (§3 예외) |
 | deprecated·제거 예정 | 🟠 |
 | 여유 있는 정책 하한 (`urgency: 여유`) | 🟠 |
 | breaking change (major 신버전) · 새 권장 패턴 | 🟡 |
@@ -214,7 +223,8 @@ node -e "fetch('https://registry.npmjs.org/react-native-worklets').then(r=>r.jso
 | `targetSdk` · iOS min | **핸드오프 `current` 필드** — 직접 파싱하지 않는다 |
 | New Arch · Hermes | `newArchEnabled`·`hermesEnabled` — `Glob`으로 `gradle.properties` 전부 + CI 워크플로 override 탐색 |
 
-- 핸드오프에서 값을 못 얻으면 비우지 말고 **사유를 병기하되 세 상태를 구분한다**: `targetSdk — (핸드오프 없음)` / `targetSdk — (핸드오프 미조회 항목)` / `targetSdk — (핸드오프 stale — <날짜>)`. "읽기 실패"와 "안 읽음"과 "낡음"은 사용자가 할 일이 다르다 — §3 «핸드오프 읽기»가 정본이다.
+- 핸드오프에서 값을 못 얻으면 비우지 말고 **사유를 병기하되 네 상태를 구분한다**: `targetSdk — (핸드오프 없음)` / `targetSdk — (핸드오프 미조회 항목)` / `targetSdk — (핸드오프 stale — <날짜>)` / `targetSdk — (핸드오프 경로 미상 — 상수 도달 실패)`. "읽기 실패"와 "안 읽음"과 "낡음"과 "경로를 몰라 못 열었음"은 사용자가 할 일이 다르다 — §3 «핸드오프 읽기»가 정본이다.
+- **네 번째는 degrade 12의 파급이다.** `handoff_path`가 `shared/constants.md`에서 오므로(§3) 상수에 도달하지 못하면 핸드오프를 열 자리 자체를 모른다. 계약 5항이 `current`를 이 헤더의 **유일한 공급원**으로 못박았으니 대체 경로도 없다 — 파일 부재로 접으면 사용자는 `platform-watch`를 다시 돌리는데, 고칠 것은 상수 도달이다.
 - **읽는 경로는 하나가 아니다.** `Glob`으로 `android/gradle.properties`·`gradle.properties`·flavor별 오버라이드 파일을 전부 찾고, `.github/workflows/*.yml`의 `-PnewArchEnabled`·`ORG_GRADLE_PROJECT_newArchEnabled` 문자열도 본다. **한 경로만 읽으면 충돌이 관측되지 않아 §7 degrade 5가 사문화된다.**
 - **런타임 env는 판정 대상이 아니다.** repo 안에서 읽을 수 있는 것만 읽고, 그래서 판정이 안 서면 `확인 못 함`이다 — 못 본 것을 없는 것으로 세지 않는다.
 - **boolean 충돌은 "가장 낮은 값" 규칙이 적용되지 않는다.** `newArchEnabled`·`hermesEnabled`가 flavor·CI env로 갈리면 **모두 병기하고 판정은 `확인 못 함`**으로 둔다 — `false`로 가정하면 New Arch 강제 항목을 놓치고 `true`로 가정하면 없는 전제 위에서 권장한다.
@@ -254,8 +264,8 @@ platform 추적은 platform-watch가 담당한다.
 | 8 | **직전 리포트 없음** | 델타 줄만 생략, 리포트 정상 산출 | — |
 | 9 | `node -e` 실패 (배포일 미확보) — **일부 대상** | soak·churn만 `확인 못 함` + `⚠ 숙성 미확인` | 제자리 |
 | 10 | **lockfile 부재·미지원·2종** | 선언 범위로 대체 + `⚠ 설치 버전 미확정` | 제자리 |
-| 11 | `node -e` 실패 — **전 대상** | 9에 더해 `soak·churn 게이트 전면 미확인 (node -e 실행 실패) — 게이트 2개가 판정에서 빠졌다` | 헤더 |
-| 12 | **`shared/constants.md` 도달 실패** | 상수에 기대는 판정만 `확인 못 함`, 리포트는 정상 산출. `상수 도달 실패 — 임계값 미적용` | 헤더 |
+| 11 | `node -e` 실패 — **전 대상** | 9에 더해 `soak·churn 게이트 전면 미확인 (node -e 실행 실패) — 게이트 2개가 판정에서 빠졌다`. `latest`·peer·`deprecated`는 WebFetch 폴백(§2)으로 계속 | 헤더 |
+| 12 | **`shared/constants.md` 도달 실패** | 상수에 기대는 판정만 `확인 못 함`, 리포트는 정상 산출. `상수 도달 실패 — 임계값 미적용`. **`handoff_path`도 못 읽으므로 핸드오프를 열 수 없다** — 하한 없이 계산 + `플랫폼 하한 미반영 (핸드오프 경로 미상 — 상수 도달 실패)` | 헤더 |
 | 13 | **`shared/lockstep-sets.md` 도달 실패** | 게이트 6만 `확인 못 함` + `⚠ lockstep 미확인`. 권장은 막지 않음 | 제자리 |
 | 14 | 핸드오프에 **그 항목이 없음** (좁힌 첫 실행) | 그 항목만 하한 없이 계산 + `(핸드오프 미조회 항목)` | 헤더 · 제자리 |
 | 15 | `react-native`를 가진 `package.json`이 **2개 이상** | 가장 얕은 것을 정본으로, 나머지 경로 나열 + `미조회 (monorepo — 경로 지정 필요)` | 헤더 · 별도 블록 |
@@ -276,7 +286,7 @@ platform 추적은 platform-watch가 담당한다.
 
 - `subagent_type`은 **쓰기 도구가 적은 것**을 고른다: `oh-my-claudecode:document-specialist` → 없으면 `general-purpose`.
 - **쓰기 불가 에이전트는 없다** — 도구 선택은 완화책일 뿐이고 실효 통제는 프롬프트 잠금이다. 각 서브에이전트 프롬프트에 **반드시** 넣는다:
-  - **read-only 못박기**: "`package.json`·네이티브 설정·소스를 수정하지 마라. 파일 수정 도구와 쓰기 명령 금지. 조회 결과만 반환하라."
+  - **read-only 못박기**: "`package.json`·네이티브 설정·소스를 수정하지 마라. 파일 수정 도구와 쓰기 명령 금지. **셸 호출도 금지 — 조회는 WebFetch·Read로만 한다.** 조회 결과만 반환하라." (셸까지 막는 이유: 본문의 셸 계약은 메인에게만 걸린다 — 서브에이전트가 셸을 쓰면 `node -e` 1종 잠금이 한 겹 아래서 명목이 된다.)
   - **조회 범위 잠금**: "너는 오직 `<대상>`만 조회한다. 다른 대상은 무시하라."
   - **반환 형식**: `[대상] 현재 vX → 최신 vY | gap 분류 | 영향 | 관측: <배포일·후속 패치·revert/known issue> | 근거: <링크>` 한 줄씩. 실패·불명확은 `확인 못 함: <대상> — <사유>`로 분리. **근거 링크 없는 최신성 주장은 반환 금지.**
   - **판정 금지**: "권장 버전은 Z다"라고 결론 내지 마라 — 게이트 해석은 메인 몫이다. **대상마다 다른 에이전트가 각자 기준을 세우면 리포트의 권장 버전이 서로 다른 잣대로 나온다.**

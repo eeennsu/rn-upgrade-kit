@@ -39,10 +39,10 @@
    현재: 35 (android/build.gradle)
    원문: "August 31, 2026" · 근거: https://developer.android.com/…
 
-🟠 D-478 · ios/min-deployment-target · iOS ≥ 15.1     [변경 D-485→D-478]
-   현재: 충돌 — Podfile 14.0 / project.pbxproj 15.0 → 14.0 기준 판정
+🟠 · ios/min-xcode · Xcode ≥ 26 / SDK iOS 26 · 파생 배포 타깃 ≥ iOS 15 · 이중화 없음   [변경 Xcode 15→26]
+   현재: CI xcode-version 26.1 (충족) / 배포 타깃 충돌 — Podfile 14.0 / project.pbxproj 15.0 → 14.0 기준 판정 (미충족)
    원문: "starting April 2027" (월 단위 — D-day 미계산, 정렬 초일 기준)
-   근거: https://developer.apple.com/…
+   근거: https://developer.apple.com/news/upcoming-requirements/ · 파생: https://developer.apple.com/support/xcode/
 
 ## 확인 못 함
 ⚠ play/data-safety — 마감일 확인 못 함 (소스 도달 실패)
@@ -105,6 +105,7 @@
 - **어떤 판정에도 입력으로 쓰지 않는다.** 등급·충족 여부·날짜 전부 이번 실행의 조회에서 나온다.
 - `schema_version`이 다르거나 파싱 실패면 **델타 마킹만 생략**하고 전수 리포트는 정상 산출한다.
 - **좁힌 실행은 병합한다.** 조회된 슬러그만 갱신하고 미조회 슬러그의 이전 엔트리는 보존한다 — 덮어쓰면 다음 전수 실행에서 `[신규]`로 오탐된다.
+- **병합 보존 대상은 enum에 있는 슬러그만이다.** `references/watch-targets.md`에서 제거·통합된 슬러그의 엔트리는 다음 실행(스코프 무관)에서 삭제하고, 리포트 말미에 한 줄로 알린다(예: `enum 정리: ios/min-deployment-target 엔트리 삭제 — ios/min-xcode로 통합`). 남겨두면 병합 규칙이 폐기된 항목을 영구 보존하고, 그 엔트리가 언젠가 `[신규]`·델타 오탐의 재료가 된다.
 - **`unclassified`의 키는 잠정 키다.** enum 슬러그가 아니고 **동일성 키도 아니다** — 관측 문구를 소문자·하이픈으로 정규화해 만든다. 원문 문구가 바뀌면 새 엔트리가 생기고 카운트가 리셋되는데, **그래도 된다.**
 - 잠정 키를 두는 게 SKILL.md §1의 *"`[미분류]`는 동일성 키가 없다"*와 충돌하지 않는 이유: **승격 후보 제안은 판정이 아니다.** 등급·충족 여부·날짜에 관여하지 않고 사용자에게 참조 파일을 늘리라고 제안할 뿐이다. 오탐 비용이 `[신규]` 오탐과 위상이 다르다 — 그래서 **잠정 키를 델타 마킹에 쓰지 않는다.** `[미분류]` 항목은 여전히 마킹 없이 나간다.
 - **승격 후보 제안 조건은 `seen_count` ≥ `enum_promotion_min_count`**(`../../../shared/constants.md`). 1회 관측은 우연일 수 있고, 그걸로 참조 파일을 고치라고 하면 제안이 소음이 된다. **소음이면 사용자가 올릴 수 있어야 하므로 상수다** — `grade_threshold_days`가 소비자 하나뿐인데도 거기 있는 것과 같은 이유다.
@@ -118,8 +119,8 @@
 ```markdown
 ---
 schema_version: 1
-generated: 2026-08-16
-scope: 전체
+generated: 2026-08-23
+scope: android/target-sdk
 ---
 
 ## android/target-sdk
@@ -130,13 +131,13 @@ scope: 전체
 - status: 미충족
 - source: https://developer.android.com/…
 
-## ios/min-deployment-target
-- requires: iOS ≥ 15.1
+## ios/min-xcode
+- requires: Xcode ≥ 26 / SDK iOS 26 · 파생 배포 타깃 ≥ iOS 15
 - deadline: 2027-04 (저정밀 — 정렬 초일 2027-04-01)
 - urgency: 여유
-- current: 충돌 — Podfile 14.0 / project.pbxproj 15.0 → 14.0
+- current: CI xcode-version 26.1 / 배포 타깃 충돌 — Podfile 14.0 / project.pbxproj 15.0 → 14.0
 - status: 미충족
-- source: https://developer.apple.com/…
+- source: https://developer.apple.com/news/upcoming-requirements/ (파생: https://developer.apple.com/support/xcode/)
 - stale: 2026-08-09
 
 ## android/16kb-page-size
@@ -149,6 +150,12 @@ scope: 전체
 ```
 
 > 위 예시의 `1`은 값이 아니라 예시다 — 실제 값은 `../../../shared/constants.md`의 `handoff_schema_version`에서 온다.
+>
+> **이 예시는 §1 리포트 예시와 다른 실행 이력이다.** 날짜가 겹치지 않게 잡은 이유가 그거다 — 같은 실행의 산출물로 읽으면 §1이 `스코프: 전체`인데 여기가 좁힌 실행이라 서로 반례가 된다. **한 실행의 세 산출물(핸드오프 · state · 리포트)은 같은 스코프를 말해야 한다**(`../SKILL.md` §5 쓰기 순서).
+>
+> 여기 가정한 이력은 이렇다: **2026-08-09에 `--platform ios`로, 2026-08-23에 `--target android/target-sdk`로 좁혀 돌렸고 전수 실행은 아직 없다.** 그래서 세 항목이 각각 다른 상태다 — `android/target-sdk`는 이번에 조회(=`stale` 없음), `ios/min-xcode`는 2026-08-09에 조회(=`stale: 2026-08-09`), `android/16kb-page-size`는 **한 번도 조회된 적 없음**(=고정 표기). 아래 «규칙»의 세 줄(`scope` 기록 · `stale` 부착 조건 · 고정 표기)이 한 예시에서 동시에 성립하는 모습이다.
+>
+> **전수 실행이면 `scope: 전체`이고 `stale`이 붙은 항목이 없다** — §1 예시가 그 경우다.
 
 ### 규칙
 
@@ -158,6 +165,8 @@ scope: 전체
   - `임박` = D-day ≤ 임계일 / `여유` = 초과 / `판정 불가` = D-day 미계산
 - **`stale`은 이번 실행에서 조회되지 않은 항목에만 붙인다.** 값 = 마지막으로 조회된 날짜. `currency`는 `stale` 항목의 값도 그대로 쓴다 — 표기용이지 판정용이 아니다.
 - **좁힌 실행은 병합한다.** 미조회 항목을 삭제하거나 값을 비우지 마라 — `currency`가 하한과 `current`를 조용히 잃는다.
+- **병합 보존 대상은 enum에 있는 슬러그만이다.** «enum 전체를 싣는다»의 enum은 현재의 `references/watch-targets.md`다 — 거기서 제거·통합된 슬러그의 섹션은 다음 실행에서 삭제하고, 통합이면 후속 슬러그를 리포트 말미에 알린다. 남겨두면 `currency`가 폐기된 요구를 살아 있는 하한으로 읽는다 — 병합 규칙이 "삭제 금지"를 말하는 대상은 미조회이지 폐기가 아니다.
+- **파일 레벨 `scope`에는 이번 실행에서 실제로 조회된 슬러그를 적는다.** 전수 실행일 때만 `전체`다. 좁힌 실행에서 앞선 `전체`를 그대로 두면 **좁혀 돌린 실행이 전수라고 주장하는 핸드오프**가 나온다 — 항목별 `stale`과 달리 이 거짓말은 `currency`가 감지할 수단이 없다. 값은 슬러그를 `·`로 이어 적는다 (예: `scope: ios/min-xcode · ios/privacyinfo-required`).
 - **enum 전체를 싣는다. 한 번도 조회된 적 없는 항목도 섹션을 만든다.** 값 자리에는 고정 표기 `미조회 (한 번도 조회되지 않음)`를 넣는다. 항목을 빼면 `currency`는 **"그런 요구가 없다"와 "아직 안 봤다"를 구분할 수 없다** — 필드 부재가 그 구분을 파괴한다. `current`는 아래 계약 5가 정한 **유일한 공급원**이라 대체 경로도 없어, 구분이 무너지면 `currency`가 하한 없이 계산하고도 그 사실을 모른다.
 - **위 병합 규칙은 보존할 이전 값이 있을 때만 성립한다.** `--platform ios`를 **처음** 돌리면 파일은 생기지만 `android/*`에는 보존할 값이 없다 — 그 자리를 고정 표기가 채운다. 첫 좁힌 실행이 이 규칙이 걸리는 유일한 자리다.
 - **`stale`과 고정 표기는 다른 상태다. 섞지 마라.** `stale`은 *이번엔 안 봤지만 예전 값이 있다*이고 값 자리에 실제 값이 남는다. 고정 표기는 *한 번도 본 적이 없다*이고 실제 값이 존재한 적이 없다. 뭉치면 `currency`가 존재한 적 없는 값을 예전 값으로 읽는다. **고정 표기 항목에는 `stale`을 붙이지 않는다** — 마지막으로 조회된 날짜가 없기 때문이다.

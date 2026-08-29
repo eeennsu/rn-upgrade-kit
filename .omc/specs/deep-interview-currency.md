@@ -99,9 +99,9 @@ seed §2는 🔴·🟠의 주 공급원을 Track C로 지목했다. Track C 이�
 | --- | --- |
 | 대상 목록 · 선언 범위 | `package.json` **Read** — `dependencies` 키만 읽으면 devDependencies가 자동 배제된다. seed의 `jq` `dependencyType` 필터가 불필요해진다 |
 | 설치된 정확 버전 | lockfile **Read** (`pnpm-lock.yaml` 등) |
-| `latest` · dist-tags · 프리릴리즈 여부 | `registry.npmjs.org/-/package/<pkg>/dist-tags` **WebFetch** — 작고 절단되지 않는다 (실측 확인) |
-| peer 상한 재료 · `deprecated` | `registry.npmjs.org/<pkg>/<ver>` **WebFetch** — 버전 단위 문서. 정확히 온다 (실측 확인) |
-| **버전 목록 · 배포일 (soak·churn 재료)** | **`node -e` 1줄** — full packument를 fetch해 필요 필드만 뽑아 출력 |
+| `latest` · dist-tags · 프리릴리즈 여부 | **같은 `node -e` 1줄 출력의 dist-tags 행** — 실패 시 폴백: `registry.npmjs.org/-/package/<pkg>/dist-tags` WebFetch (작고 절단되지 않는다 · 실측 확인) |
+| peer 상한 재료 · `deprecated` | **같은 `node -e` 1줄 출력의 열** — 실패 시 폴백: `registry.npmjs.org/<pkg>/<ver>` WebFetch (버전 단위 문서 · 실측 확인) |
+| **버전 목록 · 배포일 (soak·churn 재료)** | **`node -e` 1줄** — full packument를 fetch해 필요 필드만 뽑아 출력. **폴백 없음** (full packument WebFetch는 절단) |
 | 오늘 날짜 | **컨텍스트 현재 날짜** — `date` 호출 없음 |
 
 ### 실측 결과 (2026-08-09 · `react-native-worklets`)
@@ -120,17 +120,15 @@ seed §2는 🔴·🟠의 주 공급원을 Track C로 지목했다. Track C 이�
 ### `node -e` — 유일하게 허용되는 Bash 용도
 
 ```sh
-node -e "fetch('https://registry.npmjs.org/<pkg>').then(r=>r.json()).then(d=>{
-  const t=d.time;
-  Object.keys(d.versions).filter(v=>!/-/.test(v)).slice(-10)
-    .forEach(v=>console.log(v, t[v].slice(0,10), d.versions[v].deprecated?'DEPRECATED':''));
-})"
+node -e "fetch('https://registry.npmjs.org/<pkg>').then(r=>r.json()).then(d=>{console.log('dist-tags',JSON.stringify(d['dist-tags']));const t=d.time;Object.keys(d.versions).filter(v=>!/-/.test(v)).slice(-10).forEach(v=>{const m=d.versions[v];console.log(v,t[v].slice(0,10),(m.peerDependencies&&m.peerDependencies['react-native'])||'-',m.deprecated?'DEPRECATED':'')})})"
 ```
+
+> **정제 (2026-08-29) — 판정 재료 전부를 원문 채널로:** 원안은 `latest`·peer 상한·`deprecated`를 WebFetch(요약 채널)로 받았다. 그런데 그 셋은 전부 **게이트 판정 재료**다 — semver 범위 문자열(`">=0.79 <0.83"`) 하나가 오요약되면 peer ceiling이 조용히 틀리고 그 위에서 권장 전체가 계산된다. 위 실측이 잡은 날짜 오변환과 같은 유형의 위험이고, full packument는 `node -e` 안에 이미 raw로 와 있어 **추가 왕복 0으로** 같은 출력에서 뽑을 수 있다. 그래서 원라이너가 dist-tags 행과 peer(react-native 범위)·deprecated 열을 함께 출력하도록 확장했다. WebFetch의 두 엔드포인트는 **`node -e` 실패 시 폴백**으로 강등된다 — 요약 채널이 판정 경로에 남는 건 degrade일 때뿐이고, 그때는 이미 `⚠ 숙성 미확인`·헤더 문구가 리포트를 정상 실행과 갈라놓는다. **확장 원라이너 실측 (2026-08-29 · Windows 11 · `react-native-worklets`): PowerShell 5.1과 Git Bash 출력이 바이트 단위로 동일.** 2026-08-18 실측은 구 원라이너에 대한 것이라 이 형태를 보증하지 않으므로 재실측했다.
 
 - **Bash 출력은 원문 그대로 컨텍스트에 들어온다** — 요약 모델을 경유하지 않는다. 이게 WebFetch와의 결정적 차이이고, 이 예외의 유일한 근거다.
 - **`node`는 새 의존이 아니다.** 대상이 React Native 프로젝트이므로 100% 존재한다. `jq`·`pnpm`·`curl`과 달리 호스트·PM에 무관하고 Windows Git Bash에서도 동작한다 — §호스트 지원의 전 호스트 ✅가 유지된다.
 - **셸 문법을 쓰지 않는다.** 파이프·리다이렉트·`date`·`cat`·`ls`·`jq` 전부 금지. 허용되는 건 위 형태의 `node -e` 호출 하나뿐이고, 날짜 산술도 셸이 아니라 ISO 문자열 비교로 한다.
-- **degrade:** `node`가 없거나 `node -e`가 실패하면 그 대상의 **soak·churn 게이트만** `확인 못 함`으로 두고 나머지 게이트(1·2·5·6)로 권장을 산정한다. 대상을 리포트에서 빼지 않는다. 권장 줄에 `⚠ 숙성 미확인`을 병기한다 — 근거 없이 "충분히 익었다"고 말하지 않는다.
+- **degrade:** `node`가 없거나 `node -e`가 실패하면 그 대상의 **soak·churn 게이트만** `확인 못 함`으로 두고 나머지 게이트(1·2·5·6)로 권장을 산정한다. `latest`·peer 상한·`deprecated`는 위 표의 WebFetch 폴백으로 채운다 — 배포일만은 폴백이 없다(full packument WebFetch 절단). 대상을 리포트에서 빼지 않는다. 권장 줄에 `⚠ 숙성 미확인`을 병기한다 — 근거 없이 "충분히 익었다"고 말하지 않는다.
 
 ### 근거 — 이식성을 구조로 만든다
 
@@ -197,8 +195,11 @@ node -e "fetch('https://registry.npmjs.org/<pkg>').then(r=>r.json()).then(d=>{
 | 파일 없음 | 하한 없이 계산 | `플랫폼 하한 미반영 (파일 없음)` |
 | 스키마 불일치 | 하한 없이 계산 | `플랫폼 하한 미반영 (스키마 불일치)` |
 | 파싱됨 (낡음 여부 무관) | 하한 적용 | 헤더에 `핸드오프 <생성일>` 병기 |
+| **상수 도달 실패** (`handoff_path` 미상) | 하한 없이 계산 | `플랫폼 하한 미반영 (핸드오프 경로 미상 — 상수 도달 실패)` |
 
 > **정제 (2026-08-18 · 구현 감사 반영):** 구현은 위 2분기를 **3상태로 가른다** — `(핸드오프 없음)` / `(핸드오프 미조회 항목)` / `(핸드오프 stale — <날짜>)`. 가운데가 신설이다. `platform-watch --platform ios`를 **처음** 돌리면 파일은 있고 `android/*` 항목만 없는데, 이걸 파일 부재로 접으면 사용자는 *"`platform-watch`를 그 플랫폼으로 한 번 더 돌려야 한다"*를 못 읽는다. **세 상태는 사용자가 할 일이 각각 다르므로 표기도 갈라야 한다** — 하한을 안 쓰는 동작 자체는 파일 부재와 같으니 2분기의 판정 규칙은 그대로다.
+
+> **정제 (2026-08-19 · 감사 라운드 3 반영):** 위 표에 **상수 도달 실패** 행이 붙었다. `handoff_path`가 `shared/constants.md`에서 오므로(`.omc/specs/plugin-shell.md` §1 *"하드코딩 금지 대상: 아래 표의 모든 값"* · §2 `handoff_path` 행) **상수에 도달하지 못하면 핸드오프를 열 자리 자체를 모른다.** 파일 부재와 같은 표기로 접으면 사용자는 `platform-watch`를 다시 돌리는데 고칠 것은 상수 도달이다. 판정 규칙은 파일 부재와 같다 — 하한 없이 계산하고 대상은 남긴다. **경로를 지어내는 것은 금지다.**
 
 - **`오래됨`은 상태가 아니다.** 신선도 임계값 N을 발명하지 않는다 — currency에는 N을 고를 근거가 없다. 날짜를 소유한 쪽이 날짜를 판정한다(`platform-watch`가 리포트 보존 12개를 주간 실행 기준으로 정한 것과 같은 규칙).
 - **비대칭 근거:** 정책 하한은 시간이 갈수록 오르기만 한다. 낡은 하한은 **과소평가**일 뿐이지만 하한 부재는 마감 자체를 못 본다. 안 쓰는 쪽이 낙관 편향이다 — `platform-watch` §날짜 신뢰 모델이 죽인 편향과 같은 방향.
@@ -243,6 +244,8 @@ node -e "fetch('https://registry.npmjs.org/<pkg>').then(r=>r.json()).then(d=>{
 > 해법은 `rn_floor`를 안 둔 것과 **반대 방향의 같은 수법**이다: 재료 없는 쪽이 채우게 만들지 말고 **재료 가진 쪽이 계산해 넘긴다.** currency는 매핑만 한다.
 >
 > **파급:** §Non-Goals의 *핸드오프 신선도 판정 안 함*과 정합적이다 — currency는 여전히 날짜를 판정하지 않는다. `stale`이 붙은 항목의 `urgency`도 그대로 쓴다(낡은 임박도는 **과소평가**일 뿐이고, 안 쓰는 쪽이 낙관 편향이라는 §degrade 2분기의 비대칭 근거가 그대로 적용된다).
+
+> **정제 (2026-08-29) — 계약 6항의 예외 하나, 기한 경과:** 핸드오프 `deadline`(저정밀이면 그 정렬 초일)이 **컨텍스트 오늘보다 과거**이고 `status`가 미충족이면, `urgency` 매핑과 무관하게 **🔴 + `기한 경과 — platform-watch 재실행 권장`**을 병기한다. 이것은 D-day 산술이 아니라 **ISO 문자열 비교**(soak 컷오프와 같은 허용 산술)이고 임계일도 쓰지 않는다 — 날짜 축·임계일 소유는 그대로 `platform-watch`다. 이 예외가 없으면 stale 핸드오프에서 **이미 지난 마감이 🟠 여유로 나간다** — 위 파급의 *"낡은 임박도는 과소평가일 뿐"*은 마감이 아직 앞에 있을 때만 감수 가능한 과소평가이고, 지난 마감을 여유로 표시하는 건 이 스펙이 금지한 낙관 편향 그 자체다.
 
 **계약 7항 (인터뷰 후 추가):** 핸드오프 항목에 `stale: <날짜>`가 붙어 있어도 **하한·`current`·`urgency`를 그대로 쓴다.** `stale`은 `platform-watch`가 좁힌 스코프로 실행돼 그 항목을 이번에 조회하지 않았다는 표기이고, 판정을 바꾸지 않는다. 헤더의 `핸드오프 <생성일>` 옆에 `(일부 항목 stale)`을 병기한다.
 
@@ -605,6 +608,7 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 **핸드오프 — `urgency`·`stale` (계약 6·7항)**
 
 - [ ] 정책 하한 항목의 🔴/🟠가 핸드오프 `urgency`에서만 나온다 — `deadline`으로 D-day를 계산하는 코드 경로가 존재하지 않는다
+- [ ] `deadline`(저정밀은 정렬 초일)이 컨텍스트 오늘보다 과거인 **미충족** 항목은 `urgency`와 무관하게 🔴가 되고 `기한 경과 — platform-watch 재실행 권장`이 병기된다 (ISO 문자열 비교만 — D-day 산술·임계일 사용 없음)
 - [ ] `urgency: 판정 불가` 항목이 등급 축이 아니라 ⚠ 블록으로 간다
 - [ ] `stale`이 붙은 항목의 하한·`current`·`urgency`가 그대로 적용된다
 - [ ] `stale` 항목이 있으면 헤더에 `(일부 항목 stale)`이 병기된다
@@ -640,6 +644,7 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 **핸드오프**
 
 - [ ] 핸드오프 파일이 없으면 하한 없이 계산되고 `플랫폼 하한 미반영 (파일 없음)`이 출력된다
+- [ ] `shared/constants.md`에 도달하지 못하면 하한 없이 계산되고 `플랫폼 하한 미반영 (핸드오프 경로 미상 — 상수 도달 실패)`로 파일 부재와 사유가 구분되어 출력된다 — 경로를 하드코딩해 여는 코드 경로가 존재하지 않는다
 - [ ] 스키마 불일치 시 `플랫폼 하한 미반영 (스키마 불일치)`로 사유가 구분되어 출력된다
 - [ ] 핸드오프가 오래됐다는 이유로 하한이 무시되지 않는다 (신선도 임계값 코드 경로 부재)
 - [ ] 헤더에 핸드오프 생성일이 병기된다
@@ -678,7 +683,7 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 **스냅샷 · 네이티브**
 
 - [ ] `targetSdk`·iOS min이 핸드오프 `current` 필드에서만 나온다 — 네이티브 설정 직접 파싱 경로가 존재하지 않는다
-- [ ] 핸드오프에서 값을 못 얻으면 헤더의 해당 값이 사유와 함께 출력되고 **세 상태가 갈린다**: `— (핸드오프 없음)` / `— (핸드오프 미조회 항목)` / `— (핸드오프 stale — <날짜>)`
+- [ ] 핸드오프에서 값을 못 얻으면 헤더의 해당 값이 사유와 함께 출력되고 **네 상태가 갈린다**: `— (핸드오프 없음)` / `— (핸드오프 미조회 항목)` / `— (핸드오프 stale — <날짜>)` / `— (핸드오프 경로 미상 — 상수 도달 실패)`
 - [ ] `platform-watch`가 실은 `미조회 (한 번도 조회되지 않음)` 표기를 값으로 해석하거나 대신 채우지 않는다
 - [ ] currency가 직접 읽는 네이티브 값이 `newArchEnabled`·`hermesEnabled` 둘로 한정된다
 - [ ] 두 플래그가 경로별로 갈리면 병기되고 판정이 `확인 못 함`이 된다
@@ -954,5 +959,6 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 - **정본 `package.json` 선택 규칙을 둔다.** `Glob`으로 전부 찾고 `react-native`를 `dependencies`에 가진 것만 남긴다. 2개 이상이면 **가장 얕은 것을 정본**으로 삼고 나머지 경로를 헤더에 나열한 뒤 `미조회 (monorepo — 경로 지정 필요)`로 보낸다 — 조용히 하나만 고르면 **침묵이 점검 결과로 둔갑해** 사용자가 다른 앱의 gap을 "없다"로 읽는다. 0개거나 `dependencies`가 비었으면 리포트를 만들지 않고 종료한다 — 대상 0개인 리포트는 "gap 없음"과 겉모습이 같아서 더 나쁘다.
 - **`workspace:*`·`catalog:`와 dist-tags `latest` 부재를 따로 받는다.** 앞은 `⚠ 선언 범위 해석 불가`, 뒤는 최신을 `확인 못 함`. **한 행으로 묶지 않는 이유는 사용자가 할 일이 정반대**라서다 — 전자는 우리 쪽 선언이라 워크스페이스 설정을 보면 풀리고, 후자는 퍼블리셔 쪽 사정이라 우리가 할 수 있는 게 없다. 버전 목록의 마지막 항목을 최신으로 대신 쓰지 않는다 — **태깅하지 않은 것과 배포 순서는 다른 사실이다.**
 - **핸드오프 결손을 3상태로 가른다.** `(핸드오프 없음)` / `(핸드오프 미조회 항목)` / `(핸드오프 stale — <날짜>)`. 근거: 셋은 **사용자가 할 일이 각각 다르다** — 최초 실행 / 그 플랫폼으로 한 번 더 실행 / 값이 있으니 급하지 않음. 한 표기로 뭉치면 고쳐야 할 것과 그냥 낡은 것이 같아 보인다. `platform-watch`가 실어 보낸 고정 표기는 **그대로 옮기고 값을 지어내지 않는다** — 읽는 쪽이 채우면 두 스킬이 다른 값을 말하게 되고 핸드오프를 단방향으로 만든 이유가 사라진다.
+  - **정정 (2026-08-19 · 감사 라운드 3):** **3상태 → 4상태.** `(핸드오프 경로 미상 — 상수 도달 실패)`가 넷째다. `handoff_path`가 `shared/constants.md`에서 오므로(`.omc/specs/plugin-shell.md:47`·`:68` — 하드코딩 금지) **상수에 도달하지 못하면 핸드오프를 열 자리 자체를 모르고**, 계약 5항(§핸드오프 — 독자 계약)이 `current`를 스냅샷 헤더의 유일한 공급원으로 못박아 대체 경로도 없다. 넷째를 파일 부재로 접으면 사용자는 `platform-watch`를 다시 도는데 고칠 것은 상수 도달이다. 본문 §핸드오프 2분기 표·AC와 같이 고쳤다 — **이 절은 본문과 동기다.**
 - **degrade 10경로 → 18경로.** 더해진 8개는 §degrade 경로의 «재정정 (2026-08-18)»에 있다. 경로가 늘어난 건 규칙이 늘어서가 아니라 **"대상은 목록에서 사라지지 않는다"를 지키려면 새로 관측된 실패마다 자리를 하나씩 줘야 하기 때문**이다.
 - **`disallowed-tools: WebSearch Edit`을 신설한다.** 공식 문서 확인: `allowed-tools`는 *"It does not restrict which tools are available: every tool remains callable"*(https://code.claude.com/docs/en/skills «Pre-approve tools for a skill»). 즉 *"`allowed-tools`에 없으니 못 쓴다"*로 세운 이 스펙의 강제 서술은 **전부 명목뿐이었다.** 실제 강제 수단은 `disallowed-tools`뿐이다. 구분자(공백·콤마·YAML 리스트)는 전부 유효하므로 감사 #8의 구분자 파싱 우려는 **기각**이고, 진짜 문제는 파싱이 아니라 **필드의 의미를 잘못 안 것**이었다.

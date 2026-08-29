@@ -73,13 +73,14 @@ iOS/Android 플랫폼 정책 요구사항 중 **마감일이 있는 것**을 공
 | ----------------------------- | ----------------------------- |
 | `android/target-sdk`          | Play 제출용 targetSdk 하한    |
 | `android/16kb-page-size`      | 16KB page size 정렬           |
-| `ios/min-deployment-target`   | Apple 최소 배포 타깃          |
-| `ios/min-xcode`               | 심사용 최소 Xcode 버전        |
+| `ios/min-xcode`               | 심사용 최소 Xcode/SDK + 파생 배포 타깃 하한 |
 | `ios/privacyinfo-required`    | `PrivacyInfo.xcprivacy` 요구  |
 | `play/billing`                | Play 결제 라이브러리 요구     |
 | `play/data-safety`            | Play 데이터 안전성 폼 변경    |
 
 참조 파일 항목당 스키마: `슬러그` · `platform` · `요구 항목` · `1차 URL` · `2차 URL` · `현재값 읽기 지시` · `등급 임계일(선택 — 미지정 시 `shared/constants.md`의 `grade_threshold_days`)`.
+
+> **정정 (2026-08-29):** 초기 목록의 `ios/min-deployment-target`은 `ios/min-xcode`로 **흡수 통합됐다** (7항목 → 6항목). 사유: Apple이 최소 배포 타깃을 독립 정책 본문으로 게시하지 않아(감사 A-29 — 1차·2차 모두 내용 실패, 매 실행 degrade 5) 그 항목은 추적할 정책 본문 자체가 없었고, 재료가 실재하는 유일한 페이지는 형제 항목의 URL과 겹쳐 독립성 스키마에 표기 자리가 없었다(A-30). 통합 항목은 제출용 Xcode/SDK 요구(정책 본문 실재)를 추적하고, 배포 타깃 하한은 **요구 Xcode 버전의 `support/xcode/` 표 `Deployment Targets` 열에서 파생**한다 — 두 출처 합성이라 근거 링크를 둘 다 단다. 슬러그·URL은 §미확정 위임이 구현 재량으로 넘긴 축이라 구현(사용자 결정)이 확정했고, **정본은 `references/watch-targets.md`다.** 폐기 슬러그의 state·핸드오프 잔재는 그 파일이 지목하는 «enum에서 제거된 슬러그» 규칙이 처리한다.
 
 > **스키마 확장 (2026-08-18 · 구현 감사 반영):** 여기에 **`실측`(필수)** 과 **`교차`(선택)** 가 붙는다. `실측`은 마지막으로 URL 도달을 확인한 날짜와 결과이고 확인 안 했으면 `미실측`이다. `교차`는 이 항목의 2차가 **다른 항목의 1차**일 때 그 슬러그를 적는 자리다. 근거는 §2단 URL의 «실측 (2026-08-18)» — **실측 없이 스키마만 지켜도 이중화가 성립하지 않는다는 게 URL 조회로 드러났다.**
 
@@ -452,10 +453,10 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
    현재: 35 (android/build.gradle)
    원문: "August 31, 2026" · 근거: https://developer.android.com/…
 
-🟠 D-478 · ios/min-deployment-target · iOS ≥ 15.1     [변경 D-485→D-478]
-   현재: 충돌 — Podfile 14.0 / project.pbxproj 15.0 → 14.0 기준 판정
+🟠 · ios/min-xcode · Xcode ≥ 26 / SDK iOS 26 · 파생 배포 타깃 ≥ iOS 15 · 이중화 없음   [변경 Xcode 15→26]
+   현재: CI xcode-version 26.1 (충족) / 배포 타깃 충돌 — Podfile 14.0 / project.pbxproj 15.0 → 14.0 기준 판정 (미충족)
    원문: "starting April 2027" (월 단위 — D-day 미계산, 정렬 초일 기준)
-   근거: https://developer.apple.com/…
+   근거: https://developer.apple.com/news/upcoming-requirements/ · 파생: https://developer.apple.com/support/xcode/
 
 ## 확인 못 함
 ⚠ play/data-safety — 마감일 확인 못 함 (소스 도달 실패)
@@ -469,7 +470,7 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
    → ios/ 하위에서 PrivacyInfo.xcprivacy 경로를 찾지 못함
 
 ## 이미 충족
-✅ D-247 · android/16kb-page-size — 정렬 확인됨      [무변화]
+✅ D-247 · android/16kb-page-size — 정렬 확인됨  · 이중화 없음      [무변화]
 
 ## 미조회 (사용자 지정 스코프)
 (없음)
@@ -487,6 +488,8 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
 
 - 각 항목에 **슬러그를 함께 출력**한다 (§동일성 키).
 - 근거 링크 없는 마감일·요구사항 주장은 리포트에 실리지 않는다.
+
+> **정정 (2026-08-29):** 위 예시의 iOS 줄은 A-29·A-30을 해소한 **통합 항목 `ios/min-xcode`**로 갱신됐다(§추적 대상의 2026-08-29 정정 참조). 라운드 6이 이 자리에 남겼던 "URL이 재선정되면 지운다" 주석은 그 조건이 충족돼 지웠다. 아울러 구 예시의 `D-478` 표기는 **월 단위 저정밀 날짜에 D-day를 실어 §날짜 신뢰 모델의 반례**였다 — 저정밀은 D-day 미계산·초일 정렬이므로 갱신된 줄은 D-day 없이 🟠를 단다(등급표의 *"저정밀 초일 기준"* 분기 시연).
 
 ---
 
