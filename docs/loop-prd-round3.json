@@ -1,0 +1,130 @@
+{
+  "title": "rn-upgrade-kit 감사 라운드 3 — 리뷰어 REJECTED 지적 6건 반영 + 재수렴",
+  "source": "docs/review-round2-2026-08-18.md · docs/loop-confirm.md §3",
+  "stories": [
+    {
+      "id": "US-101",
+      "title": "N-2 — currency degrade 12의 handoff_path 파급 (라운드 1 회귀)",
+      "passes": true,
+      "acceptanceCriteria": [
+        "skills/currency/SKILL.md:131의 '하한은 그대로 적용한다' 문장이 제거되고, 상수 도달 실패 시 handoff_path도 못 읽어 핸드오프를 열 수 없다는 사실이 명시된다",
+        "그 자리에 파일 부재와 구분되는 고정 표기(핸드오프 경로 미상 — 상수 도달 실패)가 규정된다",
+        "degrade 표 12행(:258)의 '결과' 칸에 핸드오프를 열 수 없다는 파급이 명시된다",
+        "경로 하드코딩을 금지하는 문구가 있고 .omc/specs/plugin-shell.md:47과 모순되지 않는다",
+        "grep으로 '하한은 그대로 적용한다'가 skills/currency/SKILL.md에서 0건임을 확인"
+      ]
+    },
+    {
+      "id": "US-102",
+      "title": "N-1 — 핸드오프 파일 레벨 scope 기록 규칙 신설",
+      "passes": true,
+      "acceptanceCriteria": [
+        "skills/platform-watch/references/report-format.md §3 «규칙»에 파일 레벨 scope 기록 규칙이 한 줄 이상 추가된다",
+        "규칙이 좁힌 실행에서 '전체'를 그대로 두면 안 된다는 것과, 전수 실행에서만 '전체'라는 것을 규정한다",
+        "스펙 근거(.omc/specs/deep-interview-platform-watch.md:295 및 AC :625)와 문언이 일치한다",
+        "grep -c 'scope' skills/platform-watch/references/report-format.md 결과가 2 이상"
+      ]
+    },
+    {
+      "id": "US-103",
+      "title": "N-3 — 스펙 예시가 자기 AC의 반례인 건 정정",
+      "passes": true,
+      "acceptanceCriteria": [
+        ".omc/specs/deep-interview-platform-watch.md의 'D-247 · android/16kb-page-size' 예시 줄에 '이중화 없음'이 병기된다",
+        "정정 후 그 줄이 같은 파일 AC(2차가 없음인 항목은 리포트에 이중화 없음이 병기된다)와 모순되지 않는다",
+        "구현 쪽 A-16 수정(skills/platform-watch/references/report-format.md)과 표기 어휘가 동일하다"
+      ]
+    },
+    {
+      "id": "US-104",
+      "title": "원장 줄번호 정정 — report-format.md의 +2 시프트 3곳",
+      "passes": true,
+      "acceptanceCriteria": [
+        "docs/audit-ledger.md의 A-07 두 인용이 :142-148 / :161-164로 정정된다 (실제 파일에서 sed로 재확인한 값 기준)",
+        "A-18·A-19의 :108 인용이 실측값으로 정정된다",
+        "정정 후 각 인용 줄을 sed -n 으로 찍어 인용 대상이 실제로 그 줄에 있음을 증거로 남긴다",
+        "이번 라운드 수정으로 또 시프트가 생긴 인용이 없는지 원장 전체를 재확인한다"
+      ]
+    },
+    {
+      "id": "US-105",
+      "title": "A-20 근거 문장 교체 — 없는 형제 스펙 요구 인용 제거",
+      "passes": true,
+      "acceptanceCriteria": [
+        "docs/audit-ledger.md의 A-20 행에서 '두 건 다 다른 스펙 파일이 구현 쪽을 요구한 것' 취지 문장이 제거된다",
+        "deep-interview-rn-rehearsal.md:594 인용이 빠지고 plugin-shell.md:182(참조 파일 물리 구성은 구현 재량) 근거로 교체된다",
+        "교체한 인용을 grep으로 원문 확인한 증거가 원장에 남는다",
+        "append-only 원칙상 기존 행을 삭제하지 않고 정정 표기 방식으로 처리된다"
+      ]
+    },
+    {
+      "id": "US-106",
+      "title": "원장 라운드 3 절 append + 라운드 2 거짓 주장 정정",
+      "passes": true,
+      "acceptanceCriteria": [
+        "N-1·N-2·N-3이 A-21·A-22·A-23으로 원장에 append된다 (각 행에 구현 file:line + 스펙 file:line + 원문 인용)",
+        "'라운드 2 — 신규 발견 0' 절이 리뷰어 적발 3건으로 정정된다 (원 문장을 지우지 않고 정정 표기)",
+        "'미해결 잔여: 없음' 문장이 정정된다",
+        "원장 헤더의 라운드 수·총 발견/반영 건수가 갱신된다"
+      ]
+    },
+    {
+      "id": "US-107",
+      "title": "라운드 3 전수 재대조 — 신규 발견 탐색",
+      "passes": true,
+      "acceptanceCriteria": [
+        ".omc/specs/*.md 4개 대비 skills/**/SKILL.md + references/*.md 전수를 다시 대조한다",
+        "신규 발견 각 건에 구현 file:line + 스펙 file:line + 원문 인용을 붙이고, 못 붙이면 폐기한다",
+        "A-01~A-23으로 이미 판정된 항목을 재발견하지 않는다",
+        "결과(신규 N건 또는 0건)를 원장 라운드 3 절에 기록한다"
+      ]
+    },
+    {
+      "id": "US-108",
+      "title": "독립 리뷰어 재점검 — 파일 출력 방식",
+      "passes": true,
+      "acceptanceCriteria": [
+        "별도 컨텍스트 리뷰어가 docs/review-round3-2026-08-19.md에 리포트를 Write하고 반환은 한 줄로 한다 (loop-confirm.md §4-1 함정 회피)",
+        "리뷰어가 US-101~US-107의 반영 여부를 스펙 원문 대조로 검증한다",
+        "리뷰어 판정이 APPROVED이거나, REJECTED면 지적을 원장에 append하고 수정 후 재위임한다",
+        "승인 주체가 리뷰어 에이전트임이 원장에 기록된다 — 자가 승인 없음"
+      ]
+    },
+    {
+      "id": "US-109",
+      "title": "라운드 4 — 리뷰어 지시 7건 집행 (N-5·N-6·N-7 + 원장 정정 4건)",
+      "passes": true,
+      "acceptanceCriteria": [
+        "skills/currency/SKILL.md:142가 네 표기로 확장되고 넷째의 사용자 할 일이 상수 도달로 명시된다",
+        ".omc/specs/deep-interview-currency.md:960 결정 원장에 4상태 정정이 append된다 (원문 삭제 없음)",
+        "skills/platform-watch/references/report-format.md:122의 scope가 예시의 stale·고정 표기와 정합하고, stale/고정 표기는 그대로 남는다",
+        "원장 A-24의 시간관계 정당화가 삭제되고 자기모순 근거로 교체된다 (git log -S 반증 기록 포함)",
+        "원장 전수 재대조 표에서 rehearsal 행이 빠지고 보증하지 않는 축으로 명시된다",
+        "A-25·A-26·A-27이 append되고 종료 절 수치가 갱신된다",
+        "원장의 file:line 인용 전수가 실제 줄과 일치한다 (부적중 0)"
+      ]
+    },
+    {
+      "id": "US-110",
+      "title": "라운드 4 독립 리뷰어 재점검",
+      "passes": true,
+      "acceptanceCriteria": [
+        "별도 컨텍스트 리뷰어가 docs/review-round4-2026-08-19.md에 리포트를 Write하고 반환은 한 줄",
+        "지시 7건의 집행 여부를 스펙 원문 대조로 검증한다",
+        "APPROVED이거나, REJECTED면 라운드 상한 5 도달이므로 미해결 잔여를 원장 말미에 나열하고 종료한다"
+      ]
+    },
+    {
+      "id": "US-111",
+      "title": "라운드 4 마감 — 리뷰어 지시 3건(A-28·종료 판정·폐기 사유) 집행 + 마감 서명",
+      "passes": true,
+      "acceptanceCriteria": [
+        "skills/platform-watch/references/report-format.md의 §3 핸드오프 예시가 §1·§2와 다른 실행 이력으로 분리되고 세 항목 상태가 그 이력과 정합한다",
+        "원장 종료 절이 종료 사유(상한 도달)와 수렴 여부(미확인)를 갈라 적고 미해결 잔여 4항을 본문으로 싣는다",
+        "라운드 1 폐기 사유의 거짓 진술이 정정되고 해당 건이 A-28로 흡수된다",
+        "원장 인용 전수가 실제 줄과 일치한다 (432건 해석, 미해석 0)",
+        "독립 리뷰어가 마감 수정에 APPROVED 서명하고 그 사실이 원장에 기록된다"
+      ]
+    }
+  ]
+}
