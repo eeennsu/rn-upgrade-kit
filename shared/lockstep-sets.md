@@ -23,7 +23,7 @@
 | # | 신호 | 어디서 보나 |
 | - | --- | --- |
 | 1 | 서로의 `peerDependencies`가 **범위가 아니라 한 버전대로** 고정 (`"react-native-worklets": "0.7.x"` 꼴) | `registry.npmjs.org/<pkg>/<ver>` 응답 |
-| 2 | 같은 GitHub 모노레포에서 **한 태그로 함께 배포** | `references/sources.md`의 repo/태그 표 |
+| 2 | 같은 GitHub 모노레포에서 **한 태그로 함께 배포** | `skills/currency/references/sources.md`의 repo/태그 표 (`currency`만 해당 — `rehearsal`에는 이 파일이 없다) |
 | 3 | 릴리즈 노트에 *"must be upgraded together"* · *"requires matching version of"* 류 문구 | 게이트 재료 수집 중 읽는 노트 |
 
 - **잠정 후보는 확정 세트와 다르게 다룬다.** 확정 세트는 게이트 6의 **판정 근거**고, 잠정 후보는 **⚠ 표기 + 이 파일 추가 제안**이다. 감지 규칙은 휴리스틱이라 오탐이 있고, 오탐이 실행 거부로 이어지면 사용자가 막힌다.

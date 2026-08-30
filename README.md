@@ -46,7 +46,7 @@ claude --plugin-dir /path/to/rn-upgrade-kit
 **차이는 임의가 아니라 실행 유무에서 나온다:**
 
 - **`rehearsal`: POSIX 전용 — 네이티브 빌드를 실제 실행하기 때문이다.** RN 빌드·CocoaPods·에뮬레이터 제어·worktree 폐기가 전부 Windows에서 별도 경로를 요구하고, 그 경로는 유지보수자가 검증할 수 없다. *검증 못 한 실행 경로를 사실로 쓰지 않는다*는 원칙과 정면 충돌한다.
-- **`platform-watch`: 전 호스트 — 웹 조회와 텍스트 파일 읽기만 한다.** 셸을 호출하지 않는다.
+- **`platform-watch`: 전 호스트 — 웹 조회와 텍스트 파일 읽기만 한다.** 메인 실행은 셸을 호출하지 않는다(`disallowed-tools: Bash`). `Agent` 위임은 그 강제 밖이라 서브에이전트 프롬프트가 셸을 금지한다 — 근거는 `skills/platform-watch/SKILL.md` §8.
 - **`currency`: 전 호스트 — 조회·파일 읽기 + registry 조회용 `node -e` 한 줄.** 대상이 RN 프로젝트이므로 node는 항상 존재한다. **커맨드는 `$`·백틱이 없는 한 줄로 고정돼 있고, PowerShell 5.1과 Git Bash에서 같은 출력이 나오는 것을 실측했다**(2026-08-29 · Windows 11 · 현행 확장 원라이너 기준). 이 표의 `currency` ✅는 그 실측에 기대고 있다.
 
 > **`node -e`가 실패해도 리포트는 나온다. 대신 그 사실이 헤더에 박힌다.** soak·churn 게이트 2개가 판정에서 빠지고 헤더에 `soak·churn 게이트 전면 미확인`이 실린다 — **게이트 둘이 죽은 리포트와 정상 리포트가 겉보기에 같으면 안 되기 때문이다.** 위 표의 ✅는 *"돈다"*는 뜻이지 *"게이트가 전부 산다"*는 보장이 아니다.
@@ -113,7 +113,7 @@ jobs:
 | 경로 | 내용 |
 | --- | --- |
 | `skills/*/SKILL.md` | 스킬 3개 |
-| `skills/*/references/*.md` | 지연 로드 참조 — 조회가 끝난 뒤에만 Read |
+| `skills/*/references/*.md` | 지연 로드 참조 — **로드 시점은 파일마다 다르다.** 각 `SKILL.md`가 지목하는 자리에서 Read한다: `watch-targets.md`·`sources.md`는 **조회 전·중**(대상 enum과 URL 조립 규칙이 거기 있다), `log-patterns.md`는 **T2 실행 중**, `report-format.md`·`cadence.md`는 **실행이 끝난 뒤**. 전부 뒤로 미루면 조회 대상 자체가 없어진다 |
 | `shared/constants.md` | 3스킬 공용 상수 (보존 상한 · 임계일 · 핸드오프 경로 · worktree 경로 · 단계 타임아웃) |
 | `shared/lockstep-sets.md` | 짝으로만 올려야 하는 패키지 집합 — `currency` 게이트 6과 `rehearsal` 인자 검증이 **같은 목록을 본다** |
 | `.omc/specs/*.md` | 설계 정본 (deep interview 산출물 + plugin shell) |
@@ -122,3 +122,11 @@ jobs:
 **상수를 스킬 본문에 하드코딩하지 마라.** `shared/constants.md`가 존재하는 이유는 두 advisory 스킬이 같은 보존 상한을 봐야 하고, 한쪽만 바뀌는 드리프트가 실제 실패 모드이기 때문이다. 같은 이유로 lockstep 세트도 `shared/`에 있다 — `currency`가 권장한 세트를 `rehearsal`이 "짝 누락"으로 거부하는 건 목록이 두 곳에 있을 때 반드시 오는 결말이다.
 
 **`allowed-tools`는 도구를 막지 못한다.** 그 필드는 승인 스킵(pre-approve)이지 제한이 아니다 — 목록에 없는 도구도 여전히 호출 가능하다. 그래서 세 스킬의 도구 규칙은 **본문의 금지 문장 + `disallowed-tools`** 두 겹으로 되어 있다. "`allowed-tools`에 없으니 못 쓴다"는 근거로 설계를 세우지 마라.
+
+| 스킬 | `disallowed-tools` |
+| --- | --- |
+| `platform-watch` | `Bash Edit` |
+| `currency` | `WebSearch Edit` |
+| `rehearsal` | `Agent Edit WebSearch Skill` |
+
+**두 겹 중 아래 겹은 그 턴에만 걸린다.** `disallowed-tools`는 스킬을 부른 턴의 도구 풀에서 실제로 빼지만 다음 사용자 메시지에서 풀리고, **서브에이전트에는 상속되지 않는다.** 그래서 본문의 금지 문장이 정본이고 필드는 그 턴의 강제다 — **필드가 있다고 문장을 지우지 마라.**

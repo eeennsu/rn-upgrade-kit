@@ -27,6 +27,7 @@
 | `url_candidate_limit` | `3` | platform-watch (URL 이동 의심 후보) |
 | `enum_promotion_min_count` | `2` | platform-watch (`[미분류]` enum 승격 후보 제안) |
 | `worktree_path_template` | `/tmp/rn-rehearsal-<target>-<base_sha7>` | rehearsal (worktree 생성 경로) |
+| `branch_name_template` | `rn-upgrade/<target>-<base_sha7>` | rehearsal (채택 브랜치명) |
 | `step_timeout_install_seconds` | `1800` | rehearsal (T1 의존성 설치) |
 | `step_timeout_check_seconds` | `900` | rehearsal (T1 타입체크·테스트) |
 | `step_timeout_build_seconds` | `2700` | rehearsal (T2 네이티브 빌드 · `pod install`) |
@@ -39,8 +40,18 @@
 - **`grade_threshold_days`는 platform-watch만 소비한다.** currency는 이 값을 다시 계산하지 않고 핸드오프의 `urgency` 필드를 읽는다. 재료를 가진 쪽이 계산해 넘긴다.
 - **`handoff_path`가 여기 있는 이유**는 소유자와 독자가 다르기 때문이다. 양쪽 스킬에 각각 적으면 나중에 한쪽만 바뀌어 조용히 끊긴다.
 - **`target_staleness_warn_days`가 `soak_minor_days`와 같은 14인 건 우연이 아니다.** 권장 버전이 한 soak 주기만큼 묵었으면 그 사이 새 stable이 나왔을 수 있다.
+- **`branch_name_template`이 여기 있는 이유는 `worktree_path_template`과 같고, 자리가 더 많다.** 채택 브랜치명은 브랜치 생성·관문의 선점 확인·채택 절·머지 커맨드·커밋 메시지 **다섯 곳**에 박힌다. 예시로만 두면 예시가 사실상의 정본이 되고, 다섯 자리가 한꺼번에 따라오지 않는다. `<base_sha7>`을 `worktree_path_template`과 **같은 7자리로 맞춘 것도 의도다** — 브랜치명과 worktree 경로가 같은 실행을 가리킨다는 사실이 눈으로 대조된다.
 - **`worktree_path_template`이 여기 있는 이유**는 경로가 리포트 재현 블록·수동 정리 커맨드·충돌 판정 **세 곳에 동시에** 박히기 때문이다. 참조 파일 예시에만 있으면 예시가 사실상의 정본이 되고, 예시를 고칠 때 나머지 둘이 따라오지 않는다. `<base_sha7>`은 장식이 아니다 — 같은 타깃을 **다른 base에서** 동시에 돌릴 때 충돌하지 않게 하려는 것이고, 남는 충돌(같은 타깃·같은 base)은 진짜 충돌이라 rehearsal이 거부한다.
 - **타임아웃이 티어가 아니라 단계 단위인 이유**는 멈추는 지점이 단계마다 다르기 때문이다. Gradle 빌드의 45분과 `pod install`이 네트워크에서 멈춘 45분은 같은 상한을 쓸 수 없다. **`boot_survival_seconds`(60)는 통과 조건이고 `step_timeout_boot_seconds`(600)는 상한이다** — 둘을 같게 만들면 "60초 생존"을 관측할 시간 자체가 없다.
+
+## 산출물 루트 — `.rn-upgrade-kit/`의 기준 디렉토리
+
+세 스킬의 산출물 경로(`handoff_path` 포함)는 전부 `.rn-upgrade-kit/`로 시작하는 **상대경로**다. 그 기준은 **호출 시점의 작업 디렉토리가 아니라 RN 프로젝트 루트**다.
+
+- **RN 프로젝트 루트 = `dependencies`에 `react-native`를 가진 `package.json` 중 경로가 가장 얕은 것의 디렉토리.** `currency`가 정본 `package.json`을 고르는 규칙과 **같은 규칙**이다 — 세 스킬이 다른 기준을 쓰면 산출물이 흩어진다.
+- **작업 디렉토리를 기준으로 삼으면 모노레포에서 조용히 끊긴다.** `apps/mobile`에서 `platform-watch`를 돌리고 저장소 루트에서 `currency`를 돌리면, currency는 핸드오프를 **다른 자리에서** 찾다가 `플랫폼 하한 미반영 (파일 없음)`으로 떨어진다. 그 표기의 정의된 의미는 *"platform-watch를 한 번도 안 돌렸다"*여서, 사용자는 **이미 돌린 스킬을 다시 돌리고** 원인은 리포트 어디에도 안 드러난다.
+- **후보가 둘 이상이면 조용히 고르지 않는다.** `currency`가 그 상황에서 하는 것과 같이 헤더에 나열한다 — 산출물 루트를 어디로 잡았는지가 리포트에서 읽혀야 한다.
+- **후보가 없으면**(RN 프로젝트가 아님) 작업 디렉토리를 기준으로 쓰고 그 사실을 헤더에 적는다. 세 스킬 다 RN 프로젝트를 전제하지만, 전제가 깨졌을 때 **경로를 지어내는 것보다 어디에 썼는지 말하는 쪽이 낫다.**
 
 ## 항목별 덮어쓰기
 

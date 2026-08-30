@@ -56,6 +56,7 @@ T3/ios     — 미실행 (앞 티어 실패)
 
 ## 티어별 상세
 ### T1 — 통과
+적용: pnpm add react-native@0.83.4 react@19.2.0 → react-native 0.83.4 · react 19.2.0
 설치: pnpm install --frozen-lockfile (42s)
 패치: 3/3 적용
 타입체크: 0 errors
@@ -77,14 +78,19 @@ pnpm tsc --noEmit
 pnpm test
 
 # --- T2/android ---
-cd android && ./gradlew assembleDebug
+(cd android && ./gradlew assembleDebug)
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+adb shell monkey -p com.example.app -c android.intent.category.LAUNCHER 1
 
 # --- T2/ios ---
-cd ios && pod install
-xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator
+(cd ios && pod install)
+xcodebuild -workspace ios/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -derivedDataPath build
+xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/App.app
+xcrun simctl launch booted com.example.app
 
 # --- 정리 ---
-cd - && git worktree remove --force /tmp/rn-rehearsal-0.83.4-a3f9c21
+cd -
+git worktree remove --force /tmp/rn-rehearsal-0.83.4-a3f9c21
 ```
 
 ## 채택
@@ -113,7 +119,11 @@ artifacts: 보존 3개, 자동 정리 1개
 | `인자 검증 3 미실행 (lockstep 목록 도달 실패)` | `shared/lockstep-sets.md` 도달 실패 시 |
 | `artifacts 쓰기 실패: <사유> — 전체 로그 없음` | `artifacts/` 쓰기 실패 시 |
 | `기존 worktree 디렉토리 삭제: <경로>` | 고아 디렉토리를 지우고 진행한 경우 |
+| `채택 예정 브랜치가 이미 존재한다: <이름> — 채택은 막힌다` | 관문의 브랜치 선점 확인에 걸린 경우 |
+| `산출물 루트: <경로>` | RN 프로젝트 루트 후보가 둘 이상이거나 없는 경우 |
 
+- **`적용` 줄은 T1 상세에 항상 싣는다.** 무엇을 실제로 적용했고 **설치된 버전이 무엇이 됐는지**가 리포트의 주어다(`../SKILL.md` §2). 이 줄이 없으면 원본 버전을 검증한 실행과 목표 버전을 검증한 실행이 리포트에서 구분되지 않는다.
+- **타입체크·테스트가 프로젝트에 없으면 그 줄을 지우지 말고 `미실행 (프로젝트에 <검사> 스크립트 없음)`으로 적는다.** 줄이 없으면 "통과했는데 안 적었나"와 "검사가 없다"가 구분되지 않는다 — 항목은 목록에서 사라지지 않는다는 이 플러그인의 원칙이 단계 표기에도 그대로 적용된다.
 - **`base_sha` 표기 자릿수는 자리마다 다르다.** 리포트 **본문**에 값으로 싣는 자리(`검증 기준` 줄 · 채택 절 · 채택 커밋 메시지 · base 신선도 경고문 · 재현 블록의 git 인자)는 **전체 SHA**다. **브랜치명과 worktree 경로만 7자리**이고 그건 `../../../shared/constants.md`의 `worktree_path_template`이 `<base_sha7>`로 못박은 값이다. 섞으면 사후 감사에서 *"이 브랜치가 검증한 커밋"*을 짧은 해시로만 알게 되는데, 리포트는 몇 달 뒤에 읽히고 **짧은 해시는 레포가 커지면 충돌한다.**
 - **`검증 기준`과 `베이스라인`은 조건부가 아니다.** 앞은 "무엇을 검증했나"의 정의고, 뒤는 채택 게이트 3의 유일한 사후 감사 근거다(`../SKILL.md` §6). 조건부로 두면 줄이 없을 때가 "clean이라서 생략"인지 "안 봐서 생략"인지 구분되지 않는다.
 - `인자 검증 1` · `인자 검증 3` · `artifacts 쓰기 실패` 세 줄은 **degrade의 흔적**이다(`../SKILL.md` §8). 줄이 없으면 degrade가 없었다는 뜻이어야 하므로 **degrade가 있었는데 안 적는 경우가 있어서는 안 된다** — 조용히 열화된 리허설은 정상 실행과 구분되지 않는다.
@@ -130,6 +140,9 @@ artifacts: 보존 3개, 자동 정리 1개
 6. **채택한 실행이면 커밋·브랜치 생성 커맨드도 블록에 싣는다** — 정리 커맨드 **앞**에. 채택은 재현 가능해야 한다. 채택하지 않은 실행에는 넣지 않는다(3번의 연장 — 안 돌린 커맨드를 싣지 않는다).
 7. **`timeout` 래퍼를 두르지 않는다.** 단계 상한은 스킬이 건 것이지 사용자가 친 커맨드의 일부가 아니다 — 두르면 3번이 깨진다. 대신 **타임아웃으로 끝난 단계에만** 그 줄 위에 `# 이 단계는 <상수명> 초과로 중단됐다` 주석 한 줄을 단다. 블록은 그 줄에서 끝난다(2번).
 8. **worktree 경로는 `../../../shared/constants.md`의 `worktree_path_template`에서 온다.** 블록에 직접 적힌 경로를 정본으로 삼지 마라 — 재현 블록·수동 정리 커맨드·충돌 판정이 같은 값을 봐야 한다.
+9. **디렉토리 이동은 서브셸로 감싼다** (`(cd android && …)`). 블록 전체의 기준 디렉토리는 2번째 줄의 `cd <worktree>` 하나이고, 그 뒤 모든 줄이 worktree 루트를 기준으로 읽힌다. 감싸지 않으면 `cd android` 다음의 `cd ios`가 `<worktree>/android/ios`를 찾다 실패하고, 말미의 `cd -`도 엉뚱한 곳으로 돌아간다 — **1번의 "단일 복붙 블록"이 복붙되지 않는 블록이 된다.** 이 블록의 존재 이유가 복붙 재현이므로 형태가 곧 계약이다.
+10. **적용 커맨드와 잠금 설치는 반드시 짝으로 싣는다** (`pnpm add …` 다음 줄에 `pnpm install --frozen-lockfile`). 앞줄만 실으면 lockfile 검증이 빠지고, **뒷줄만 실으면 복붙한 사용자가 `package.json`↔lockfile 불일치 에러를 재현한다** — 실제 실행은 통과했는데 재현은 실패하는 최악의 형태다. 사유는 `../SKILL.md` §2 «적용 다음에 잠금 설치가 오는 이유».
+11. **도출된 값은 치환된 실제 값으로 싣는다.** `<applicationId>`·`<Name>`·`<bundleId>`(`../SKILL.md` §3 «기동»)는 플레이스홀더가 아니라 그 실행에서 읽어낸 값이다 — 꺾쇠를 그대로 남기면 복붙이 안 된다.
 
 ## 채택 절 — 출력 형태
 
@@ -177,6 +190,8 @@ rn-upgrade: react-native 0.82.1 → 0.83.4 (rehearsal 통과)
 ```
 
 > 위 예시의 버전·SHA·티어 결과는 값이 아니라 예시다 — 실제 값은 그 실행에서 온다. **브랜치명의 `a3f9c21`과 본문의 전체 SHA는 같은 커밋이다** — 자릿수 규칙은 위 «헤더» 절에 있다.
+
+> 위 브랜치명(`rn-upgrade/0.83.4-a3f9c21`)도 값이 아니라 예시다 — 실제 이름은 `../../../shared/constants.md`의 `branch_name_template`에서 조립한다. 그 이름은 다섯 자리에 박히므로 예시를 정본으로 삼으면 나머지 넷이 따라오지 않는다.
 
 - **`베이스라인`을 커밋 메시지에 싣는 이유**: 채택 후 worktree는 폐기되고 리포트는 같은 타깃 재실행에서 덮어쓰이며 `artifacts/`는 보존 상한에 밀린다. **커밋만 남는다** — 채택 게이트 3(*"조건부 베이스라인이 측정되지 않았을 것"*)의 통과 근거를 나중에 확인할 수 있는 유일한 자리다.
 - **`미검증`도 함께 싣는다.** 브랜치명은 타깃과 base만 주장하지 어디까지 봤는지는 말하지 않는다 — 몇 달 뒤 이 브랜치를 머지하는 사람이 iOS가 안 돌았다는 걸 리포트 없이 알 수 있어야 한다.
