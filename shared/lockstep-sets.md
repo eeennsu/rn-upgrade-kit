@@ -8,11 +8,13 @@
 
 | 세트 | 구성원 | 근거 |
 | --- | --- | --- |
-| RN 코어 | `react-native` · `react` | RN 릴리즈마다 대응 React 버전이 고정된다 |
+| RN 코어 | `react-native` · `react` · **`@react-native/*` 전체** (`babel-preset` · `metro-config` · `gradle-plugin` · `codegen` · `eslint-config` · `jest-preset` · `typescript-config` …) | RN 릴리즈마다 대응 React 버전이 고정되고, `@react-native/*`는 RN 모노레포에서 **RN과 같은 버전 번호로** 함께 배포된다. 실측(2026-08-31): `react-native@0.85.3`의 dependencies가 `@react-native/gradle-plugin: 0.85.3` 등을 한 버전으로 고정하고, `android/settings.gradle`이 프로젝트 devDeps의 `@react-native/gradle-plugin`을 `includeBuild`한다 — `react-native`만 올리면 구버전 gradle 플러그인이 신버전 아티팩트 좌표를 배선하지 못해 빌드가 죽는다(`Could not find com.facebook.react:hermes-android:0.85.3`) |
 | Reanimated | `react-native-reanimated` · `react-native-worklets` | v4에서 워클릿 런타임이 분리됐다 — 버전이 어긋나면 런타임에서 깨진다 |
 | React Navigation | `@react-navigation/*` 전체 (`native` · `stack` · `bottom-tabs` · `drawer` · `native-stack` …) | 단일 모노레포에서 메이저를 함께 올린다 |
 
 **세트 구성원 중 프로젝트에 설치된 것만** 대상이다. `@react-navigation/drawer`를 안 쓰면 그 짝을 요구하지 않는다 — 없는 패키지를 "누락"이라 부르지 않는다.
+
+**`@react-native-community/cli*`는 확정 세트가 아니다** (2026-08-31): 버전 축이 RN과 다르고(20.x 꼴), `@react-native/community-cli-plugin@0.85.3`의 peerDependencies가 `"@react-native-community/cli": "*"`로 열려 있음을 실측했다 — 한 버전 고정이 아니므로 확정 근거(신호 1)가 성립하지 않는다. RN 릴리즈 노트가 특정 CLI 버전을 지정하면 그때 그 버전을 따르되, 게이트가 거부 근거로 쓰지는 않는다.
 
 ## 확정 목록에 없는 짝을 만났을 때 — 감지 규칙
 

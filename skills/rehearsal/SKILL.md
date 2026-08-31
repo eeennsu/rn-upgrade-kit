@@ -76,6 +76,7 @@ node -e "fetch('https://registry.npmjs.org/react-native/0.83.4').then(r=>console
 
 - **표면이 dirty면 거부하는 이유**: `git worktree add`는 커밋된 것만 가져간다. 그 변경이 빠진 트리를 검증해놓고 "우리 프로젝트"라고 부를 수 없다 — 서두가 정의한 이 스킬의 질문이 그 자리에서 거짓이 된다. §6의 base 신선도 절은 이 누수를 **미래 방향으로만** 막는다(검증 후 쌓인 커밋). 과거 방향 — 커밋 안 된 현재 — 은 여기서 막는다.
 - **그 밖의 경로를 거부하지 않는 이유**: 소스 한 줄 고쳐둔 상태로 리허설을 못 돌리게 하면 스킬이 실용성을 잃는다. 표면 밖 변경은 설치·빌드·부팅 결과를 바꾸지 않으므로 **비례적으로 갈라 경고로 끝낸다.** 대신 무엇이 검증에서 빠졌는지 리포트가 말한다.
+- **거부 출력에는 우회 경로를 함께 싣는다** (2026-08-31 · 실행 검증 반영): dev/beta/pro 환경을 파일 치환으로 전환하는 RN 프로젝트는 `ios/**`가 평상시에 항상 dirty라, 안내 없는 거부는 사실상 영구 차단이다. 고정 문구 — `커밋하거나 git stash -u 후 재실행하라. worktree는 커밋된 트리만 가져가므로 이 변경은 어차피 검증에 포함되지 않는다.`
 
 리포트 헤더는 **항상** 둘 중 하나를 싣는다:
 
@@ -83,6 +84,21 @@ node -e "fetch('https://registry.npmjs.org/react-native/0.83.4').then(r=>console
 검증 기준: <base_sha> (작업 트리 clean)
 검증 기준: <base_sha> (작업 트리 dirty — 검증에 미포함: <경로 목록>)
 ```
+
+### 커밋 외 파일 · 격리 누수 — 관측만 하고 거부하지 않는다 (2026-08-31 · 실행 검증 반영)
+
+worktree는 커밋된 트리다. **커밋 밖에 있지만 실행에 필요한 파일은 worktree에 없고**, 그 부재가 만든 실패는 리포트 독자에게 업그레이드 회귀처럼 보인다 — §1 환경 전제 탐지가 막는 것과 같은 오분류가 파일 축에서 열려 있었다. 실측 근거: 타입 에러 17건 중 15건이 gitignore된 `config/` 부재였다.
+
+두 검사 다 **§0에서 커밋 상태만으로 판정 가능하다** — gitignored 파일은 정의상 어느 커밋에도 없으므로 worktree 생성 전에 안다.
+
+| 검사 | 방법 | 출력 (리포트 헤더) |
+| --- | --- | --- |
+| 커밋 외 파일 | `git status --porcelain --ignored`의 `!!` 항목을 최상위 경로로 접는다. **설치·빌드가 재생성하는 산물은 제외**: `node_modules/` · `Pods/` · `build/` · `.gradle/` · `dist/` · `DerivedData/` · `.rn-upgrade-kit/` | `커밋 외 파일: worktree 미포함 N개 — <목록>` (0개면 `커밋 외 파일: 없음`) |
+| 격리 누수 | PM 설정(`pnpm-workspace.yaml` · `package.json` · `.yarnrc.yml`)에서 **worktree 밖을 가리키는 절대경로** | `격리 누수: <파일> <N>건 — <경로 예시 1개>` (없으면 줄 생략) |
+
+- **거부하지 않는다.** 대부분의 RN 프로젝트가 이 상태다 — 환경 설정·시크릿은 원래 커밋 밖에 산다. 거부하면 스킬이 실용성을 잃는다.
+- **T2가 실패하면 이 목록을 실패 해석에 병기한다.** 실패 발췌 아래 한 줄: `worktree에 없는 커밋 외 파일: <목록> — 실패 원인이 업그레이드가 아닐 수 있다`. 판정은 바꾸지 않는다 — 판정 어휘를 늘리는 게 아니라 독자가 오분류를 가릴 재료를 주는 것이다.
+- **격리 누수를 거부하지 않는 이유**: 절대경로 `patchedDependencies`는 사용자 프로젝트의 실태고, 스킬이 고칠 수 있는 것이 아니다. 다만 그 경로의 파일은 **base_sha 시점의 것이라는 보장이 없으므로**, 헤더에 남겨 "우리 프로젝트를 검증했다"는 주장의 한계를 드러낸다.
 
 ### 산정 시각 주석
 
@@ -96,7 +112,7 @@ node -e "fetch('https://registry.npmjs.org/react-native/0.83.4').then(r=>console
 
 | 티어 | 내용 | 플랫폼 축 |
 | --- | --- | --- |
-| **T1** | worktree 생성 → PM 감지 → 의존성 설치 → 패치 재적용 → 타입체크 → 테스트 | 없음 (공통) |
+| **T1** | worktree 생성 → PM 감지 → **버전 세트 적용** → 의존성 설치 → 패치 재적용 → 타입체크 → 테스트 | 없음 (공통) |
 | **T2/android** | Gradle 빌드 → 에뮬레이터/기기 설치 → 부팅 → 로그 스캔 | android |
 | **T2/ios** | `pod install` → `xcodebuild` → 시뮬레이터 부팅 → 로그 스캔 | ios (macOS 호스트만) |
 | **T3/\<platform\>** | 스크린샷 수집 — **증거물 전용, 판정 근거 아님** | 부팅 성공한 플랫폼마다 |
@@ -114,7 +130,7 @@ node -e "fetch('https://registry.npmjs.org/react-native/0.83.4').then(r=>console
 | fail-fast | `미실행 (앞 티어 실패)` |
 | 호스트·환경 전제 미충족 | `미실행 (macOS 필요)` / `미실행 (Android SDK 없음)` / `미실행 (Xcode 없음)` / `미실행 (CocoaPods 없음)` |
 | 사용자 지정 스코프 | `미실행 (사용자 지정 스코프)` |
-| 개입 필요로 중단 | `미실행 (패치 불완전으로 중단)` |
+| 개입 필요로 중단 | `미실행 (패치 불완전으로 중단)` / `미실행 (베이스라인 복원 실패로 중단)` |
 | 증거물 수집 실패 | `미실행 (스크린샷 수집 실패: <사유>)` |
 
 **"요청 안 함"과 "못 함"은 다른 사유다.** 합치지 마라 — 합치면 리포트 독자가 "iOS를 안 본 게 내 선택이었나 환경 탓이었나"를 못 가린다.
@@ -150,6 +166,8 @@ node -e "fetch('https://registry.npmjs.org/react-native/0.83.4').then(r=>console
 - 타임아웃 실패에도 **수직 fail-fast가 그대로 적용된다.** 뒤 티어는 `미실행 (앞 티어 실패)`다.
 - **`boot_survival_seconds`는 통과 조건이고 `step_timeout_boot_seconds`는 상한이다** — 앱이 살아 있어야 하는 **최소** 시간과 부팅 단계를 기다려주는 **최대** 시간이라 축이 다르다. 전자가 후자보다 크면 통과가 구조적으로 불가능해지므로, 그 관계가 깨지면 실행이 아니라 상수가 잘못이다.
 - **재현 블록에 `timeout` 래퍼를 넣지 마라.** 상한은 스킬이 단계를 감싸 건 것이지 사용자가 친 커맨드의 일부가 아니다 — 넣으면 *"실제 실행된 것에서 그대로 추출"*이 깨진다. 대신 **타임아웃으로 끝난 단계에만** 그 줄 위에 주석 한 줄을 단다: `# 이 단계는 <상수명> 초과로 중단됐다`.
+- **강제 래퍼는 이것이다** (2026-08-31 · 실행 검증 반영): `perl -e 'alarm shift; exec @ARGV' <초> <커맨드>`. macOS에는 `timeout`도 `gtimeout`도 없다(실측: 둘 다 `command not found`) — 래퍼 없이 상한 표만 두면 이 계약은 주 호스트에서 강제 수단이 없는 선언이 된다. `perl`은 macOS·Linux 기본 탑재고 `alarm`은 `exec`를 넘어 유지되므로 추가 의존이 없다. 위 불릿의 "재현 블록에 넣지 마라"가 가리키는 래퍼가 바로 이것이다 — 스킬이 두르고, 재현 블록에서는 벗긴다.
+- **전체 실행 상한은 두지 않는다** (2026-08-31 · 명시 선언): 상한은 단계 단위가 정본이고, 전체의 사실상 상한은 단계 상한의 합이다 — 최악 산술로 `1800 + 900×2 + 2700×2 + 600×2 + 베이스라인 install 2회`, 약 3~4시간. 전체 상한을 따로 두면 단계 상한과 겹치는 두 번째 축이 생기고, 어느 쪽이 끊었는지가 리포트에서 안 가려진다. 이 선언이 없으면 구현자가 상한 부재를 누락으로 읽는다.
 
 ### 오염 플래그 — 판정 축과 직교
 
@@ -168,15 +186,25 @@ node -e "fetch('https://registry.npmjs.org/react-native/0.83.4').then(r=>console
 
 lockfile 기반 1회 감지. `Glob`으로 탐지한다.
 
-| lockfile | PM | 설치 | 패치 메커니즘 (우선순위) |
-| --- | --- | --- | --- |
-| `pnpm-lock.yaml` | pnpm | `pnpm install --frozen-lockfile` | `patches/` + `patchedDependencies` → `patch-package` |
-| `package-lock.json` | npm | `npm ci` | `patch-package` (postinstall) |
-| `yarn.lock` | yarn | `yarn install --immutable` | `.yarn/patches` + resolutions → `patch-package` |
-| `bun.lock` / `bun.lockb` | bun | `bun install --frozen-lockfile` | `patches/` + `patchedDependencies` → `patch-package` |
+| lockfile | PM | 버전 세트 적용 | 설치 | 패치 메커니즘 (우선순위) |
+| --- | --- | --- | --- | --- |
+| `pnpm-lock.yaml` | pnpm | `pnpm add <pkg>@<ver> …` | `pnpm install --frozen-lockfile` | `patches/` + `patchedDependencies` → `patch-package` |
+| `package-lock.json` | npm | `npm install <pkg>@<ver> …` | `npm ci` | `patch-package` (postinstall) |
+| `yarn.lock` | yarn | `yarn add <pkg>@<ver> …` | `yarn install --immutable` | `.yarn/patches` + resolutions → `patch-package` |
+| `bun.lock` / `bun.lockb` | bun | `bun add <pkg>@<ver> …` | `bun install --frozen-lockfile` | `patches/` + `patchedDependencies` → `patch-package` |
 
 - **PM 네이티브 메커니즘 우선.** `patch-package`는 폴백.
 - lockfile이 둘 이상이면 실행 거부가 아니라 **T1 실패**로 처리하고 사유를 명시한다(`PM 판별 불가: lockfile 2종 존재`).
+- **적용과 설치는 별개 단계다** (2026-08-31 · 실행 검증 반영). 적용이 `package.json`과 lockfile을 함께 갱신하고, 그 뒤의 frozen 설치는 **갱신된 lockfile의 재현성 검증**이다 — frozen 설치만으로는 lockfile 갱신이 거부되므로 업그레이드가 원리상 불가능하다. 인자 세트 전체를 적용 커맨드 **1회**에 싣는다 — 나눠 넣으면 중간 상태의 resolution이 lockfile에 남는다.
+
+### 검사 커맨드 (2026-08-31 · 실행 검증 반영)
+
+작문 금지 원칙은 검사 커맨드에도 적용된다 — 커맨드가 정의돼 있지 않으면 재현 블록에 실을 줄을 지어내게 된다.
+
+| 검사 | 커맨드 |
+| --- | --- |
+| 타입체크 | `package.json`에 `typecheck` 스크립트가 있으면 그것. 없으면 `<pm> tsc --noEmit` |
+| 테스트 | `package.json`의 `test` 스크립트 (`<pm> test`). 없으면 테스트를 `미실행 (test 스크립트 없음)`으로 표기 — 지어내지 않는다 |
 
 ### 패치 재적용 실패
 
@@ -185,14 +213,26 @@ lockfile 기반 1회 감지. `Glob`으로 탐지한다.
 3. T1 판정 = **실패**, T2 이후 `미실행 (패치 불완전으로 중단)`
 4. 실패한 패치의 대상 패키지·hunk 번호를 리포트에 명시
 
+**패치 개수의 분모는 「PM에 등록된 패치 수」다** (2026-08-31 · 실행 검증 반영) — `patchedDependencies`·`.yarn/patches` 등록분이지 `patches/` 디렉토리의 파일 수가 아니다. 등록되지 않은 패치 파일은 적용 대상이 아니므로 실패로 세지 않되, 발견하면 리포트 헤더에 `미등록 패치: <파일>` 한 줄을 남긴다 — 등록이 빠진 것 자체가 사용자가 알아야 할 드리프트다.
+
 ### 베이스라인 — 조건부 대조군
 
-**통과 시 비용 0. 실패했을 때만 지불한다.**
+**통과 시 비용 0. 실패했을 때만 지불한다 — 그 비용은 install 2회 추가(되돌림 + 복원)다.**
 
 1. 업그레이드 적용 후 T1을 먼저 돌린다.
-2. 타입체크 또는 테스트가 실패하면 **그때만** 같은 worktree를 업그레이드 전 상태로 되돌려 재측정한다.
-3. 판정은 **델타**로 서술한다: `신규 에러 N개 / 기존 부채 M개`.
-4. **신규 에러 0이면 T1은 통과다** — 기존 부채는 업그레이드 산물이 아니다.
+2. 타입체크 또는 테스트가 실패하면 **그때만** 같은 worktree를 업그레이드 전 상태로 되돌려 재측정한다. 되돌리기 **전에** 업그레이드 상태의 `package.json`·lockfile을 worktree 밖(`artifacts/`)에 백업한다 — 복원(아래 6)의 재료다.
+3. **되돌림 절차** (2026-08-31 · 실행 검증 반영): `git checkout -- package.json <lockfile>` 후 **되돌림 설치**를 돌린다. 되돌림 설치는 frozen이 **아니다** — lockfile을 과거로 되돌렸으므로 재현성 검증이 아니라 상태 전환이다:
+
+   | PM | 되돌림 설치 |
+   | --- | --- |
+   | pnpm | `pnpm install --no-frozen-lockfile` |
+   | npm | `npm install` |
+   | yarn | `yarn install --no-immutable` |
+   | bun | `bun install` |
+
+4. **되돌림을 검증한다 — exit code를 믿지 마라.** 설치 후 타깃 세트의 대표 패키지 버전을 실제로 읽는다(`node -e "console.log(require('<pkg>/package.json').version)"`). **여전히 타깃 버전이면 되돌림 실패다**: 델타를 계산하지 않고 `베이스라인: 미측정 (되돌림 실패: <사유>)`를 헤더에 적으며, **T1 판정은 실패 그대로 둔다.** 실측 근거: 되돌림 설치가 `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`로 죽은 채 재측정이 진행돼, 업그레이드된 트리를 자기 자신과 비교한 델타 0으로 **거짓 통과**가 나왔다 — 아래 «캐시» 절이 이 스킬이 가장 싫어한다고 선언한 바로 그 실패 모드다.
+5. 판정은 **델타**로 서술한다: `신규 에러 N개 / 기존 부채 M개`. **신규 에러 0이면 T1은 통과다** — 기존 부채는 업그레이드 산물이 아니다.
+6. **복원**: 2의 백업을 worktree에 되돌리고 frozen 설치를 돌린 뒤, 4와 같은 방법으로 대표 패키지가 **타깃 버전인지** 확인한다. 복원 실패면 T2 이후 전부 `미실행 (베이스라인 복원 실패로 중단)` — 복원 안 된 트리로 T2를 돌리면 업그레이드 안 된 것을 빌드한 관측이 업그레이드의 관측으로 실린다.
 
 > 이 절이 없으면 이미 깨져 있는 레포에서 T1은 영원히 실패로 나오고 스킬 전체가 쓸모없어진다.
 
