@@ -35,7 +35,7 @@
 호스트: Windows 11 · 직전 실행: 2026-08-09 · 스코프: 전체
 
 ## 미충족
-🔴 D-113 · android/target-sdk · targetSdk ≥ 36        [무변화]
+🔴 D-113 · android/target-sdk · targetSdk ≥ 36
    현재: 35 (android/build.gradle)
    원문: "August 31, 2026" · 근거: https://developer.android.com/…
 
@@ -56,7 +56,7 @@
    → ios/ 하위에서 PrivacyInfo.xcprivacy 경로를 찾지 못함
 
 ## 이미 충족
-✅ D-247 · android/16kb-page-size — 정렬 확인됨  · 이중화 없음      [무변화]
+✅ D-247 · android/16kb-page-size — 정렬 확인됨  · 이중화 없음
 
 ## 미조회 (사용자 지정 스코프)
 (없음)

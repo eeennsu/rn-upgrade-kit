@@ -42,6 +42,16 @@ disallowed-tools: Agent Edit WebSearch Skill WebFetch
 | --- | --- |
 | 각 `<pkg>`가 `^(@[a-z0-9~][a-z0-9._~-]*/)?[a-z0-9~][a-z0-9._~-]*$` | `실행 거부 — 패키지명 문자 위반: <pkg>` |
 
+**검사 전에 인자가 아닌 토큰을 걷어낸다 — 둘이다:**
+
+| 토큰 | 처리 |
+| --- | --- |
+| `--`로 시작 | 스코프 인자(`--platform …`)로 먼저 분리 |
+| `#`부터 줄 끝까지 | **주석으로 버린다** |
+
+- **`#` 규칙이 없으면 정본 복붙 블록이 관문에서 거부된다.** `currency` 리포트의 커맨드 블록에는 `# 산정 시각: YYYY-MM-DD`가 **반드시** 붙고(§0 «산정 시각 주석»이 그걸 받아 경과일을 계산한다), 그대로 붙여넣으면 `#`·`산정`·`시각:`·날짜가 인자 토큰으로 들어와 `실행 거부 — 패키지명 문자 위반: #`이 난다. **`currency` → `rehearsal` 체인의 유일한 전달 수단이 그 블록이므로, 체인이 첫걸음에서 끊긴다.**
+- **버리는 게 아니라 §0 «산정 시각 주석»으로 넘긴다.** 주석의 날짜는 경과일 경고의 재료다 — 인자 목록에서만 빼고 값은 살린다.
+
 **`<pkg>@<ver>`는 마지막 `@`에서 자른다.** 첫 `@`에서 자르면 스코프 패키지(`@react-navigation/native@7.0.0`)의 `<pkg>`가 빈 문자열이 되어 **`currency`가 권장한 정상 세트가 거부된다** — `../../shared/lockstep-sets.md`의 확정 세트에 `@react-navigation/*` 전체가 있으므로 그 형태는 **반드시 온다.**
 
 | 각 `<ver>`가 `^[A-Za-z0-9.+-]+$` | `실행 거부 — 버전 문자 위반: <ver>` |
@@ -200,13 +210,14 @@ worktree·`base_sha`·채택이 전부 git에 기댄다. **티어 시작 전에 
 
 | 축 | 확인 | 하나라도 실패하면 |
 | --- | --- | --- |
-| android | `ANDROID_HOME` 또는 `ANDROID_SDK_ROOT` 설정 + `adb version` + `emulator -version` | T2/android·T3/android = `미실행 (Android SDK 없음)` |
+| android | `ANDROID_HOME` 또는 `ANDROID_SDK_ROOT` 설정 + `adb version` | T2/android·T3/android = `미실행 (Android SDK 없음)` |
 | android | `adb devices`에 `device` 상태 항목이 **정확히 1개** | 0개 → `미실행 (Android 기기 없음)` / 2개 이상 → `미실행 (Android 기기 다중 — 하나만 남기고 재실행)` |
 | ios | 호스트가 macOS + `xcodebuild -version` | T2/ios·T3/ios = `미실행 (macOS 필요)` / `미실행 (Xcode 없음)` |
 | ios | `pod --version` | T2/ios·T3/ios = `미실행 (CocoaPods 없음)` |
 | ios | `xcrun simctl list devices booted`에 항목이 **정확히 1개** | 0개 → `미실행 (iOS 시뮬레이터 없음)` / 2개 이상 → `미실행 (iOS 시뮬레이터 다중 — 하나만 남기고 재실행)` |
 
 - **환경변수와 실행 가능 여부를 둘 다 본다.** 변수는 경로 선언일 뿐 실행 가능을 뜻하지 않는다 — 변수만 보고 통과시키면 `adb`가 없는 호스트에서 T2/android가 시작되고, 그 실패가 업그레이드 회귀처럼 보인다.
+- **`emulator` 바이너리는 전제가 아니다.** 이 스킬은 기기·시뮬레이터를 띄우지 않으므로(아래) `emulator`를 **한 번도 부르지 않는다** — 전제로 요구하면 실기기만 붙인 호스트에서 android 축이 **틀린 사유**로 통째로 빠지고, 사용자는 SDK를 깔라는 잘못된 할 일을 받는다. **쓰지 않는 도구를 전제로 세우지 않는다.**
 - **바이너리 유무와 기기 기동 여부도 둘 다 본다.** SDK는 깔려 있고 기기는 안 떠 있는 호스트가 가장 흔하다 — 바이너리만 보고 통과시키면 T2가 시작돼 `실패`로 기록되고, 그게 바로 이 절이 막으려는 오분류다. **§3의 통과 조건 3개는 전부 앱이 떠 있어야 관측된다** — 띄울 기기가 없으면 관측이 아니라 부재다.
 - **하나도 없을 때와 여럿일 때를 가른다.** `adb install`과 `xcrun simctl … booted`는 **대상이 하나라고 전제하는 커맨드다** — 기기가 둘이면 `adb`는 `more than one device`로 죽고 `booted`는 어느 시뮬레이터인지 모호해진다. 조용히 하나를 고르면 리포트가 **어느 기기에서 관측했는지 말할 수 없는 판정**을 싣게 된다. 둘 다 `미실행`이지만 사용자가 할 일이 반대라(하나 띄우기 / 하나 남기기) **표기를 합치지 않는다.**
 - **`-s <serial>`로 기기를 지정하는 경로를 만들지 않는다.** 인자를 하나 늘리면 §1의 «`--platform` — 좁히기 전용»이 깨지고, 어느 기기가 맞는지는 이 스킬이 알 수 없다. 사용자가 정리하는 쪽이 정확하다.
@@ -220,6 +231,7 @@ worktree·`base_sha`·채택이 전부 git에 기댄다. **티어 시작 전에 
 
 | 단계 | 상한 (`../../shared/constants.md`) |
 | --- | --- |
+| T1 업그레이드 적용 | `step_timeout_install_seconds` |
 | T1 의존성 설치 | `step_timeout_install_seconds` |
 | T1 타입체크 · 테스트 (각각) | `step_timeout_check_seconds` |
 | T2 `pod install` · 네이티브 빌드 (각각) | `step_timeout_build_seconds` |
@@ -255,17 +267,31 @@ lockfile 기반 1회 감지. `Glob`으로 탐지한다.
 | --- | --- | --- | --- | --- |
 | `pnpm-lock.yaml` | pnpm | `pnpm add <pkg>@<ver>…` | `pnpm install --frozen-lockfile` | `patches/` + `patchedDependencies` → `patch-package` |
 | `package-lock.json` | npm | `npm install <pkg>@<ver>…` | `npm ci` | `patch-package` (postinstall) |
-| `yarn.lock` | yarn | `yarn add <pkg>@<ver>…` | `yarn install --immutable` | `.yarn/patches` + resolutions → `patch-package` |
+| `yarn.lock` | yarn | `yarn add <pkg>@<ver>…` | **메이저별로 다르다 — 아래 «yarn은 lockfile 이름으로 갈리지 않는다»** | `.yarn/patches`(Berry) · resolutions → `patch-package` |
 | `bun.lock` / `bun.lockb` | bun | `bun add <pkg>@<ver>…` | `bun install --frozen-lockfile` | `patches/` + `patchedDependencies` → `patch-package` |
 
 - **PM 네이티브 메커니즘 우선.** `patch-package`는 폴백.
 - lockfile이 둘 이상이면 실행 거부가 아니라 **T1 실패**로 처리하고 사유를 명시한다(`PM 판별 불가: lockfile 2종 존재`).
 
+#### yarn은 lockfile 이름으로 갈리지 않는다
+
+`yarn.lock`은 **Yarn Classic(1.x)과 Berry(2+)가 둘 다** 쓴다. lockfile 이름만 보면 두 메이저를 구분하지 못하는데 커맨드는 서로 배타적이다 — `yarn --version`의 첫 숫자로 한 번 더 가른다.
+
+| 메이저 | 설치 | 타입체크 |
+| --- | --- | --- |
+| 1.x (Classic) | `yarn install --frozen-lockfile` | `./node_modules/.bin/tsc --noEmit` |
+| 2+ (Berry) | `yarn install --immutable` | `.pnp.cjs`가 있으면 `yarn exec tsc --noEmit`, 없으면 `./node_modules/.bin/tsc --noEmit` |
+
+- **`--immutable`은 Berry 전용 플래그다.** Classic에는 없고(1.x는 `--frozen-lockfile`) 넣으면 설치가 즉시 실패한다 — 그 실패는 T1 실패로 기록되고 수직 fail-fast가 전 티어를 `미실행 (앞 티어 실패)`로 만들어, **README가 지원한다고 선언한 4종 중 하나에서 스킬이 전혀 동작하지 않는다.** 게다가 그 실패가 «환경 부재와 업그레이드 회귀를 못 가린다»는 오분류로 리포트에 실린다.
+- **Berry의 기본 링커(PnP)에는 `node_modules/`가 없다.** 그 상태에서 `./node_modules/.bin/tsc`를 찾으면 `미실행 (typescript 미설치)`가 나오는데 **타입스크립트는 설치돼 있다** — 틀린 사유로 검사가 빠지고, 게이트 3이 *"검사가 깨끗해서가 아니라 검사가 없어서"* 자동 충족된다. `.pnp.cjs` 존재로 가른다.
+- **`yarn --version`이 실패하면 T1 실패다**(`PM 판별 불가: yarn 메이저 확인 실패`). 둘 중 하나를 찍지 않는다 — 찍으면 위 두 실패 중 하나가 그대로 난다.
+
 ### worktree 고정 — 모든 단계는 격리 공간 안에서
 
 **worktree 생성 이후 T1·T2·T3의 모든 커맨드는 worktree 안에서 돈다.** 예외는 없다.
 
-- 첫 단계에서 worktree로 이동하고, git 호출은 **`git -C <worktree>`**로 대상을 명시한다. 상대 경로에 기대지 마라 — `cd` 한 번이 빠지면 설치·적용 커맨드가 **사용자 트리에서** 돌고, 서두의 *"`package.json`을 어떤 경로로도 수정하지 않는다"*가 그 한 줄로 깨진다.
+- **worktree 안에서 «RN 프로젝트 루트»로 이동한다.** 기준은 `../../shared/constants.md`의 «산출물 루트»와 같은 규칙이다 — `dependencies`에 `react-native`를 가진 `package.json` 중 가장 얕은 것의 디렉토리. worktree는 **저장소 전체**를 복제하므로, RN 앱이 `apps/mobile`에 있으면 저장소 루트에서는 PM 감지·적용·`(cd android && …)`가 전부 엉뚱한 자리에서 돌고 **그 실패가 업그레이드 회귀로 기록된다.** 후보가 둘 이상이거나 없으면 `실행 거부 — RN 프로젝트 루트 판별 불가: <후보 목록>` — `currency`가 같은 상황에서 가장 얕은 것을 고르는 것과 달리 **여기서는 거부한다**: advisory는 잘못 골라도 리포트 한 줄이 틀리지만 여기서는 **수십 분을 엉뚱한 앱에 쓴다.**
+- 그 뒤 git 호출은 **`git -C <worktree>`**로 대상을 명시한다. 상대 경로에 기대지 마라 — `cd` 한 번이 빠지면 설치·적용 커맨드가 **사용자 트리에서** 돌고, 서두의 *"`package.json`을 어떤 경로로도 수정하지 않는다"*가 그 한 줄로 깨진다.
 - **사용자 저장소에서 도는 커맨드는 §0의 관문 검사와 worktree 관리뿐이다.** 관문(`git rev-parse`·`git status --porcelain`·`git show-ref`)은 전부 읽기다. **worktree 관리 3종은 읽기가 아니다** — `git worktree add`는 `.git/worktrees/`에 등록을 만들고 `remove`·`prune`은 그것을 지운다. 서두의 «쓰기는 셋»은 **사용자에게 남는 산출물**을 세는 목록이고 worktree 등록은 스킬이 스스로 만들고 스스로 거두는 **자기 흔적**이라 거기 없다 — 그래도 사용자 저장소를 건드리는 건 사실이므로 여기 적는다.
 - **`git worktree prune`은 대상을 지정하지 않는다.** 이 스킬과 무관한 잔재 등록까지 정리하는데, `prune`이 지우는 것은 **이미 디렉토리가 사라진 등록뿐**이라 살아 있는 worktree는 건드리지 않는다. 그래도 자기 산물이 아닌 상태를 바꾸므로 **폐기 실패 보고에 함께 적는다.**
 - 이 규칙은 산문이 아니라 **재현 블록의 형태로도 강제된다**: `references/report-format.md` §재현 커맨드 시퀀스가 첫 두 줄을 `git worktree add` → `cd <worktree>`로 못박고, 그 뒤 모든 줄이 그 안에서 돈다.
@@ -296,7 +322,7 @@ lockfile 기반 1회 감지. `Glob`으로 탐지한다.
 | 타입체크 — `tsconfig.json` 존재 | `./node_modules/.bin/tsc --noEmit` | `미실행 (프로젝트에 tsconfig.json 없음)` |
 | 테스트 — `package.json`의 `scripts.test` 존재 | `<pm> run test` | `미실행 (프로젝트에 test 스크립트 없음)` |
 
-- **두 커맨드 모두 PM 분기가 없다 — 그게 이 형태를 고른 이유다.** `<pm> tsc`는 pnpm·yarn에서만 돌고 **npm에는 그런 서브커맨드가 없다**(`npm tsc` → `Unknown command`). `<pm> test`는 **bun에서 `package.json`의 `scripts.test`가 아니라 Bun 자체 테스트 러너를 돌린다** — 리포트의 `테스트: N passed`가 프로젝트 스위트가 아닌 다른 것의 결과가 되고, 이 절이 바로 아래에서 금지한 *"돌지 않은 검사를 통과로 적는다"*가 그대로 난다.
+- **두 커맨드는 PM 분기를 최소화한 형태다** — 유일한 분기는 위 «yarn은 lockfile 이름으로 갈리지 않는다»의 Berry PnP 한 자리이고, 그건 `node_modules/`가 **존재하지 않는** 링커라 우회가 없다. `<pm> tsc`는 pnpm·yarn에서만 돌고 **npm에는 그런 서브커맨드가 없다**(`npm tsc` → `Unknown command`). `<pm> test`는 **bun에서 `package.json`의 `scripts.test`가 아니라 Bun 자체 테스트 러너를 돌린다** — 리포트의 `테스트: N passed`가 프로젝트 스위트가 아닌 다른 것의 결과가 되고, 이 절이 바로 아래에서 금지한 *"돌지 않은 검사를 통과로 적는다"*가 그대로 난다.
   - 타입체크는 **로컬 바이너리를 직접 부른다.** 네 PM 모두 `node_modules/.bin/`에 심는다.
   - 테스트는 **`run`을 명시한다.** `<pm> run test`는 네 PM 모두 `scripts.test`를 돌린다.
   - `tsconfig.json`은 있는데 `./node_modules/.bin/tsc`가 없으면 `미실행 (typescript 미설치)`다 — 없는 바이너리를 부른 실패를 업그레이드 회귀로 적지 않는다.
@@ -544,7 +570,8 @@ git -C "<worktree_path>" commit -am "<커밋 메시지>"
 - **자동 머지·자동 push** — 어떤 조건에서도
 - **사용자 현재 브랜치에 직접 커밋 · 체크아웃**
 - **채택 브랜치의 rebase·`--onto`** — 검증 기준점을 옮기는 어떤 조작도 금지. rebase하면 검증 결과가 무효가 되는데 브랜치는 여전히 "검증됨"을 주장하게 된다 — **최악의 조합이다**
-- **적용이 트리를 바꾸지 않은 실행의 채택** — 타깃이 이미 현재 설치 버전이면 «적용»은 성공하고 버전 대조도 통과하며 전 티어가 통과한다. 게이트 4개 중 **무엇이 바뀌었는지 보는 항목이 없어** 그대로 두면 base와 내용이 같은 브랜치가 남고, `commit -am`은 커밋할 것이 없어 실패하는데 리포트는 `채택함`을 적는다 — **브랜치명이 주장하는 "이 커밋 위에서 이 타깃을 검증했다"와 내용이 어긋나는** 바로 그 상태다. 채택 직전에 `git -C "<worktree>" status --porcelain`이 비어 있으면 `채택 안 함 (적용이 트리를 바꾸지 않음 — 타깃이 이미 현재 버전)`으로 남긴다. **리허설 자체는 유효하므로 리포트는 정상 산출한다** — 막는 건 채택뿐이다
+- **적용이 트리를 바꾸지 않은 실행의 채택** — 타깃이 이미 현재 설치 버전이면 «적용»은 성공하고 버전 대조도 통과하며 전 티어가 통과한다. 게이트 4개 중 **무엇이 바뀌었는지 보는 항목이 없어** 그대로 두면 base와 내용이 같은 브랜치가 남고, `commit -am`은 커밋할 것이 없어 실패하는데 리포트는 `채택함`을 적는다 — **브랜치명이 주장하는 "이 커밋 위에서 이 타깃을 검증했다"와 내용이 어긋나는** 바로 그 상태다. 채택 직전에 `git -C "<worktree>" status --porcelain -- package.json <lockfile>`이 비어 있으면 `채택 안 함 (적용이 트리를 바꾸지 않음 — 타깃이 이미 현재 버전)`으로 남긴다.
+  - **경로를 `package.json`과 lockfile로 좁히는 이유**: 채택 직전은 T2(`pod install`·Gradle)까지 끝난 시점이라, `Pods/`나 생성 파일을 **추적하는** 프로젝트에서는 적용이 아무것도 안 바꿔도 트리 전체 출력이 비지 않는다. 그러면 가드가 통과되고 **base와 내용상 같은 업그레이드가 브랜치로 남는다.** «적용»이 바꾸는 것은 그 둘뿐이므로 그 둘만 본다. **리허설 자체는 유효하므로 리포트는 정상 산출한다** — 막는 건 채택뿐이다
 - **기존 브랜치 덮어쓰기·force update** — 브랜치명이 곧 "이 커밋 위에서 이 타깃을 검증했다"는 주장이다. 같은 이름에 다른 내용을 넣으면 주장과 내용이 어긋난다. 충돌 시 채택하지 않고 `채택 안 함 (동일 브랜치 존재: <이름>)`으로 남긴다
 
 ### base 신선도 — 게이트가 막지 못하는 누수
@@ -609,7 +636,7 @@ git merge rn-upgrade/0.86.2-a3f9c21
 
 - **증거물을 못 썼다고 관측을 버리지 않는다.** `artifacts/`는 증거물이지 판정 근거가 아니다(§4) — 없어도 티어 판정은 이미 관측된 사실이다.
 - **리포트를 못 썼다고 채택을 되돌리지 않는다.** 커밋은 검증이 끝난 결과물이고, 게이트 3의 사후 감사 근거는 커밋 메시지에 이미 들어 있다(§6).
-- **쓰기 실패는 실행 거부가 아니다.** 거부는 **관측이 하나라도 나기 전에만** 한다 — §0의 관문과, §5의 worktree 생성 시점 거부 3종(`worktree 사용 중` · `고아 경로가 심볼릭 링크다` · `고아 경로가 템플릿 밖이다`)이 그 자리다. **worktree 생성은 티어 표에 T1 첫 단계로 적혀 있지만 아직 아무 관측도 만들지 않았으므로 거기서 멈추면 §0과 같은 취급이다** — 리포트 파일을 만들지 않고 사유만 출력한다. 관측이 난 뒤에는 거부하지 않는다 — 이미 돌린 리허설의 관측을 파일 문제로 폐기하는 쪽이 더 나쁘다.
+- **쓰기 실패는 실행 거부가 아니다.** 거부는 **관측이 하나라도 나기 전에만** 한다 — §0의 관문, §1의 전제 거부 2종(`유효하지 않은 --platform 값` · `상수 관계 위반`), §5의 worktree 생성 시점 거부 3종(`worktree 사용 중` · `고아 경로가 심볼릭 링크다` · `고아 경로가 템플릿 밖이다`), §8의 `상수 도달 실패`가 그 자리다. **전부 §0과 같은 취급이다** — 티어를 시작하지 않고 리포트 파일도 만들지 않으며 사유만 출력한다. **worktree 생성은 티어 표에 T1 첫 단계로 적혀 있지만 아직 아무 관측도 만들지 않았으므로 거기서 멈추면 §0과 같은 취급이다** — 리포트 파일을 만들지 않고 사유만 출력한다. 관측이 난 뒤에는 거부하지 않는다 — 이미 돌린 리허설의 관측을 파일 문제로 폐기하는 쪽이 더 나쁘다.
 
 ## 실행 원칙
 

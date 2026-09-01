@@ -80,7 +80,7 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 
 ## 규칙
 
-- **스냅샷 헤더의 `targetSdk`·`iOS min`은 핸드오프 `current` 필드에서만 온다.** 네이티브 설정을 직접 파싱하지 않는다 — 두 스킬이 다른 값을 말할 경로를 구조적으로 없앤 결과다. 값을 못 얻으면 비우지 말고 사유를 병기하되 **네 상태를 구분한다**: `targetSdk — (핸드오프 없음)` / `targetSdk — (핸드오프 미조회 항목)` / `targetSdk — (핸드오프 stale — <날짜>)` / `targetSdk — (핸드오프 경로 미상 — 상수 도달 실패)`. **넷은 사용자가 할 일이 다르다** — 파일 자체가 없으면 `platform-watch` 최초 실행, 파일은 있고 항목만 없으면(`--platform ios`만 돌린 첫 실행) 그 플랫폼으로 한 번 더 실행, stale이면 값이 있으니 급하지 않다. 네 번째는 `handoff_path`를 못 읽어 **파일을 열 자리를 모르는** 상태라 고칠 것이 `platform-watch`가 아니라 상수 도달이다(SKILL.md §7 degrade 12). 넷을 한 표기로 뭉치면 **고쳐야 할 것과 그냥 낡은 것이 같아 보인다.**
+- **스냅샷 헤더의 `targetSdk`·`iOS min`은 핸드오프 `current` 필드에서만 온다.** 네이티브 설정을 직접 파싱하지 않는다 — 두 스킬이 다른 값을 말할 경로를 구조적으로 없앤 결과다. 값을 못 얻으면 비우지 말고 사유를 병기하되 **다섯 상태를 구분한다**: `targetSdk — (핸드오프 없음)` / `targetSdk — (핸드오프 미조회 항목)` / `targetSdk — (핸드오프 stale — <날짜>)` / `targetSdk — (핸드오프 경로 미상 — 상수 도달 실패)` / `targetSdk — (핸드오프 스키마 불일치)`. **다섯은 사용자가 할 일이 다르다** — 파일 자체가 없으면 `platform-watch` 최초 실행, 파일은 있고 항목만 없으면(`--platform ios`만 돌린 첫 실행) 그 플랫폼으로 한 번 더 실행, stale이면 값이 있으니 급하지 않다. 네 번째는 `handoff_path`를 못 읽어 **파일을 열 자리를 모르는** 상태라 고칠 것이 `platform-watch`가 아니라 상수 도달이다(SKILL.md §7 degrade 12). 다섯 번째는 생산자와 독자의 스키마 버전이 어긋난 것이라 **다시 돌려도 같은 파일이 나온다** — 플러그인을 맞춰 올릴 일이다(SKILL.md §7 degrade 2). 다섯을 한 표기로 뭉치면 **고쳐야 할 것과 그냥 낡은 것이 같아 보인다.**
   - `platform-watch`가 미조회 항목을 고정 표기로 실어 보내면 **그 표기를 그대로 옮긴다.** 읽는 쪽이 값을 지어내면 두 스킬이 다른 값을 말하고, 핸드오프를 단방향으로 만든 이유가 사라진다.
 - 스코프 줄은 실제 조회 범위를 그대로 적는다. lockstep 자동 포함분도 숨기지 않는다: `스코프: --target react-native-reanimated (+lockstep: react-native-worklets)`.
 - **0건인 등급 섹션은 통째로 생략한다.** 빈 헤더를 남기지 않는다.
