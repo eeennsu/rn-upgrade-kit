@@ -85,8 +85,6 @@ adb shell monkey -p com.example.app -c android.intent.category.LAUNCHER 1
 # --- T2/ios ---
 (cd ios && pod install)
 xcodebuild -workspace ios/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -derivedDataPath build
-xcrun simctl install booted build/Build/Products/Debug-iphonesimulator/App.app
-xcrun simctl launch booted com.example.app
 
 # --- 정리 ---
 cd -
@@ -140,9 +138,10 @@ artifacts: 보존 3개, 자동 정리 1개
 6. **채택한 실행이면 커밋·브랜치 생성 커맨드도 블록에 싣는다** — 정리 커맨드 **앞**에. 채택은 재현 가능해야 한다. 채택하지 않은 실행에는 넣지 않는다(3번의 연장 — 안 돌린 커맨드를 싣지 않는다).
 7. **`timeout` 래퍼를 두르지 않는다.** 단계 상한은 스킬이 건 것이지 사용자가 친 커맨드의 일부가 아니다 — 두르면 3번이 깨진다. 대신 **타임아웃으로 끝난 단계에만** 그 줄 위에 `# 이 단계는 <상수명> 초과로 중단됐다` 주석 한 줄을 단다. 블록은 그 줄에서 끝난다(2번).
 8. **worktree 경로는 `../../../shared/constants.md`의 `worktree_path_template`에서 온다.** 블록에 직접 적힌 경로를 정본으로 삼지 마라 — 재현 블록·수동 정리 커맨드·충돌 판정이 같은 값을 봐야 한다.
-9. **디렉토리 이동은 서브셸로 감싼다** (`(cd android && …)`). 블록 전체의 기준 디렉토리는 2번째 줄의 `cd <worktree>` 하나이고, 그 뒤 모든 줄이 worktree 루트를 기준으로 읽힌다. 감싸지 않으면 `cd android` 다음의 `cd ios`가 `<worktree>/android/ios`를 찾다 실패하고, 말미의 `cd -`도 엉뚱한 곳으로 돌아간다 — **1번의 "단일 복붙 블록"이 복붙되지 않는 블록이 된다.** 이 블록의 존재 이유가 복붙 재현이므로 형태가 곧 계약이다.
-10. **적용 커맨드와 잠금 설치는 반드시 짝으로 싣는다** (`pnpm add …` 다음 줄에 `pnpm install --frozen-lockfile`). 앞줄만 실으면 lockfile 검증이 빠지고, **뒷줄만 실으면 복붙한 사용자가 `package.json`↔lockfile 불일치 에러를 재현한다** — 실제 실행은 통과했는데 재현은 실패하는 최악의 형태다. 사유는 `../SKILL.md` §2 «적용 다음에 잠금 설치가 오는 이유».
-11. **도출된 값은 치환된 실제 값으로 싣는다.** `<applicationId>`·`<Name>`·`<bundleId>`(`../SKILL.md` §3 «기동»)는 플레이스홀더가 아니라 그 실행에서 읽어낸 값이다 — 꺾쇠를 그대로 남기면 복붙이 안 된다.
+9. **이 예시에서 ios 블록이 `xcodebuild`에서 끝나는 건 2번의 실물이다.** 그 실행의 T2/ios는 빌드에서 실패했으므로 `simctl install`·`simctl launch`는 **돌지 않았고, 돌지 않은 줄은 싣지 않는다.** android 쪽에 설치·실행 줄이 있는 건 그 티어가 통과했기 때문이다 — 두 플랫폼의 줄 수가 다른 것이 정상이다.
+10. **디렉토리 이동은 서브셸로 감싼다** (`(cd android && …)`). 블록 전체의 기준 디렉토리는 2번째 줄의 `cd <worktree>` 하나이고, 그 뒤 모든 줄이 worktree 루트를 기준으로 읽힌다. 감싸지 않으면 `cd android` 다음의 `cd ios`가 `<worktree>/android/ios`를 찾다 실패하고, 말미의 `cd -`도 엉뚱한 곳으로 돌아간다 — **1번의 "단일 복붙 블록"이 복붙되지 않는 블록이 된다.** 이 블록의 존재 이유가 복붙 재현이므로 형태가 곧 계약이다.
+11. **적용 커맨드와 잠금 설치는 반드시 짝으로 싣는다** (`pnpm add …` 다음 줄에 `pnpm install --frozen-lockfile`). 앞줄만 실으면 lockfile 검증이 빠지고, **뒷줄만 실으면 복붙한 사용자가 `package.json`↔lockfile 불일치 에러를 재현한다** — 실제 실행은 통과했는데 재현은 실패하는 최악의 형태다. 사유는 `../SKILL.md` §2 «적용 다음에 잠금 설치가 오는 이유».
+12. **도출된 값은 치환된 실제 값으로 싣는다.** `<applicationId>`·`<Name>`·`<bundleId>`(`../SKILL.md` §3 «기동»)는 플레이스홀더가 아니라 그 실행에서 읽어낸 값이다 — 꺾쇠를 그대로 남기면 복붙이 안 된다.
 
 ## 채택 절 — 출력 형태
 
