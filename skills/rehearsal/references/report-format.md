@@ -60,9 +60,9 @@ T3/ios     — 미실행 (앞 티어 실패)
 ### T1 — 통과
 적용: pnpm add react-native@0.83.4 react@19.2.0 → react-native 0.83.4 · react 19.2.0
 설치: pnpm install --frozen-lockfile (42s)
+타입체크: ./node_modules/.bin/tsc --noEmit — 0 errors
 패치: 3/3 적용
-타입체크: 0 errors
-테스트: 128 passed
+테스트: pnpm run test — 128 passed
 
 ### T2/android — 통과
 기기에 디버그 빌드를 설치했다 (기존 설치본 교체 — 원복하지 않는다)
@@ -81,8 +81,8 @@ git worktree add /tmp/rn-rehearsal-0.83.4-a3f9c21 a3f9c21e4b8d7f0a2c5e9b1d6f3a8c
 cd /tmp/rn-rehearsal-0.83.4-a3f9c21
 pnpm add react-native@0.83.4 react@19.2.0
 pnpm install --frozen-lockfile
-pnpm tsc --noEmit
-pnpm test
+./node_modules/.bin/tsc --noEmit
+pnpm run test
 
 # --- T2/android ---
 (cd android && ./gradlew assembleDebug)
@@ -97,7 +97,7 @@ xcodebuild -workspace "ios/App.xcworkspace" -scheme "App" -configuration Debug -
 
 # --- 정리 ---
 cd -
-git worktree remove --force /tmp/rn-rehearsal-0.83.4-a3f9c21
+git worktree remove --force "/tmp/rn-rehearsal-0.83.4-a3f9c21"
 ```
 
 ## 채택
@@ -195,6 +195,7 @@ rn-upgrade: react-native 0.82.1 → 0.83.4 (rehearsal 통과)
 검증 기준: a3f9c21e4b8d7f0a2c5e9b1d6f3a8c4e7b0d2f59 (작업 트리 clean)
 세트: react-native@0.83.4 react@19.2.0
 검증 티어: T1 통과 · T2/android 통과 · T3/android 통과
+degrade: 없음
 미검증: T2/ios · T3/ios (미실행 — macOS 필요)
 베이스라인: 미측정
 ```
@@ -204,6 +205,7 @@ rn-upgrade: react-native 0.82.1 → 0.83.4 (rehearsal 통과)
 > 위 브랜치명(`rn-upgrade/0.83.4-a3f9c21`)도 값이 아니라 예시다 — 실제 이름은 `../../../shared/constants.md`의 `branch_name_template`에서 조립한다. 그 이름은 다섯 자리에 박히므로 예시를 정본으로 삼으면 나머지 넷이 따라오지 않는다.
 
 - **`베이스라인`을 커밋 메시지에 싣는 이유**: 채택 후 worktree는 폐기되고 리포트는 같은 타깃 재실행에서 덮어쓰이며 `artifacts/`는 보존 상한에 밀린다. **커밋만 남는다** — 채택 게이트 3(*"조건부 베이스라인이 측정되지 않았을 것"*)의 통과 근거를 나중에 확인할 수 있는 유일한 자리다.
+- **`degrade` 줄을 항상 싣는다** — 없으면 `degrade: 없음`. 있으면 헤더의 degrade 흔적을 그대로 옮긴다(`인자 검증 1 미실행 (registry 조회 실패)` 등). 짝 검증이나 존재 확인 없이 통과한 실행이 **커밋에서 정상 실행과 구분되지 않으면**, 리포트가 덮어쓰인 뒤 그 사실을 확인할 자리가 사라진다 — `베이스라인`을 여기 싣는 논리와 같다.
 - **`미검증`도 함께 싣는다.** 브랜치명은 타깃과 base만 주장하지 어디까지 봤는지는 말하지 않는다 — 몇 달 뒤 이 브랜치를 머지하는 사람이 iOS가 안 돌았다는 걸 리포트 없이 알 수 있어야 한다.
 
 ## worktree 폐기 실패
@@ -212,7 +214,7 @@ rn-upgrade: react-native 0.82.1 → 0.83.4 (rehearsal 통과)
 ## 정리
 worktree 폐기: 실패 — Gradle 데몬이 파일을 잡고 있음
 수동 정리:
-  git worktree remove --force /tmp/rn-rehearsal-0.83.4-a3f9c21
+  git worktree remove --force "/tmp/rn-rehearsal-0.83.4-a3f9c21"
   git worktree prune
 ```
 
