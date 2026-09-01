@@ -79,6 +79,7 @@ rn-upgrade-kit/
 | `url_candidate_limit` | `3` | platform-watch (URL 이동 의심 후보) | platform-watch 라운드 5c |
 | `enum_promotion_min_count` | `2` | platform-watch (`[미분류]` enum 승격 후보 제안) | `deep-interview-platform-watch.md` §미확정 해소(2026-08-12). 1회 관측은 우연일 수 있고 그걸로 참조 파일을 고치라고 하면 제안이 소음이 된다 — **소음이면 사용자가 올릴 수 있어야 하므로 상수다.** 소비자가 하나뿐인데도 여기 있는 건 `grade_threshold_days`와 같은 이유다 |
 | `worktree_path_template` | `/tmp/rn-rehearsal-<target>-<base_sha7>` | rehearsal (worktree 생성 경로) | 신설 2026-08-18. 경로가 재현 블록·수동 정리 커맨드·충돌 판정 **세 곳에 동시에** 박힌다 — 참조 파일 예시에만 있으면 예시가 사실상의 정본이 되고, 예시를 고칠 때 나머지 둘이 안 따라온다. `<base_sha7>`은 같은 타깃을 **다른 base에서** 돌릴 때의 충돌을 없앤다 |
+| `branch_name_template` | `rn-upgrade/<target>-<base_sha7>` | rehearsal (채택 브랜치명) | 신설 2026-09-01 (omc team 검증). 브랜치명이 **브랜치 생성·관문의 선점 확인·채택 절·머지 커맨드·커밋 메시지 다섯 곳**에 박히는데 예시로만 있었다 — `worktree_path_template`과 같은 사유이고 자리가 더 많다. `<base_sha7>`을 그것과 같은 7자리로 맞춘 것도 의도다(브랜치명과 worktree 경로가 같은 실행을 가리킨다는 사실이 눈으로 대조된다) |
 | `step_timeout_install_seconds` | `1800` | rehearsal (T1 의존성 설치) | 신설 2026-08-18 |
 | `step_timeout_check_seconds` | `900` | rehearsal (T1 타입체크·테스트) | 신설 2026-08-18 |
 | `step_timeout_build_seconds` | `2700` | rehearsal (T2 네이티브 빌드 · `pod install`) | 신설 2026-08-18 |
@@ -193,3 +194,7 @@ platform-watch  ──파일──▶  currency  ──커맨드 블록──▶
 - **`shared/constants.md`에 «이 파일에 도달하는 법» 절을 신설한다.** 근거: 이 스펙은 *"스킬 본문에서 상대 경로로 참조한다"*고만 적고 **그 상대경로가 무엇 기준으로 풀리는지 확인하지 않았다.** 호출 시점의 작업 디렉토리는 사용자 RN 프로젝트다. 도달 실패 시 `Glob` 폴백, 둘 다 실패하면 `상수 도달 실패` degrade로 가고 **추정 기본값을 쓰지 않는다** — 드리프트를 막으려고 둔 파일이 못 읽혔을 때 "흔한 값"으로 때우면 드리프트를 대신 만들어낸다.
 - **상수 5개를 신설한다** — `worktree_path_template` · `step_timeout_{install,check,build,boot}_seconds`. worktree 경로는 **재현 블록·수동 정리 커맨드·충돌 판정 세 곳에 동시에** 박히므로 참조 파일 예시에 두면 예시가 사실상의 정본이 된다. 타임아웃이 단계 단위인 건 멈추는 지점이 단계마다 다르기 때문이고, `boot_survival_seconds`(통과 조건)와 `step_timeout_boot_seconds`(상한)는 **다른 축이라 같은 값이 될 수 없다.**
 - **`allowed-tools`는 제한 수단이 아니다 — 감사 #8은 절반이 기각, 절반이 승격이다.** 공식 문서 확인: *"It does not restrict which tools are available: every tool remains callable"* (https://code.claude.com/docs/en/skills «Pre-approve tools for a skill»). 구분자는 **공백·콤마·YAML 리스트 전부 유효**하므로 *"공백 구분이라 파싱이 깨져 제한이 무효화된다"*는 우려는 **기각**이다. 대신 더 큰 문제가 드러났다 — **파싱이 되든 안 되든 그 필드는 원래 아무것도 막지 않는다.** 세 스펙이 *"규칙을 도구 목록으로 강제한다"*고 적은 자리가 **전부 명목뿐이었고**, 실제 강제 수단은 `disallowed-tools`다. 구현은 `platform-watch`에 `Bash Edit`, `currency`에 `WebSearch Edit`을 신설해 그 자리를 메웠다. **"목록에 없으니 못 쓴다"를 근거로 설계를 세우지 마라** — 그 문장 위에 세운 제약은 전부 무근거다.
+
+---
+
+> **구현 정정 (2026-09-01 · omc team 검증 반영):** 위 §2 상수 표에 `branch_name_template`이 더해졌다(행 참조). 같은 라운드에 `shared/constants.md`에 «산출물 루트» **절**도 신설됐다 — `.rn-upgrade-kit/` 상대경로의 기준을 **호출 시점의 작업 디렉토리가 아니라 RN 프로젝트 루트**(=`currency`가 정본 `package.json`을 고르는 그 규칙)로 못박은 것이다. 모노레포에서 `apps/mobile`에서 `platform-watch`를, 저장소 루트에서 `currency`를 돌리면 핸드오프가 서로 다른 자리에 생겨 `currency`가 `플랫폼 하한 미반영 (파일 없음)`으로 떨어지는데, 그 표기의 정의된 뜻은 *"platform-watch 최초 실행 필요"*라 **사용자가 이미 돌린 스킬을 다시 돌리고 원인은 어디에도 안 드러난다.** 그 절은 값이 아니라 규칙이라 상수 표에 행으로 넣지 않는다.

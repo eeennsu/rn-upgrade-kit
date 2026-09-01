@@ -12,7 +12,7 @@ T2 실행 중에만 필요하다.
 
 | # | 신호 | 확인 |
 | - | --- | --- |
-| 1 | 프레임 카운트 > 0 | `adb shell dumpsys gfxinfo <applicationId>` — `Total frames rendered` 값 |
+| 1 | 프레임 카운트 > 0 | `adb shell dumpsys gfxinfo "<applicationId>"` — `Total frames rendered` 값 |
 | 2 | Choreographer 첫 프레임 | logcat `Choreographer` 태그의 `Skipped ... frames` 또는 `ViewRootImpl` 첫 draw |
 | 3 | RN 초기화 완료 | logcat `ReactNativeJS` 태그의 첫 정상 출력 (`Running "…" with …`) |
 
@@ -53,7 +53,9 @@ T2 실행 중에만 필요하다.
 
 - **부팅 전 로그를 섞지 마라.** 앱 실행 직전에 `adb logcat -c`로 버퍼를 비우고, iOS는 스트림 시작 시각 이후만 읽는다.
   - **`adb logcat -c`는 기기 전역 버퍼를 지운다 — worktree 격리가 닿지 않는 유일한 축이다.** 기기는 사용자 것이고 다른 앱의 로그도 그 버퍼에 있다. 격리 계약(`../SKILL.md` 서두)이 파일 시스템만 다루므로 **이 한 줄은 계약 밖에서 사용자 상태를 바꾼다** — 그래서 리포트 T2/android 상세에 고정 문구로 남긴다: `logcat 버퍼를 비우고 스캔했다 (기기 전역)`. 조용히 지우지 않는다.
-  - **수집은 앱 단위로 좁힌다.** `adb logcat --pid=$(adb shell pidof -s <applicationId>)`로 읽는다 — 전체 로그를 뜨면 같은 기기의 무관한 앱 로그가 함께 담기고, 그게 `artifacts/`를 거쳐 **사용자 저장소 안 파일로** 떨어진다(`../SKILL.md` §5). `<applicationId>`는 §1과 같은 값이다(`../SKILL.md` §3 «기동»).
+  - **수집은 앱 단위로 좁힌다.** `adb logcat -d --pid="$(adb shell pidof -s "<applicationId>")"`로 읽는다 — 전체 로그를 뜨면 같은 기기의 무관한 앱 로그가 함께 담기고, 그게 `artifacts/`를 거쳐 **사용자 저장소 안 파일로** 떨어진다(`../SKILL.md` §5). `<applicationId>`는 §1과 같은 값이다(`../SKILL.md` §3 «기동»).
+  - **`-d`를 빼지 마라.** `adb logcat`은 기본이 스트리밍이라 스스로 끝나지 않는다 — 빼면 앱이 건강해도 `step_timeout_boot_seconds` 초과로 `실패 (타임아웃)`이 나고, **정상 통과 경로가 성립하지 않는다.** `-d`는 현재 버퍼를 덤프하고 종료한다.
+  - **도출값은 큰따옴표로 감싼다.** `<applicationId>`는 `android/app/build.gradle`에서 읽은 값이라 이 스킬이 문자셋을 검사하지 않았다 — `../SKILL.md` §3의 «검사하지 않은 값은 인용으로 막는다»가 이 파일에도 걸린다. (`../SKILL.md` §0의 *"`$`와 백틱 없음"*은 **PowerShell을 거칠 수 있는 `node -e` 원라이너 한 줄**에 대한 규칙이다. 이 스킬은 Windows에서 실행을 거부하므로 T2 커맨드는 POSIX 하나만 상대한다.)
   - **`pidof`가 비면 앱이 죽은 것이다.** 좁히기에 실패했다고 전체 로그로 되돌아가지 마라 — 프로세스 부재는 §1의 생존 조건이 이미 판정할 사실이다.
 - **경고는 게이트가 아니다.** `W/` 레벨·deprecation 경고는 실패 사유가 아니다 — 잡으면 거의 모든 실행이 실패로 나온다.
 - **서드파티 SDK의 자체 에러 로그**(분석·크래시 리포터 초기화 실패 등)는 위 패턴에 안 걸리면 통과다. 이 스킬은 **RN 스택의 회귀**를 본다.
