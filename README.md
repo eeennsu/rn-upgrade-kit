@@ -113,7 +113,7 @@ jobs:
 | 경로 | 내용 |
 | --- | --- |
 | `skills/*/SKILL.md` | 스킬 3개 |
-| `skills/*/references/*.md` | 지연 로드 참조 — **로드 시점은 파일마다 다르다.** 각 `SKILL.md`가 지목하는 자리에서 Read한다: `watch-targets.md`·`sources.md`는 **조회 전·중**(대상 enum과 URL 조립 규칙이 거기 있다), `log-patterns.md`는 **T2 실행 중**, `report-format.md`·`cadence.md`는 **실행이 끝난 뒤**. 전부 뒤로 미루면 조회 대상 자체가 없어진다 |
+| `skills/*/references/*.md` | 지연 로드 참조 — **로드 시점은 파일마다 다르다.** 각 `SKILL.md`가 지목하는 자리에서 Read한다: `watch-targets.md`·`sources.md`는 **조회 전·중**(대상 enum과 URL 조립 규칙이 거기 있다), `log-patterns.md`는 **T2 실행 중**, `cadence.md`는 **실행이 끝난 뒤**, `report-format.md`는 **§경로만 실행 중**(rehearsal의 T3·증거물 복사가 `artifacts/` 경로를 쓴다)이고 나머지 절은 실행이 끝난 뒤. 전부 뒤로 미루면 조회 대상 자체가 없어진다 |
 | `shared/constants.md` | 3스킬 공용 상수 (보존 상한 · 임계일 · 핸드오프 경로 · worktree 경로 · 단계 타임아웃) |
 | `shared/lockstep-sets.md` | 짝으로만 올려야 하는 패키지 집합 — `currency` 게이트 6과 `rehearsal` 인자 검증이 **같은 목록을 본다** |
 | `.omc/specs/*.md` | 설계 정본 (deep interview 산출물 + plugin shell) |
@@ -127,6 +127,6 @@ jobs:
 | --- | --- |
 | `platform-watch` | `Bash Edit` |
 | `currency` | `WebSearch Edit` |
-| `rehearsal` | `Agent Edit WebSearch Skill` |
+| `rehearsal` | `Agent Edit WebSearch Skill WebFetch` |
 
 **두 겹 중 아래 겹은 그 턴에만 걸린다.** `disallowed-tools`는 스킬을 부른 턴의 도구 풀에서 실제로 빼지만 다음 사용자 메시지에서 풀리고, **서브에이전트에는 상속되지 않는다.** 그래서 본문의 금지 문장이 정본이고 필드는 그 턴의 강제다 — **필드가 있다고 문장을 지우지 마라.**

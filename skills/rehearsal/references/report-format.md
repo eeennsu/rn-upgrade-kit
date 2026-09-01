@@ -64,6 +64,11 @@ T3/ios     — 미실행 (앞 티어 실패)
 타입체크: 0 errors
 테스트: 128 passed
 
+### T2/android — 통과
+기기에 디버그 빌드를 설치했다 (기존 설치본 교체 — 원복하지 않는다)
+logcat 버퍼를 비우고 스캔했다 (기기 전역)
+부팅: 첫 프레임 신호 관측 · 60s 생존 · 로그 스캔 클린
+
 ### T2/ios — 실패
 xcodebuild 실패 — 발췌:
   ❌ error: module 'Foo' not found (Foo.swift:12)
@@ -83,12 +88,12 @@ pnpm test
 (cd android && ./gradlew assembleDebug)
 adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 adb logcat -c
-adb shell monkey -p com.example.app -c android.intent.category.LAUNCHER 1
-adb logcat --pid="$(adb shell pidof -s com.example.app)" -d
+adb shell monkey -p "com.example.app" -c android.intent.category.LAUNCHER 1
+adb logcat -d --pid="$(adb shell pidof -s "com.example.app")"
 
 # --- T2/ios ---
 (cd ios && pod install)
-xcodebuild -workspace ios/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -derivedDataPath build
+xcodebuild -workspace "ios/App.xcworkspace" -scheme "App" -configuration Debug -sdk iphonesimulator -derivedDataPath build
 
 # --- 정리 ---
 cd -
@@ -107,6 +112,7 @@ artifacts: 보존 3개, 자동 정리 1개
 
 > 위 경로는 값이 아니라 예시다 — 실제 경로는 `../../../shared/constants.md`의 `worktree_path_template`에서 온다.
 
+- **T2 상세에는 격리 밖 상태 변경 2건을 고정 문구로 싣는다** — `기기에 디버그 빌드를 설치했다 (기존 설치본 교체 — 원복하지 않는다)`(`../SKILL.md` §3)와 `logcat 버퍼를 비우고 스캔했다 (기기 전역)`(`../references/log-patterns.md` §3). **부팅에 성공한 축에만** 붙는다 — 설치까지 못 간 축은 바꾼 것도 없다. 이 둘은 worktree 폐기로 되돌아가지 않는 유일한 변경이라, 리포트가 말하지 않으면 어디에도 남지 않는다.
 - **요약 한 줄을 플랫폼별로 분리한다.** 한 플랫폼 통과를 전체 통과로 접지 않는다.
 - 실패 상세는 **발췌문**으로 인용한다(상위 N줄). 전체 로그는 `artifacts/`에 있고 **경로만 적는다.**
 
@@ -125,7 +131,7 @@ artifacts: 보존 3개, 자동 정리 1개
 | `산출물 루트: <경로>` | RN 프로젝트 루트 후보가 둘 이상이거나 없는 경우 |
 
 - **`적용` 줄은 T1 상세에 항상 싣는다.** 무엇을 실제로 적용했고 **설치된 버전이 무엇이 됐는지**가 리포트의 주어다(`../SKILL.md` §2). 이 줄이 없으면 원본 버전을 검증한 실행과 목표 버전을 검증한 실행이 리포트에서 구분되지 않는다.
-- **타입체크·테스트가 프로젝트에 없으면 그 줄을 지우지 말고 `미실행 (프로젝트에 tsconfig.json 없음)` · `미실행 (프로젝트에 test 스크립트 없음)` — 표기는 `../SKILL.md` §2의 표가 정본이다으로 적는다.** 줄이 없으면 "통과했는데 안 적었나"와 "검사가 없다"가 구분되지 않는다 — 항목은 목록에서 사라지지 않는다는 이 플러그인의 원칙이 단계 표기에도 그대로 적용된다.
+- **타입체크·테스트가 프로젝트에 없으면 그 줄을 지우지 말고 `미실행 (프로젝트에 tsconfig.json 없음)` · `미실행 (프로젝트에 test 스크립트 없음)` · `미실행 (typescript 미설치)`로 적는다 — 표기 정본은 `../SKILL.md` §2의 표다.** 줄이 없으면 "통과했는데 안 적었나"와 "검사가 없다"가 구분되지 않는다 — 항목은 목록에서 사라지지 않는다는 이 플러그인의 원칙이 단계 표기에도 그대로 적용된다.
 - **`base_sha` 표기 자릿수는 자리마다 다르다.** 리포트 **본문**에 값으로 싣는 자리(`검증 기준` 줄 · 채택 절 · 채택 커밋 메시지 · base 신선도 경고문 · 재현 블록의 git 인자)는 **전체 SHA**다. **브랜치명과 worktree 경로만 7자리**이고 그건 `../../../shared/constants.md`의 `worktree_path_template`이 `<base_sha7>`로 못박은 값이다. 섞으면 사후 감사에서 *"이 브랜치가 검증한 커밋"*을 짧은 해시로만 알게 되는데, 리포트는 몇 달 뒤에 읽히고 **짧은 해시는 레포가 커지면 충돌한다.**
 - **`검증 기준`과 `베이스라인`은 조건부가 아니다.** 앞은 "무엇을 검증했나"의 정의고, 뒤는 채택 게이트 3의 유일한 사후 감사 근거다(`../SKILL.md` §6). 조건부로 두면 줄이 없을 때가 "clean이라서 생략"인지 "안 봐서 생략"인지 구분되지 않는다.
 - `인자 검증 1` · `인자 검증 3` · `artifacts 쓰기 실패` 세 줄은 **degrade의 흔적**이다(`../SKILL.md` §8). 줄이 없으면 degrade가 없었다는 뜻이어야 하므로 **degrade가 있었는데 안 적는 경우가 있어서는 안 된다** — 조용히 열화된 리허설은 정상 실행과 구분되지 않는다.
@@ -135,7 +141,7 @@ artifacts: 보존 3개, 자동 정리 1개
 **단일 복붙 블록 1개.** worktree는 이미 폐기됐으므로 **재현은 worktree 재생성부터** 시작한다.
 
 1. **티어 경계는 블록 안 주석으로** 표시한다 (`# --- T1 ---`). 블록 분할의 실익을 파일 증가 없이 흡수한다.
-2. **블록은 실패한 티어에서 끝난다.** 미실행 티어의 커맨드는 넣지 않는다.
+2. **블록은 실패한 티어에서 끝난다** — **플랫폼 축마다 따로 적용한다.** 수평(플랫폼 간)에는 fail-fast가 없으므로(`../SKILL.md` §1) `T2/android` 실패가 `T2/ios`를 막지 않는다 — 그 경우 android 블록은 실패한 줄에서 끝나고 **ios 블록은 실제로 돈 데까지 그대로 실린다.** 두 축을 한 덩어리로 잘라내면 3번(실제 실행된 것 그대로)이 깨진다. 미실행 티어의 커맨드는 넣지 않는다.
 3. **커맨드는 새로 작문하지 않고 실제 실행된 것에서 그대로 추출한다.** 작문하면 검증할 수 없는 커맨드를 싣게 된다 — 환각 금지 위반이다.
 4. **셸은 POSIX 고정.** 감지·분기 없음.
 5. 블록 말미에 정리 커맨드를 포함한다.
