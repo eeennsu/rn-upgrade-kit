@@ -88,7 +88,7 @@ pnpm run test
 
 # --- T2/android ---
 (cd android && ./gradlew assembleDebug)
-adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+adb install -r "android/app/build/outputs/apk/debug/app-debug.apk"
 adb logcat -c
 adb shell monkey -p "com.example.app" -c android.intent.category.LAUNCHER 1
 adb shell dumpsys gfxinfo "com.example.app"
@@ -158,7 +158,7 @@ artifacts: 보존 3개, 자동 정리 1개
 9. **판정에 쓰인 관측 커맨드는 전부 넣는다** — 첫 프레임 신호(`dumpsys gfxinfo`)·생존(`pidof` / `ps -p`)·로그 스캔이 §3 통과 조건 3개의 관측 수단이다. 하나라도 빠지면 블록을 복붙한 사용자가 **통과 판정을 재현할 수 없고**, 3번(실제 실행된 것 그대로)이 깨진다. **증거물 수집·정리 커맨드는 반대로 넣지 않는다.** T3 스크린샷(`../SKILL.md` §4)과 `artifacts/` 복사·보존 정리(§5)는 **스킬의 기록 작업이지 사용자가 재현할 업그레이드 경로가 아니다** — T3는 스스로 *"증거물 전용, 판정 근거 아님"*이라 판정 재현에 기여하지 않는다. 7번(`timeout` 래퍼를 넣지 않는 이유 — *"스킬이 건 것이지 사용자가 친 커맨드의 일부가 아니다"*)과 같은 선이다. **판정에 쓰인 로그 수집은 반대로 반드시 넣는다** — T2 통과 조건 3이 그 출력으로 판정된다.
 10. **이 예시에서 ios 블록이 `xcodebuild`에서 끝나는 건 2번의 실물이다.** 그 실행의 T2/ios는 빌드에서 실패했으므로 `simctl install`·`simctl launch`는 **돌지 않았고, 돌지 않은 줄은 싣지 않는다.** android 쪽에 설치·실행 줄이 있는 건 그 티어가 통과했기 때문이다 — 두 플랫폼의 줄 수가 다른 것이 정상이다.
 11. **블록의 기준 디렉토리는 `cd <worktree>/<rn_root>` 한 줄이다** — 모노레포에서 `<rn_root>`는 저장소 루트가 아니다(`../SKILL.md` §2). 단일 패키지 저장소에서는 둘이 같아 2번째 줄이 `cd <worktree>`로 보이지만, **워크스페이스 저장소에서 그 형태로 실으면 `pnpm add`가 저장소 루트에서 돌고 `(cd android && …)`가 파일 부재로 죽는다.** «설치»만 설치 기준 디렉토리에서 도는 경우 그 줄도 서브셸로 감싼다.
-12. **디렉토리 이동은 서브셸로 감싼다** (`(cd android && …)`). 블록 전체의 기준 디렉토리는 2번째 줄의 `cd <worktree>` 하나이고, 그 뒤 모든 줄이 worktree 루트를 기준으로 읽힌다. 감싸지 않으면 `cd android` 다음의 `cd ios`가 `<worktree>/android/ios`를 찾다 실패하고, 말미의 `cd -`도 엉뚱한 곳으로 돌아간다 — **1번의 "단일 복붙 블록"이 복붙되지 않는 블록이 된다.** 이 블록의 존재 이유가 복붙 재현이므로 형태가 곧 계약이다.
+12. **디렉토리 이동은 서브셸로 감싼다** (`(cd android && …)`). 블록 전체의 기준 디렉토리는 2번째 줄(위 11번) 하나이고, 그 뒤 모든 줄이 그 디렉토리를 기준으로 읽힌다. 감싸지 않으면 `cd android` 다음의 `cd ios`가 `<worktree>/android/ios`를 찾다 실패하고, 말미의 `cd -`도 엉뚱한 곳으로 돌아간다 — **1번의 "단일 복붙 블록"이 복붙되지 않는 블록이 된다.** 이 블록의 존재 이유가 복붙 재현이므로 형태가 곧 계약이다.
 13. **적용 커맨드와 잠금 설치는 반드시 짝으로 싣는다** (`pnpm add …` 다음 줄에 `pnpm install --frozen-lockfile`). 앞줄만 실으면 lockfile 검증이 빠지고, **뒷줄만 실으면 복붙한 사용자가 `package.json`↔lockfile 불일치 에러를 재현한다** — 실제 실행은 통과했는데 재현은 실패하는 최악의 형태다. 사유는 `../SKILL.md` §2 «적용 다음에 잠금 설치가 오는 이유».
 14. **도출된 값은 치환된 실제 값으로 싣는다.** `<applicationId>`·`<Name>`·`<bundleId>`(`../SKILL.md` §3 «기동»)는 플레이스홀더가 아니라 그 실행에서 읽어낸 값이다 — 꺾쇠를 그대로 남기면 복붙이 안 된다.
 
