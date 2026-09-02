@@ -26,6 +26,7 @@
 | `boot_survival_seconds` | `60` | rehearsal (T2 통과 조건 1) |
 | `url_candidate_limit` | `3` | platform-watch (URL 이동 의심 후보) |
 | `enum_promotion_min_count` | `2` | platform-watch (`[미분류]` enum 승격 후보 제안) |
+| `withdrawal_suspect_min_count` | `2` | platform-watch (요구 폐지 의심 제거 검토 제안) |
 | `worktree_path_template` | `/tmp/rn-rehearsal-<target>-<base_sha7>` | rehearsal (worktree 생성 경로) |
 | `branch_name_template` | `rn-upgrade/<target>-<base_sha7>` | rehearsal (채택 브랜치명) |
 | `step_timeout_install_seconds` | `1800` | rehearsal (T1 의존성 설치) |
@@ -37,6 +38,7 @@
 
 - **`report_retention_n`이 12이고 `artifact_retention_n`이 3인 건 실수가 아니다.** 두 advisory 스킬은 마크다운 수 KB를 쌓고 rehearsal은 실행당 수십 MB를 쌓는다 — 매체가 다르므로 성격에서 파생된 정당한 차이다. 두 advisory 스킬끼리는 **반드시 같아야** 한다.
 - **`report_retention_n`에는 기능적 하한 2가 있다.** currency는 델타 표기를 직전 리포트 파일에서 뽑는다 — 1이면 델타 줄이 영구히 빈다.
+- **`withdrawal_suspect_min_count`가 `enum_promotion_min_count`와 같은 값·같은 이유로 여기 있다.** 둘 다 «한 번 관측된 것으로 참조 파일을 고치라고 하면 제안이 소음이 된다»를 막는 임계이고, **소음이면 사용자가 올릴 수 있어야 하므로 상수다.** 승격 임계만 상수로 두고 폐지 임계를 본문에 적으면, `shared/constants.md`가 막으려는 «한쪽만 바뀌는 드리프트»가 자매 규칙 사이에서 그대로 난다.
 - **`grade_threshold_days`는 platform-watch만 소비한다.** currency는 이 값을 다시 계산하지 않고 핸드오프의 `urgency` 필드를 읽는다. 재료를 가진 쪽이 계산해 넘긴다.
 - **`handoff_path`가 여기 있는 이유**는 소유자와 독자가 다르기 때문이다. 양쪽 스킬에 각각 적으면 나중에 한쪽만 바뀌어 조용히 끊긴다.
 - **`target_staleness_warn_days`가 `soak_minor_days`와 같은 14인 건 우연이 아니다.** 권장 버전이 한 soak 주기만큼 묵었으면 그 사이 새 stable이 나왔을 수 있다.

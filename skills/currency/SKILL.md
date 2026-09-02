@@ -251,7 +251,7 @@ node -e "fetch('https://registry.npmjs.org/react-native-worklets').then(r=>r.jso
 | `targetSdk` · iOS min | **핸드오프 `current` 필드** — 직접 파싱하지 않는다 |
 | New Arch · Hermes | `newArchEnabled`·`hermesEnabled` — `Glob`으로 `gradle.properties` 전부 + CI 워크플로 override 탐색 |
 
-- 핸드오프에서 값을 못 얻으면 비우지 말고 **사유를 병기하되 네 상태를 구분한다**: `targetSdk — (핸드오프 없음)` / `targetSdk — (핸드오프 미조회 항목)` / `targetSdk — (핸드오프 stale — <날짜>)` / `targetSdk — (핸드오프 경로 미상 — 상수 도달 실패)` / `targetSdk — (핸드오프 스키마 불일치)`. "읽기 실패"와 "안 읽음"과 "낡음"과 "경로를 몰라 못 열었음"과 "열었는데 못 읽음"은 사용자가 할 일이 다르다 — §3 «핸드오프 읽기»가 정본이다.
+- 핸드오프에서 값을 못 얻으면 비우지 말고 **사유를 병기하되 다섯 상태를 구분한다**: `targetSdk — (핸드오프 없음)` / `targetSdk — (핸드오프 미조회 항목)` / `targetSdk — (핸드오프 stale — <날짜>)` / `targetSdk — (핸드오프 경로 미상 — 상수 도달 실패)` / `targetSdk — (핸드오프 스키마 불일치)`. "읽기 실패"와 "안 읽음"과 "낡음"과 "경로를 몰라 못 열었음"과 "열었는데 못 읽음"은 사용자가 할 일이 다르다 — §3 «핸드오프 읽기»가 정본이다.
 - **네 번째는 degrade 12의 파급이다.** `handoff_path`가 `shared/constants.md`에서 오므로(§3) 상수에 도달하지 못하면 핸드오프를 열 자리 자체를 모른다. 계약 5항이 `current`를 이 헤더의 **유일한 공급원**으로 못박았으니 대체 경로도 없다 — 파일 부재로 접으면 사용자는 `platform-watch`를 다시 돌리는데, 고칠 것은 상수 도달이다.
 - **읽는 경로는 하나가 아니다.** `Glob`으로 `android/gradle.properties`·`gradle.properties`·flavor별 오버라이드 파일을 전부 찾고, `.github/workflows/*.yml`의 `-PnewArchEnabled`·`ORG_GRADLE_PROJECT_newArchEnabled` 문자열도 본다. **한 경로만 읽으면 충돌이 관측되지 않아 §7 degrade 5가 사문화된다.**
 - **런타임 env는 판정 대상이 아니다.** repo 안에서 읽을 수 있는 것만 읽고, 그래서 판정이 안 서면 `확인 못 함`이다 — 못 본 것을 없는 것으로 세지 않는다.

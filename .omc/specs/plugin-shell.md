@@ -78,6 +78,7 @@ rn-upgrade-kit/
 | `boot_survival_seconds` | `60` | rehearsal (T2 통과 조건 1) | rehearsal §T2 |
 | `url_candidate_limit` | `3` | platform-watch (URL 이동 의심 후보) | platform-watch 라운드 5c |
 | `enum_promotion_min_count` | `2` | platform-watch (`[미분류]` enum 승격 후보 제안) | `deep-interview-platform-watch.md` §미확정 해소(2026-08-12). 1회 관측은 우연일 수 있고 그걸로 참조 파일을 고치라고 하면 제안이 소음이 된다 — **소음이면 사용자가 올릴 수 있어야 하므로 상수다.** 소비자가 하나뿐인데도 여기 있는 건 `grade_threshold_days`와 같은 이유다 |
+| `withdrawal_suspect_min_count` | `2` | platform-watch (요구 폐지 의심 제거 검토 제안) | 신설 2026-09-02 (omc team 재검증 라운드 10). `enum_promotion_min_count`와 **같은 값·같은 사유** — 1회 관측으로 참조 파일을 고치라고 하면 제안이 소음이 되고, **소음이면 사용자가 올릴 수 있어야 하므로 상수다.** 승격 임계만 상수로 두고 폐지 임계를 본문에 적으면 자매 규칙 사이에서 드리프트가 난다 |
 | `worktree_path_template` | `/tmp/rn-rehearsal-<target>-<base_sha7>` | rehearsal (worktree 생성 경로) | 신설 2026-08-18. 경로가 재현 블록·수동 정리 커맨드·충돌 판정 **세 곳에 동시에** 박힌다 — 참조 파일 예시에만 있으면 예시가 사실상의 정본이 되고, 예시를 고칠 때 나머지 둘이 안 따라온다. `<base_sha7>`은 같은 타깃을 **다른 base에서** 돌릴 때의 충돌을 없앤다 |
 | `branch_name_template` | `rn-upgrade/<target>-<base_sha7>` | rehearsal (채택 브랜치명) | 신설 2026-09-01 (omc team 검증). 브랜치명이 **브랜치 생성·관문의 선점 확인·채택 절·머지 커맨드·커밋 메시지 다섯 곳**에 박히는데 예시로만 있었다 — `worktree_path_template`과 같은 사유이고 자리가 더 많다. `<base_sha7>`을 그것과 같은 7자리로 맞춘 것도 의도다(브랜치명과 worktree 경로가 같은 실행을 가리킨다는 사실이 눈으로 대조된다) |
 | `step_timeout_install_seconds` | `1800` | rehearsal (T1 의존성 설치) | 신설 2026-08-18 |
