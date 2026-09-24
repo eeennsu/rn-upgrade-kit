@@ -11,7 +11,7 @@
 | `요구 항목` | ✔ | 무엇을 얼마로 맞춰야 하나 |
 | `1차 URL` | ✔ | 공식 정책 본문 |
 | `2차 URL` | ✔ | 독립 이중화. 만족시킬 페이지가 없으면 **`없음 (<사유>)`**을 명시적으로 적는다 — 아래 «2차의 독립성» |
-| `교차` | ✖ | 이 항목의 2차가 **다른 항목의 1차**와 같을 때, 그 슬러그를 적는다. 비워두지 말고 명시한다 |
+| `교차` | ✖ | 이 항목의 2차가 **다른 항목의 1차**와 같을 때, 또는 이 항목의 1차가 다른 항목의 1차와 같은 페이지일 때(`(1차 공유)`) 그 슬러그를 적는다. 비워두지 말고 명시한다 |
 | `실측` | ✔ | 마지막으로 URL 도달을 확인한 날짜와 결과. 확인 안 했으면 `미실측` |
 | `현재값 읽기 지시` | ✔ | 프로젝트 어디를 어떻게 읽나 |
 | `등급 임계일` | ✖ | 미지정 시 `references/constants.md`의 `grade_threshold_days` |
@@ -33,6 +33,8 @@
 - **1차의 미러나 1차와 같은 페이지를 2차로 쓰지 않는다.** 같은 개편에 함께 죽어서 이중화가 아니다.
 
 **③ 교차를 금지가 아니라 표기 대상으로 둔 이유**는 공급자가 그 요건을 두 페이지에만 싣는 경우가 실제로 있기 때문이다(Apple의 iOS 버전 요건). 없는 독립성을 URL을 하나 더 적어서 만들어낼 수는 없다 — **만들 수 없으면 드러낸다.** 교차 페이지가 죽으면 두 항목이 동시에 단일 소스로 떨어지고, 그건 degrade 5(소스 도달 실패)보다 먼저 오는 상태다.
+
+**1차 공유를 `교차:`에 적는 이유** (2026-09-24): 공급자가 제출 요구 여럿을 한 정책 페이지에 절로 나눠 싣는 경우가 있다(Apple `upcoming-requirements`). 두 항목이 같은 페이지의 **다른 절**을 1차로 쓰는 건 1차 미러 금지와 다르다 — 각 항목이 자기 절의 재료를 읽는다. 다만 그 페이지가 죽으면 두 항목의 1차가 함께 죽으므로 ③ 교차와 같은 이유로 드러낸다.
 
 **✖ 없음을 허용한 이유**도 같다. 2차를 필수로 두고 아무 URL이나 채우면 스키마는 만족하지만 이중화는 없고, **없다는 사실만 안 보이게 된다.** 2차가 없는 항목은 1차가 죽는 순간 바로 `확인 못 함`이므로, 리포트에서 그 항목에 `이중화 없음`을 병기한다.
 
@@ -61,14 +63,28 @@ URL을 추가·수정할 때는 **2차를 고르기 전에 이미 다른 항목�
 ### `ios/min-xcode`
 
 - **platform:** ios
-- **요구:** 심사 제출용 최소 Xcode / SDK 버전 + **그로부터 파생되는 최소 배포 타깃 하한.** 파생 규칙: 요구된 Xcode 버전의 행을 `support/xcode/` 표에서 찾아 `Deployment Targets` 열의 하한을 읽는다 — 그 열의 Legend가 *"The OS range supported by this version of Xcode for uploading apps to App Store Connect"*이므로 제출 가능한 배포 타깃의 하한이다. **두 출처의 합성이므로 근거 링크를 둘 다 단다.**
-- **1차:** https://developer.apple.com/news/upcoming-requirements/ — 요구를 싣는 정책 본문
-- **2차:** **없음** (요구를 싣는 정책 본문이 1차 하나뿐 — 2026-08-19·2026-08-29 두 실측 동일. `support/xcode/`는 능력 참조표라 *"제출하려면 최소 Xcode N 이상"*이라는 정책 문장이 없어 2차 요건 — "1차가 죽어도 이 사실을 다른 데서 확인" — 미달이다. 파생 하한의 **재료**로는 쓰지만 재료와 이중화는 다르다) — 리포트에 `이중화 없음` 병기 대상
-- **실측:** 2026-08-29 · 1차 도달, 요구 확인: *"Since April 28, 2026 Apps uploaded to App Store Connect must be built with Xcode 26 or later using an SDK for iOS 26, iPadOS 26, tvOS 26, visionOS 26, or watchOS 26."* **최소 배포 타깃을 직접 요구하는 정책 문장은 1차에 없다** — 배포 타깃 하한은 위 파생으로만 나온다. `support/xcode/` 도달 — 이날 표 최상단 행은 Xcode 27 beta 6 (`Deployment Targets` = `iOS 15–27` · `Device Support` = `iOS 17 or later` · `Simulator` = `iOS 17 or later`)이고, 2026-08-19 실측의 Xcode 26.6 행(`iOS 15 or later` / `iOS 15–26.5` / `iOS 15 or later`)과 값이 다르다 — **표가 열흘 새 갱신됐고, 요구 Xcode 26대의 행은 이날 직접 확인하지 않았다.** 파생 하한을 쓸 때는 그 실행에서 해당 행을 직접 읽어라 — 남의(지난) 관측을 자기 실측으로 옮기지 마라.
-- **현재값:** 두 축을 다 읽고 **둘 다 충족일 때만 충족**이다 — 충돌 시 가장 낮은 값 판정의 연장.
-  - Xcode 축 — repo 안에서 읽을 수 있는 건 CI 설정(`.github/workflows/*.yml`의 `xcode-version`)뿐이다. 없으면 그 축은 `현재값 확인 못 함 (경로 부재)` — **로컬 Xcode 버전을 셸로 확인하지 않는다.**
-  - 배포 타깃 축 — `ios/Podfile`의 `platform :ios, 'X.Y'` + `ios/*.xcodeproj/project.pbxproj`의 `IPHONEOS_DEPLOYMENT_TARGET` + `ios/*.xcconfig`. 셋이 갈리면 전부 병기, 가장 낮은 값 기준 판정.
-- **통합 이력 (2026-08-29):** `ios/min-deployment-target`을 이 항목으로 흡수했다(사용자 결정 — 슬러그·URL은 스펙이 구현 재량으로 위임한 축). 사유: Apple이 최소 배포 타깃을 독립 정책 본문으로 게시하지 않아 그 항목은 1차·2차 모두 내용 실패로 **매 실행 degrade 5**였고(감사 원장 A-29 — git 태그 `audit-2026-08`의 `docs/audit-ledger.md`), 재료가 실재하는 유일한 페이지는 이 항목의 URL과 겹쳐 독립성 스키마에 표기 자리가 없었다(A-30). 통합으로 두 미결이 함께 닫힌다 — 요구는 1차가 싣고, 배포 타깃은 파생으로 나오며, 단일 소스라는 사실은 `2차: 없음`이 드러낸다. 폐기 슬러그의 state·핸드오프 잔재 처리는 `report-format.md` §2·§3의 «enum에서 제거된 슬러그» 규칙.
+- **요구:** 심사 제출용 최소 Xcode / SDK 버전
+- **1차:** https://developer.apple.com/news/upcoming-requirements/ — «SDK minimum requirements» 절
+- **2차:** https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds — ② 같은 호스트·다른 성격(제출 도움말). 대상 유형별 *"Built using Xcode"* 표에 같은 요구가 있다. **날짜는 없다** — 1차가 죽으면 요구값은 확인되지만 마감은 `확인 못 함`으로 떨어진다
+- **교차:** `ios/min-deployment-target` (1차 공유 — 같은 페이지의 다른 절)
+- **실측:** 2026-09-24 · 1차 도달, 요구 확인: *"SDK minimum requirements — Since April 28, 2026 Apps uploaded to App Store Connect must be built with Xcode 26 or later using an SDK for iOS 26, iPadOS 26, tvOS 26, visionOS 26, or watchOS 26."* 2차 도달, `iOS app` 행 `Xcode 26 or later`. **예고 요구 미포착 — 알려진 한계:** 제출 안내 페이지(https://developer.apple.com/app-store/submitting/)가 *"Starting April 2027, … iOS and iPadOS apps must be built with the iOS & iPadOS 27 SDK or later"*를 싣는데, 1차에는 아직 없다(`2027` 언급 0). 이 스킬은 1차가 성공하면 다른 페이지를 읽지 않으므로 1차에 실릴 때까지 이 예고를 보고하지 못한다. 1차에 실리면 SKILL.md §3 «발효와 예고»가 받는다.
+- **현재값:** repo 안에서 읽을 수 있는 건 CI 설정(`.github/workflows/*.yml`의 `xcode-version`)뿐이다. 없으면 `현재값 확인 못 함 (경로 부재)` — **로컬 Xcode 버전을 셸로 확인하지 않는다.**
+- **통합 이력 (2026-08-29) — 2026-09-24 분리로 해제:** `ios/min-deployment-target`을 이 항목으로 흡수했었다(사유: Apple이 최소 배포 타깃을 정책 본문으로 게시하지 않았다 — 감사 원장 A-29·A-30, git 태그 `audit-2026-08`의 `docs/audit-ledger.md`). 배포 타깃 하한은 `support/xcode/` 표의 `Deployment Targets` 열에서 파생했다. 2026-09-09에 Apple이 그 요구를 정책 문장으로 게시해 흡수 사유가 사라졌으므로 되돌렸다 — 아래 `ios/min-deployment-target`의 «재도입 이력».
+
+### `ios/min-deployment-target`
+
+- **platform:** ios
+- **요구:** 심사 제출용 최소 배포 타깃 (iOS·iPadOS)
+- **1차:** https://developer.apple.com/news/upcoming-requirements/ — «iOS and iPadOS minimum system requirements» 절
+- **2차:** **없음** (후보 실측 탈락 — `upload-builds`는 Xcode 요구만 싣고, `app-store/submitting/`은 SDK 예고만 싣는다(2026-09-24). `support/xcode/` 표의 `Deployment Targets` 열은 Xcode의 **지원 범위**이지 제출 정책이 아니다) — 리포트에 `이중화 없음` 병기 대상
+- **교차:** `ios/min-xcode` (1차 공유 — 같은 페이지의 다른 절)
+- **실측:** 2026-09-24 · 1차 도달, 요구 확인: *"iOS and iPadOS minimum system requirements — Since September 9, 2026 iOS and iPadOS apps uploaded to App Store Connect must target iOS 13 or later."*
+- **현재값:** `ios/Podfile`의 `platform :ios, 'X.Y'` + `ios/*.xcodeproj/project.pbxproj`의 `IPHONEOS_DEPLOYMENT_TARGET` + `ios/*.xcconfig`. 셋이 갈리면 전부 병기하고 가장 낮은 값 기준으로 판정.
+- **재도입 이력 (2026-09-24):** 2026-08-29에 `ios/min-xcode`로 흡수했던 슬러그를 되살렸다(사용자 결정).
+  - **흡수 사유가 사라졌다.** A-29의 전제(*Apple이 최소 배포 타깃을 정책 본문으로 게시하지 않는다*)가 2026-09-09 게시로 사실이 아니게 됐다.
+  - **통합 상태는 두 결함을 만들었다.** 정책(iOS 13)과 Xcode 표 파생(iOS 15)이 같은 항목에 서로 다른 하한을 냈다. 그리고 핸드오프 `current` 한 칸에 Xcode·배포 타깃 두 축이 섞여, `currency`가 어느 축이 미충족인지 가를 수 없었다.
+  - **슬러그를 새로 짓지 않고 되살렸다.** 요구의 정체(제출용 최소 배포 타깃)가 같다 — 슬러그는 한 번 정하면 바꾸지 않는다(«항목 스키마»).
+  - **파생 규칙은 폐기했다.** Xcode 표의 배포 타깃 범위는 도구 지원 범위라 정책 하한과 다를 수 있다. 이 스킬은 인용 가능한 정책 문장만 추적한다(SKILL.md §3과 같은 원칙).
 
 ### `ios/privacyinfo-required`
 
@@ -126,6 +142,15 @@ URL을 추가·수정할 때는 **2차를 고르기 전에 이미 다른 항목�
 | `upcoming-requirements`는 Xcode 26/SDK 26 요구를 그대로 싣고, 최소 배포 타깃 요구는 여전히 없다 | 통합 항목의 1차로 확정 |
 | `support/xcode/` 표 최상단 행이 Xcode 26.6 → **Xcode 27 beta 6**으로 갱신됐고 열 값도 다르다 | 실측 필드에 두 시점 값을 병기 — **능력 참조표는 열흘 단위로도 움직인다.** 파생 하한은 매 실행 그 자리에서 읽어야 한다 |
 
-**enum은 7개 → 6개다.** 폐기 슬러그 `ios/min-deployment-target`의 state·핸드오프 잔재는 `report-format.md` §2·§3의 «enum에서 제거된 슬러그» 규칙이 처리한다.
+**enum은 7개 → 6개가 됐다(2026-08-29 당시 — 아래 2026-09-24에 7개로 복귀).** 폐기 슬러그 `ios/min-deployment-target`의 state·핸드오프 잔재는 `report-format.md` §2·§3의 «enum에서 제거된 슬러그» 규칙이 처리한다.
+
+**2026-09-24 · iOS 항목 분리 + iOS 관련 URL 4개 재실측.** Apple이 최소 배포 타깃을 정책 문장으로 게시해 2026-08-29 통합을 되돌렸다(사용자 결정 · 위 «재도입 이력»). **enum은 다시 7개다.**
+
+| 발견 | 조치 |
+| --- | --- |
+| `upcoming-requirements`에 «iOS and iPadOS minimum system requirements — Since September 9, 2026 … must target iOS 13 or later»가 새로 실렸다 | `ios/min-deployment-target` 재도입, 1차 공유를 `교차:`로 표기 |
+| `upload-builds`가 `iOS app — Built using Xcode 26 or later`를 싣는다 | `ios/min-xcode`의 2차로 투입 (② 강도 · 날짜 없음) |
+| `app-store/submitting/`이 `Starting April 2027 — iOS & iPadOS 27 SDK`를 싣는데 1차엔 없다 | 알려진 한계로 `ios/min-xcode` 실측 필드에 기록 — 2차 요건(1차와 같은 사실)을 만족하지 않아 2차로 쓰지 않았다 |
+| `support/xcode/`가 `/xcode/system-requirements`로 리다이렉트된다. 최상단 행은 Xcode 27.1 beta(`Deployment Targets` = `iOS 15–27`) | 파생 규칙 폐기로 이 파일의 URL 목록에서 빠졌다 |
 
 URL이 죽으면 §소스 도달의 수리 루프(`URL 이동 의심` → 이 파일 수정 → `--target`으로 해당 항목만 재확인)를 타라. 그게 이 파일이 스킬 본문 밖에 있는 이유다. **고칠 때 `실측` 필드도 같이 갱신한다** — 안 하면 다음 사람이 이 표를 믿는다.

@@ -177,7 +177,10 @@ node -e "const P='react-native-worklets',C='0.5.1';const n=s=>s.split('.').map(N
 | `여유` | 🟠 |
 | `판정 불가` | 등급 축 밖 → ⚠ 블록 `마감 임박도 판정 불가 (platform-watch)` |
 
-- **예외 하나 — 기한 경과.** `deadline`(저정밀이면 그 정렬 초일)이 컨텍스트 오늘보다 과거이고 `status`가 미충족이면, `urgency` 값과 무관하게 **🔴 + `기한 경과 — platform-watch 재실행 권장`**을 병기한다. D-day 산술이 아니다 — ISO 문자열 비교(soak 컷오프와 같은 허용 산술)이고 임계일도 안 쓴다. 이 예외가 없으면 stale 핸드오프에서 **이미 지난 마감이 🟠 여유로 나간다** — 낙관 편향 금지 위반이다.
+- **예외 하나 — 기한 경과.** `deadline`(저정밀이면 그 정렬 초일)이 컨텍스트 오늘보다 과거이고 `status`가 미충족이면, `urgency` 값과 무관하게 **🔴 + `기한 경과`**를 병기한다. D-day 산술이 아니다 — ISO 문자열 비교(soak 컷오프와 같은 허용 산술)이고 임계일도 안 쓴다. 이 예외가 없으면 stale 핸드오프에서 **이미 지난 마감이 🟠 여유로 나간다** — 낙관 편향 금지 위반이다.
+  - **재실행 권장은 마감 전에 조회된 값일 때만 붙인다** (2026-09-24). 그 항목의 조회일(`stale`이 있으면 그 날짜, 없으면 파일 `generated`)이 `deadline`보다 이르면 `기한 경과 — platform-watch 재실행 권장`이다. 마감 뒤에 조회된 값이면 다시 돌려도 같은 결과라 권하지 않는다 — 할 일은 요구를 맞추는 것이다. 역시 ISO 문자열 비교다.
+  - **`deadline`은 기본 마감이다.** `(확정 · 연장 <날짜> — 신청 시)` 병기의 연장일은 리포트에 옮겨 적되 판정에 쓰지 않는다 — 연장은 신청해야 받는 조건부 날짜다.
+- **`status: 이미 충족` 항목은 하한을 만들지 않고 등급에도 올리지 않는다** (2026-09-24). `platform-watch`가 충족을 판정한 요구를 다시 번역하면 이미 맞춘 요구가 🔴로 나간다. `urgency`는 날짜만 보는 값이라 충족 항목에도 `임박`이 붙을 수 있다 — 등급은 `status`를 먼저 본다.
 
 ## 4. 게이트 6개 — 최신 ≠ 권장
 
@@ -223,10 +226,11 @@ node -e "const P='react-native-worklets',C='0.5.1';const n=s=>s.split('.').map(N
 | 헤더 필드 | 출처 |
 | --- | --- |
 | RN · React 버전 | `package.json` + lockfile |
-| `targetSdk` · iOS min | **핸드오프 `current` 필드** — 직접 파싱하지 않는다 |
+| `targetSdk` · iOS min | **핸드오프 `current` 필드** — `targetSdk`는 `android/target-sdk`, iOS min은 `ios/min-deployment-target` 항목. 직접 파싱하지 않는다 |
 | New Arch · Hermes | `newArchEnabled`·`hermesEnabled` — `Glob`으로 `gradle.properties` 전부 + CI 워크플로 override 탐색 |
 
 - 핸드오프에서 값을 못 얻으면 비우지 말고 **사유를 병기하되 네 상태를 구분한다**: `targetSdk — (핸드오프 없음)` / `targetSdk — (핸드오프 미조회 항목)` / `targetSdk — (핸드오프 stale — <날짜>)` / `targetSdk — (핸드오프 경로 미상 — 상수 도달 실패)`. "읽기 실패"와 "안 읽음"과 "낡음"과 "경로를 몰라 못 열었음"은 사용자가 할 일이 다르다 — §3 «핸드오프 읽기»가 정본이다.
+- **2026-08-29 ~ 2026-09-24 사이에 생성된 핸드오프에는 `ios/min-deployment-target` 섹션이 없다** — 그 기간엔 그 항목이 `ios/min-xcode`에 흡수돼 있었다. 항목 부재 경로(`iOS min — (핸드오프 미조회 항목)`)로 가고, `ios/min-xcode`의 `current`에서 배포 타깃을 골라 읽지 마라 — 두 축이 섞인 값이다. `platform-watch`를 한 번 전수로 돌리면 풀린다.
 - **네 번째는 degrade 12의 파급이다.** `handoff_path`가 `references/constants.md`에서 오므로(§3) 상수에 도달하지 못하면 핸드오프를 열 자리 자체를 모른다. 계약 5항이 `current`를 이 헤더의 **유일한 공급원**으로 못박았으니 대체 경로도 없다 — 파일 부재로 접으면 사용자는 `platform-watch`를 다시 돌리는데, 고칠 것은 상수 도달이다.
 - **읽는 경로는 하나가 아니다.** `Glob`으로 `android/gradle.properties`·`gradle.properties`·flavor별 오버라이드 파일을 전부 찾고, `.github/workflows/*.yml`의 `-PnewArchEnabled`·`ORG_GRADLE_PROJECT_newArchEnabled` 문자열도 본다. **한 경로만 읽으면 충돌이 관측되지 않아 §7 degrade 5가 사문화된다.**
 - **런타임 env는 판정 대상이 아니다.** repo 안에서 읽을 수 있는 것만 읽고, 그래서 판정이 안 서면 `확인 못 함`이다 — 못 본 것을 없는 것으로 세지 않는다.

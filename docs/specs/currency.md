@@ -243,6 +243,8 @@ node -e "const P='<pkg>',C='<현재>';const n=s=>s.split('.').map(Number);const 
 
 **계약 5항 (라운드 7에서 추가):** 핸드오프의 `current` 필드는 currency 스냅샷 헤더의 `targetSdk`·`iOS min`의 **유일한 공급원**이다. currency는 그 값을 직접 파싱하지 않는다.
 
+> **정정 (2026-09-24):** 어느 항목의 `current`인지 못박는다 — `targetSdk`는 `android/target-sdk`, `iOS min`은 `ios/min-deployment-target`이다. 2026-08-29 ~ 09-24 사이에는 배포 타깃이 `ios/min-xcode`에 흡수돼 `current` 한 칸에 Xcode·배포 타깃 두 축이 섞여 있었다(`platform-watch.md` §추적 대상 2026-09-24 정정). 그 기간의 핸드오프에는 `ios/min-deployment-target` 섹션이 없으므로 항목 부재(`(핸드오프 미조회 항목)`)로 받는다. 섞인 `current`에서 배포 타깃을 골라 읽지 않는다.
+
 **계약 6항 (인터뷰 후 추가 — 2026-08-09):** 핸드오프의 `urgency` 필드는 정책 하한 항목의 **🔴/🟠 분기의 유일한 공급원**이다. currency는 `deadline`으로 D-day를 계산하지 않는다.
 
 | 핸드오프 `urgency` | currency 등급 |
@@ -258,6 +260,12 @@ node -e "const P='<pkg>',C='<현재>';const n=s=>s.split('.').map(Number);const 
 > **파급:** §Non-Goals의 *핸드오프 신선도 판정 안 함*과 정합적이다 — currency는 여전히 날짜를 판정하지 않는다. `stale`이 붙은 항목의 `urgency`도 그대로 쓴다(낡은 임박도는 **과소평가**일 뿐이고, 안 쓰는 쪽이 낙관 편향이라는 §degrade 2분기의 비대칭 근거가 그대로 적용된다).
 
 > **정제 (2026-08-29) — 계약 6항의 예외 하나, 기한 경과:** 핸드오프 `deadline`(저정밀이면 그 정렬 초일)이 **컨텍스트 오늘보다 과거**이고 `status`가 미충족이면, `urgency` 매핑과 무관하게 **🔴 + `기한 경과 — platform-watch 재실행 권장`**을 병기한다. 이것은 D-day 산술이 아니라 **ISO 문자열 비교**(soak 컷오프와 같은 허용 산술)이고 임계일도 쓰지 않는다 — 날짜 축·임계일 소유는 그대로 `platform-watch`다. 이 예외가 없으면 stale 핸드오프에서 **이미 지난 마감이 🟠 여유로 나간다** — 위 파급의 *"낡은 임박도는 과소평가일 뿐"*은 마감이 아직 앞에 있을 때만 감수 가능한 과소평가이고, 지난 마감을 여유로 표시하는 건 이 스펙이 금지한 낙관 편향 그 자체다.
+
+> **정제 (2026-09-24 · 감사) — 기한 경과의 세 경계:**
+>
+> 1. **재실행 권장은 마감 전에 조회된 값일 때만 붙인다.** 그 항목의 조회일(`stale`이 있으면 그 날짜, 없으면 파일 `generated`)이 `deadline`보다 이르면 `기한 경과 — platform-watch 재실행 권장`이다. 마감 뒤에 조회된 값이면 `기한 경과`만 적는다 — 다시 돌려도 같은 결과이고, 할 일은 요구를 맞추는 것이다. ISO 문자열 비교다.
+> 2. **`deadline`은 기본 마감이다.** `platform-watch`가 연장일을 `(확정 · 연장 <날짜> — 신청 시)`로 병기해도 판정은 기본 마감으로 한다. 연장은 신청해야 받는 조건부 날짜다(`platform-watch.md` §날짜 신뢰 모델 2026-09-24 정정 2).
+> 3. **`status: 이미 충족` 항목은 하한을 만들지 않고 등급에도 올리지 않는다.** `urgency`는 날짜만 보는 값이라 충족 항목에도 `임박`이 붙을 수 있다. 등급을 `urgency`에서만 읽으면 이미 맞춘 요구가 🔴로 나간다. `platform-watch` 스펙이 *"`currency`가 이미 충족을 알면 제외 근거로 쓸 수 있다"*고 약속만 하고 있던 것을 이쪽 규칙으로 닫는다.
 
 **계약 7항 (인터뷰 후 추가):** 핸드오프 항목에 `stale: <날짜>`가 붙어 있어도 **하한·`current`·`urgency`를 그대로 쓴다.** `stale`은 `platform-watch`가 좁힌 스코프로 실행돼 그 항목을 이번에 조회하지 않았다는 표기이고, 판정을 바꾸지 않는다. 헤더의 `핸드오프 <생성일>` 옆에 `(일부 항목 stale)`을 병기한다.
 
@@ -635,6 +643,10 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 - [ ] `stale` 항목이 있으면 헤더에 `(일부 항목 stale)`이 병기된다
 - [ ] 핸드오프 `schema_version`이 `shared/constants.md`의 값과 다르면 `스키마 불일치` degrade로 간다
 - [ ] 헤더의 핸드오프 생성일이 파일 레벨 `generated`에서 나온다
+- [ ] `status: 이미 충족` 항목이 하한·등급에 쓰이지 않는다 — `urgency: 임박`이어도 🔴가 되지 않는다 (2026-09-24)
+- [ ] 기한 경과의 `platform-watch 재실행 권장`이 그 항목의 조회일 < `deadline`일 때만 붙는다 (2026-09-24)
+- [ ] 연장일이 병기된 항목의 기한 경과가 기본 마감으로 판정된다 (2026-09-24)
+- [ ] `iOS min`이 `ios/min-deployment-target`의 `current`에서만 오고, 그 섹션이 없으면 `(핸드오프 미조회 항목)`이다 — `ios/min-xcode`의 `current`에서 골라 읽는 코드 경로가 없다 (2026-09-24)
 
 **인자 문법**
 
@@ -994,3 +1006,4 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 - **`@react-native/*` lockstep 동반** — §점검 대상 정정 · §rehearsal 간선 규칙 a. 2026-08-31의 RN 코어 세트 확장이 이 스킬에 닿지 않아 `rehearsal` 인자 검증 3과 어긋나 있었다.
 - **`node -e` 창·peer 확장** — §수집 «정제 (2026-09-24)». 뒤처진 프로젝트의 호환 후보가 창 밖으로 밀리던 것과, RN 밖 peer가 상한 계산에서 빠지던 것.
 - **1차 조회는 메인 전담** — §조회 순서 병렬화 정정. 서브에이전트 셸 금지(2026-08-29 · 구현에만 반영됐다)와 1차 조회 위임이 서로를 무력화하던 것.
+- **핸드오프 읽기의 경계** — 계약 5항 정정(`iOS min` ← `ios/min-deployment-target`) · 계약 6항 «정제 (2026-09-24)»(재실행 권장 조건 · 기본 마감 · `이미 충족` 제외). `platform-watch`의 enum 분리 복원과 날짜 모델 정정에 맞춘 독자 쪽 변경이다.

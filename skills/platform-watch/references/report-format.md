@@ -31,18 +31,22 @@
 ### 포맷
 
 ```
-# 플랫폼 마감 감사 — 2026-08-16
-호스트: Windows 11 · 직전 실행: 2026-08-09 · 스코프: 전체
+# 플랫폼 마감 감사 — 2026-09-10
+호스트: Windows 11 · 직전 실행: 2026-09-03 · 스코프: 전체
 
 ## 미충족
-🔴 D-113 · android/target-sdk · targetSdk ≥ 36        [무변화]
+🔴 D+10 · android/target-sdk · targetSdk ≥ 36
    현재: 35 (android/build.gradle)
-   원문: "August 31, 2026" · 근거: https://developer.android.com/…
+   원문: "August 31, 2026" (경과 · 연장 신청 시 "November 1, 2026") · 근거: https://developer.android.com/…
 
-🟠 · ios/min-xcode · Xcode ≥ 26 / SDK iOS 26 · 파생 배포 타깃 ≥ iOS 15 · 이중화 없음   [변경 Xcode 15→26]
-   현재: CI xcode-version 26.1 (충족) / 배포 타깃 충돌 — Podfile 14.0 / project.pbxproj 15.0 → 14.0 기준 판정 (미충족)
-   원문: "starting April 2027" (월 단위 — D-day 미계산, 정렬 초일 기준)
-   근거: https://developer.apple.com/news/upcoming-requirements/ · 파생: https://developer.apple.com/support/xcode/
+🔴 D+1 · ios/min-deployment-target · iOS 배포 타깃 ≥ 13 · 이중화 없음   [신규]
+   현재: 충돌 — Podfile 12.4 / project.pbxproj 13.0 → 12.4 기준 판정
+   원문: "Since September 9, 2026" · 근거: https://developer.apple.com/news/upcoming-requirements/
+
+🟠 · ios/min-xcode · SDK iOS 27 (예고)   [변경 Xcode 26 → SDK 27]
+   현재: CI xcode-version 26.1 — 발효 요구 충족 · 예고 요구 미충족
+   원문: "Starting April 2027" (월 단위 — D-day 미표시, 초일 2027-04-01 기준 등급) · 발효 중: "Since April 28, 2026 … Xcode 26 or later"
+   근거: https://developer.apple.com/news/upcoming-requirements/
 
 ## 확인 못 함
 ⚠ play/data-safety — 마감일 확인 못 함 (소스 도달 실패)
@@ -51,12 +55,12 @@
    URL 이동 의심 — 후보: support.google.com/googleplay/android-developer/answer/…
    → references/watch-targets.md 수정 필요
 
-⚠ ios/privacyinfo-required — 현재값 확인 못 함 (경로 부재)
-   마감: 2026-05-01 (확정) · 근거: https://developer.apple.com/…
-   → ios/ 하위에서 PrivacyInfo.xcprivacy 경로를 찾지 못함
+⚠ ios/privacyinfo-required — 마감일 확인 못 함 (날짜 언급 없음) · 현재: 없음 → 미충족
+   요구: PrivacyInfo.xcprivacy 존재 · 근거: https://developer.apple.com/…
+   → ios/ 하위에 PrivacyInfo.xcprivacy가 없다 — 부재가 곧 미충족이다(탐색 실패가 아니다)
 
 ## 이미 충족
-✅ D-247 · android/16kb-page-size — 정렬 확인됨  · 이중화 없음      [무변화]
+✅ D-144 · android/16kb-page-size — 정렬 확인됨 · 이중화 없음
 
 ## 미조회 (사용자 지정 스코프)
 (없음)
@@ -71,8 +75,11 @@
 ```
 
 > 위 예시의 `12`·`1`은 값이 아니라 예시다 — 실제 보존 상한은 `references/constants.md`의 `report_retention_n`에서 오고, 초과 개수는 그 상한과 실제 파일 수의 차다.
+>
+> 예시의 D-day는 헤더 날짜(2026-09-10) 기준이다: 2026-08-31 → `D+10`, 2026-09-09 → `D+1`, 2027-02-01 → `D-144`. `ios/min-xcode`의 `Starting April 2027`은 1차가 예고를 실었다고 가정한 것이다 — 2026-09-24 실측 시점에는 제출 안내 페이지에만 있다(`references/watch-targets.md`). 초일 2027-04-01까지 203일이라 임계일 밖 🟠다.
 
 - 각 항목에 **슬러그를 함께 출력한다.**
+- **변화 없는 항목은 마킹 없이 나간다.** 마킹은 `[신규]`·`[변경]`·`[미분류]` 3값뿐이다(SKILL.md §1) — "무변화" 같은 4번째 표기를 만들지 마라.
 - **근거 링크 없는 마감일·요구사항 주장은 리포트에 실리지 않는다.**
 - **`references/watch-targets.md`에서 2차 URL이 `없음`인 항목에는 `이중화 없음`을 병기한다** — 블록과 등급에 무관하게(✅ 항목에도 붙는다). 그 항목은 1차가 죽는 순간 바로 `확인 못 함`으로 떨어지는데, 병기가 없으면 그 취약성이 리포트 어디에도 안 보인다. **`확인 못 함`으로 떨어진 뒤에 알리는 건 늦다** — 이 표기의 목적은 이번 실행의 판정이 아니라 다음 실행의 위험을 미리 드러내는 것이다.
   - 이건 등급도 마킹도 아니다. 🔴🟠✅⚠ 4값과 `[신규]`·`[변경]`·`[미분류]` 3값 어디에도 들어가지 않는 **소스 상태 표기**다 — 어휘를 늘리는 게 아니라 항목 줄에 붙는 꼬리표다.
@@ -105,7 +112,7 @@
 - **어떤 판정에도 입력으로 쓰지 않는다.** 등급·충족 여부·날짜 전부 이번 실행의 조회에서 나온다.
 - `schema_version`이 다르거나 파싱 실패면 **델타 마킹만 생략**하고 전수 리포트는 정상 산출한다.
 - **좁힌 실행은 병합한다.** 조회된 슬러그만 갱신하고 미조회 슬러그의 이전 엔트리는 보존한다 — 덮어쓰면 다음 전수 실행에서 `[신규]`로 오탐된다.
-- **병합 보존 대상은 enum에 있는 슬러그만이다.** `references/watch-targets.md`에서 제거·통합된 슬러그의 엔트리는 다음 실행(스코프 무관)에서 삭제하고, 리포트 말미에 한 줄로 알린다(예: `enum 정리: ios/min-deployment-target 엔트리 삭제 — ios/min-xcode로 통합`). 남겨두면 병합 규칙이 폐기된 항목을 영구 보존하고, 그 엔트리가 언젠가 `[신규]`·델타 오탐의 재료가 된다.
+- **병합 보존 대상은 enum에 있는 슬러그만이다.** `references/watch-targets.md`에서 제거·통합된 슬러그의 엔트리는 다음 실행(스코프 무관)에서 삭제하고, 리포트 말미에 한 줄로 알린다(형식: `enum 정리: <폐기 슬러그> 엔트리 삭제 — <후속 슬러그>로 통합`). 남겨두면 병합 규칙이 폐기된 항목을 영구 보존하고, 그 엔트리가 언젠가 `[신규]`·델타 오탐의 재료가 된다.
 - **`unclassified`의 키는 잠정 키다.** enum 슬러그가 아니고 **동일성 키도 아니다** — 관측 문구를 소문자·하이픈으로 정규화해 만든다. 원문 문구가 바뀌면 새 엔트리가 생기고 카운트가 리셋되는데, **그래도 된다.**
 - 잠정 키를 두는 게 SKILL.md §1의 *"`[미분류]`는 동일성 키가 없다"*와 충돌하지 않는 이유: **승격 후보 제안은 판정이 아니다.** 등급·충족 여부·날짜에 관여하지 않고 사용자에게 참조 파일을 늘리라고 제안할 뿐이다. 오탐 비용이 `[신규]` 오탐과 위상이 다르다 — 그래서 **잠정 키를 델타 마킹에 쓰지 않는다.** `[미분류]` 항목은 여전히 마킹 없이 나간다.
 - **승격 후보 제안 조건은 `seen_count` ≥ `enum_promotion_min_count`**(`references/constants.md`). 1회 관측은 우연일 수 있고, 그걸로 참조 파일을 고치라고 하면 제안이 소음이 된다. **소음이면 사용자가 올릴 수 있어야 하므로 상수다** — `grade_threshold_days`가 소비자 하나뿐인데도 거기 있는 것과 같은 이유다.
@@ -125,19 +132,28 @@ scope: android/target-sdk
 
 ## android/target-sdk
 - requires: targetSdk ≥ 36
-- deadline: 2026-08-31 (확정)
+- deadline: 2026-08-31 (확정 · 연장 2026-11-01 — 신청 시)
 - urgency: 임박
 - current: 35 (android/build.gradle)
 - status: 미충족
 - source: https://developer.android.com/…
 
 ## ios/min-xcode
-- requires: Xcode ≥ 26 / SDK iOS 26 · 파생 배포 타깃 ≥ iOS 15
-- deadline: 2027-04 (저정밀 — 정렬 초일 2027-04-01)
-- urgency: 여유
-- current: CI xcode-version 26.1 / 배포 타깃 충돌 — Podfile 14.0 / project.pbxproj 15.0 → 14.0
+- requires: Xcode ≥ 26 / SDK iOS 26
+- deadline: 2026-04-28 (확정)
+- urgency: 임박
+- current: CI xcode-version 26.1
+- status: 이미 충족
+- source: https://developer.apple.com/news/upcoming-requirements/
+- stale: 2026-08-09
+
+## ios/min-deployment-target
+- requires: iOS 배포 타깃 ≥ 13
+- deadline: 2026-09-09 (확정)
+- urgency: 임박
+- current: 충돌 — Podfile 12.4 / project.pbxproj 13.0 → 12.4
 - status: 미충족
-- source: https://developer.apple.com/news/upcoming-requirements/ (파생: https://developer.apple.com/support/xcode/)
+- source: https://developer.apple.com/news/upcoming-requirements/
 - stale: 2026-08-09
 
 ## android/16kb-page-size
@@ -153,7 +169,7 @@ scope: android/target-sdk
 >
 > **이 예시는 §1 리포트 예시와 다른 실행 이력이다.** 날짜가 겹치지 않게 잡은 이유가 그거다 — 같은 실행의 산출물로 읽으면 §1이 `스코프: 전체`인데 여기가 좁힌 실행이라 서로 반례가 된다. **한 실행의 세 산출물(핸드오프 · state · 리포트)은 같은 스코프를 말해야 한다**(`../SKILL.md` §5 쓰기 순서).
 >
-> 여기 가정한 이력은 이렇다: **2026-08-09에 `--platform ios`로, 2026-08-23에 `--target android/target-sdk`로 좁혀 돌렸고 전수 실행은 아직 없다.** 그래서 세 항목이 각각 다른 상태다 — `android/target-sdk`는 이번에 조회(=`stale` 없음), `ios/min-xcode`는 2026-08-09에 조회(=`stale: 2026-08-09`), `android/16kb-page-size`는 **한 번도 조회된 적 없음**(=고정 표기). 아래 «규칙»의 세 줄(`scope` 기록 · `stale` 부착 조건 · 고정 표기)이 한 예시에서 동시에 성립하는 모습이다.
+> 여기 가정한 이력은 이렇다: **2026-08-09에 `--platform ios`로, 2026-08-23에 `--target android/target-sdk`로 좁혀 돌렸고 전수 실행은 아직 없다.** 그래서 세 항목이 각각 다른 상태다 — `android/target-sdk`는 이번에 조회(=`stale` 없음), iOS 두 항목은 2026-08-09에 조회(=`stale: 2026-08-09`), `android/16kb-page-size`는 **한 번도 조회된 적 없음**(=고정 표기). `ios/min-xcode`는 `이미 충족`인데 `urgency`가 `임박`이다 — `urgency`는 날짜만 보는 값이라 그렇고, `currency`는 `이미 충족` 항목을 하한·등급에 쓰지 않는다. 아래 «규칙»의 세 줄(`scope` 기록 · `stale` 부착 조건 · 고정 표기)이 한 예시에서 동시에 성립하는 모습이다.
 >
 > **전수 실행이면 `scope: 전체`이고 `stale`이 붙은 항목이 없다** — §1 예시가 그 경우다.
 
@@ -161,8 +177,11 @@ scope: android/target-sdk
 
 - **`rn_floor` 계열 필드는 아예 없어야 한다.** 필드가 있으면 채우려는 압력이 생긴다. **이 파일에 RN 버전을 언급하지 않는다.**
 - **미충족만 싣지 말고 전수로 싣는다.** 충족 여부는 `status`로 구분한다 — `currency`가 "이미 충족"을 알면 하한 계산에서 제외 근거로 쓴다. 비용은 0이다.
-- **`urgency`는 SKILL.md §4 등급의 🔴/🟠 분기와 같은 함수·같은 임계일에서 나온다.** 같은 항목이 리포트 🔴인데 핸드오프 `여유`인 상태는 발생할 수 없다.
-  - `임박` = D-day ≤ 임계일 / `여유` = 초과 / `판정 불가` = D-day 미계산
+- **항목의 `key`는 섹션 제목 `## <슬러그>`다.** 슬러그가 동일성 키이므로 필드로 한 번 더 적지 않는다.
+- **`urgency`는 SKILL.md §4 등급의 🔴/🟠 분기와 같은 함수·같은 임계일에서 나온다.** 같은 항목이 리포트 🔴인데 핸드오프 `여유`인 상태는 발생할 수 없다. 날짜만 보는 값이라 `status`와 무관하게 계산한다.
+  - `임박` = D-day ≤ 임계일 (경과 포함 · 저정밀은 초일 기준) / `여유` = 초과 (저정밀은 초일 기준) / `판정 불가` = 규칙 표현·날짜 언급 없음·소스 도달 실패로 날짜를 못 냈을 때
+  - **저정밀은 `판정 불가`가 아니다.** D-day를 표시하지 않을 뿐 초일로 등급이 선다(SKILL.md §3) — `판정 불가`로 보내면 `currency`가 🔴/🟠를 못 가르고 ⚠로 내린다.
+- **`deadline`은 기본 마감이다.** 연장이 있으면 `(확정 · 연장 <날짜> — 신청 시)`로 병기한다 — `currency`의 기한 경과 판정은 기본 마감을 본다. 발효 요구와 예고 요구가 공존하는 항목은 SKILL.md §3 «발효와 예고»가 고른 쪽이 `requires`·`deadline`에 실린다.
 - **`stale`은 이번 실행에서 조회되지 않은 항목에만 붙인다.** 값 = 마지막으로 조회된 날짜. `currency`는 `stale` 항목의 값도 그대로 쓴다 — 표기용이지 판정용이 아니다.
 - **좁힌 실행은 병합한다.** 미조회 항목을 삭제하거나 값을 비우지 마라 — `currency`가 하한과 `current`를 조용히 잃는다.
 - **병합 보존 대상은 enum에 있는 슬러그만이다.** «enum 전체를 싣는다»의 enum은 현재의 `references/watch-targets.md`다 — 거기서 제거·통합된 슬러그의 섹션은 다음 실행에서 삭제하고, 통합이면 후속 슬러그를 리포트 말미에 알린다. 남겨두면 `currency`가 폐기된 요구를 살아 있는 하한으로 읽는다 — 병합 규칙이 "삭제 금지"를 말하는 대상은 미조회이지 폐기가 아니다.
@@ -178,5 +197,5 @@ scope: android/target-sdk
 2. 번역(`targetSdk 36 → RN 0.7x`)의 **근거 링크를 자기 리포트에 남긴다.**
 3. 근거를 못 찾으면 하한을 만들지 말고 `번역 확인 못 함`으로 남긴다.
 4. 파일이 없으면 하한 없이 계산하고 `플랫폼 하한 미반영`을 적는다.
-5. `current`는 `currency` 스냅샷 헤더의 `targetSdk`·iOS min의 **유일한 공급원**이다.
+5. `current`는 `currency` 스냅샷 헤더의 `targetSdk`·iOS min의 **유일한 공급원**이다 — `targetSdk`는 `android/target-sdk`, iOS min은 `ios/min-deployment-target` 항목의 `current`.
 6. `urgency`는 정책 하한 항목의 🔴/🟠 분기의 **유일한 공급원**이다.
