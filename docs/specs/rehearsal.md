@@ -1,4 +1,4 @@
-# Deep Interview Spec: rehearsal — RN 업그레이드 리허설 룸
+# Spec: rehearsal — RN 업그레이드 리허설 룸
 
 ## Metadata
 
@@ -10,7 +10,7 @@
 - Threshold: 0.15 (`--deep` — 기본 0.20에서 조임)
 - Initial Context Summarized: no
 - Status: **PASSED**
-- 다음 단계: `plugin-dev:/create-plugin`. **autopilot·ralph·team 금지.**
+- 다음 단계: `plugin-dev:/create-plugin`.
 
 ## Clarity Breakdown
 
@@ -613,7 +613,7 @@ artifacts: 보존 3개, 자동 정리 1개
 
 ## 구현자에게 남기는 미확정 (설계 재량 — 인터뷰에서 다루지 않음)
 
-- 리포트·artifacts 경로 규칙 (`.rn-upgrade-kit/rehearsal/reports/YYYY-MM-DD-<target>.md`, `.rn-upgrade-kit/rehearsal/artifacts/YYYY-MM-DD-<target>/` — 플러그인 공용 루트는 `deep-interview-platform-watch.md` §산출물·경로에서 확정)
+- 리포트·artifacts 경로 규칙 (`.rn-upgrade-kit/rehearsal/reports/YYYY-MM-DD-<target>.md`, `.rn-upgrade-kit/rehearsal/artifacts/YYYY-MM-DD-<target>/` — 플러그인 공용 루트는 `platform-watch.md` §산출물·경로에서 확정)
 - 첫 프레임 렌더 신호의 정확한 관측 커맨드
 - ~~Linux 호스트에서 Android SDK·에뮬레이터 부재 시 → `T2/android` = `미실행 (Android SDK 없음)` (호스트 미지원 계열)~~ → **해소됨 (2026-08-18 · 구현 감사)**
 - 로그 스캔 패턴 목록의 정본 위치 (`references/log-patterns.md` 권장)
@@ -621,7 +621,7 @@ artifacts: 보존 3개, 자동 정리 1개
 - ~~`base_sha` 표기 자릿수 (브랜치명 7자리 / 리포트 본문 전체 권장)~~ → **해소됨 (2026-08-18 · 구현 감사)**
 - 채택 커밋에 리포트 파일을 포함할지 (기본 제외 권장 — 리포트·`artifacts/`는 gitignore 대상)
 
-> **해소됨 (2026-08-09 · 스펙 리뷰):** `artifacts` 보존 개수·부팅 대기 시간 → **`shared/constants.md`의 `artifact_retention_n`(3)·`boot_survival_seconds`(60)** (`.omc/specs/plugin-shell.md` §2) / `<target>` 정의·같은 날 재실행 규칙·브랜치 충돌 → §worktree 수명·§채택에서 확정 / frontmatter·`allowed-tools` → §스킬 표면.
+> **해소됨 (2026-08-09 · 스펙 리뷰):** `artifacts` 보존 개수·부팅 대기 시간 → **`shared/constants.md`의 `artifact_retention_n`(3)·`boot_survival_seconds`(60)** (`docs/specs/plugin-shell.md` §2) / `<target>` 정의·같은 날 재실행 규칙·브랜치 충돌 → §worktree 수명·§채택에서 확정 / frontmatter·`allowed-tools` → §스킬 표면.
 
 > **해소됨 (2026-08-18 · 구현 감사):** **Android SDK·에뮬레이터 부재 탐지** → 환경변수(`ANDROID_HOME`/`ANDROID_SDK_ROOT`)와 실행 가능 여부(`adb version`·`emulator -version`)를 **둘 다** 보고 **티어 시작 전에** 1회 판정 / **채택 커밋 메시지 형식** → 검증 티어 목록·`미검증`·`검증 기준`·`베이스라인`을 **전부 싣는다** / **`base_sha` 표기 자릿수** → 브랜치명과 worktree 경로는 **7자리**(`worktree_path_template`의 `<base_sha7>`), 리포트 본문은 전체. 근거는 전부 §구현 감사 반영 — 2026-08-18.
 

@@ -75,7 +75,7 @@ pnpm info react-native-reanimated@4.4.0 peerDependencies
   - 분류별 기본 등급(§4): known issue·마감 임박 → 🔴 / deprecated·제거 예정·여유 있는 마감일 → 🟠 / breaking change·새 권장 패턴 → 🟡 / minor·patch → ⚪. 실제 영향으로 조정하되 근거를 남긴다.
 - **노트를 읽을 때 §3 게이트 재료를 같이 건진다.** 어차피 펼친 노트다 — revert·hotfix 예고·"do not upgrade" 경고·후속 패치 언급은 그 자리에서 메모한다. 나중에 다시 fetch하면 왕복이 두 배다.
 - **병렬화**: 1차(registry)는 **메인이 Bash 한 콜로 끝낸다** — 서브에이전트에 위임하지 않는다(위임 이득 없이 왕복 비용만 든다). 2차 노트 fetch와 Track A·C 웹 조회만 `Agent`에게 나눠 동시 실행하고, 메인은 취합·우선순위·리포트를 맡는다.
-  - `subagent_type`은 **쓰기 도구가 적은 것**을 고른다: `oh-my-claudecode:document-specialist`(Write·Edit 미보유) → 없으면 `general-purpose`.
+  - `subagent_type`은 `general-purpose`를 쓴다.
   - 단 **쓰기 불가 에이전트는 없다** — Bash만 있어도 리다이렉트로 파일을 쓴다. 도구 선택은 완화책일 뿐이고 **실효 통제는 아래 프롬프트 잠금**이다. 각 서브에이전트 프롬프트에 **반드시** 넣는다.
     - **read-only 못박기**: "`package.json`·네이티브 설정·소스를 수정하지 마라. 파일 수정 도구와 쓰기 명령 금지. 조회 결과만 반환하라."
     - **조회 범위 잠금**: "너는 오직 `<트랙/대상>`만 조회한다. 다른 대상은 무시하라."

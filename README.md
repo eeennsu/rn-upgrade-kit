@@ -116,7 +116,7 @@ jobs:
 | `skills/*/references/*.md` | 지연 로드 참조 — 조회가 끝난 뒤에만 Read |
 | `shared/constants.md` | 3스킬 공용 상수 (보존 상한 · 임계일 · 핸드오프 경로 · worktree 경로 · 단계 타임아웃) |
 | `shared/lockstep-sets.md` | 짝으로만 올려야 하는 패키지 집합 — `currency` 게이트 6과 `rehearsal` 인자 검증이 **같은 목록을 본다** |
-| `.omc/specs/*.md` | 설계 정본 (deep interview 산출물 + plugin shell) |
+| `docs/specs/*.md` | 설계 정본 (스킬별 스펙 3개 + plugin shell) |
 | `seed/` | 포팅 원본 (`rn-currency` 단일 스킬 시절) |
 
 **상수를 스킬 본문에 하드코딩하지 마라.** `shared/constants.md`가 존재하는 이유는 두 advisory 스킬이 같은 보존 상한을 봐야 하고, 한쪽만 바뀌는 드리프트가 실제 실패 모드이기 때문이다. 같은 이유로 lockstep 세트도 `shared/`에 있다 — `currency`가 권장한 세트를 `rehearsal`이 "짝 누락"으로 거부하는 건 목록이 두 곳에 있을 때 반드시 오는 결말이다.

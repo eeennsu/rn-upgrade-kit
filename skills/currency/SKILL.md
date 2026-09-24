@@ -284,7 +284,7 @@ platform 추적은 platform-watch가 담당한다.
 
 1차 registry 조회는 대상당 응답 1개이므로 `Agent`에 분담한다. 2차 노트 fetch와 Track A 서사 조회도 분담하고 **메인은 취합·게이트 판정·리포트를 맡는다.**
 
-- `subagent_type`은 **쓰기 도구가 적은 것**을 고른다: `oh-my-claudecode:document-specialist` → 없으면 `general-purpose`.
+- `subagent_type`은 `general-purpose`를 쓴다.
 - **쓰기 불가 에이전트는 없다** — 도구 선택은 완화책일 뿐이고 실효 통제는 프롬프트 잠금이다. 각 서브에이전트 프롬프트에 **반드시** 넣는다:
   - **read-only 못박기**: "`package.json`·네이티브 설정·소스를 수정하지 마라. 파일 수정 도구와 쓰기 명령 금지. **셸 호출도 금지 — 조회는 WebFetch·Read로만 한다.** 조회 결과만 반환하라." (셸까지 막는 이유: 본문의 셸 계약은 메인에게만 걸린다 — 서브에이전트가 셸을 쓰면 `node -e` 1종 잠금이 한 겹 아래서 명목이 된다.)
   - **조회 범위 잠금**: "너는 오직 `<대상>`만 조회한다. 다른 대상은 무시하라."

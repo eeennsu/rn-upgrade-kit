@@ -16,7 +16,7 @@ Claude Code 플러그인 `rn-upgrade-kit`의 소스 repo.
 
 ## 위치
 
-- 스펙: `.omc/specs/`
+- 스펙: `docs/specs/`
 - 포트 원본: `seed/rn-currency-SKILL.md`
 
 세 스킬의 리포트 문체·구조 기준은 seed 파일이다.

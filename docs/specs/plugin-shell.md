@@ -1,6 +1,6 @@
 # Plugin Shell Spec — `rn-upgrade-kit`
 
-세 스킬 스펙(`deep-interview-platform-watch.md` · `deep-interview-currency.md` · `deep-interview-rn-rehearsal.md`)이 **의존하지만 어느 스펙도 소유하지 않는** 플러그인 레벨 산출물의 정본.
+세 스킬 스펙(`platform-watch.md` · `currency.md` · `rehearsal.md`)이 **의존하지만 어느 스펙도 소유하지 않는** 플러그인 레벨 산출물의 정본.
 
 - Generated: 2026-08-09
 - 출처: 스펙 3개 리뷰(§A~§E)의 D·C·E 항목
@@ -20,7 +20,7 @@ rn-upgrade-kit/
       references/
         watch-targets.md          ← enum 정본 (슬러그·platform·URL 2단·교차·실측·읽기 지시)
         report-format.md          ← 리포트 4블록 · state.json 스키마 · 핸드오프 스키마 정본
-        cadence.md                ← 실행 타이밍 (`deep-interview-platform-watch.md` §미확정)
+        cadence.md                ← 실행 타이밍 (`platform-watch.md` §미확정)
     currency/
       SKILL.md
       references/
@@ -77,7 +77,7 @@ rn-upgrade-kit/
 | `target_staleness_warn_days` | `14` | rehearsal (`# 산정 시각` 경과 경고) | 권장 버전은 soak·churn 산물이라 빨리 썩는다. 거부가 아니라 경고 |
 | `boot_survival_seconds` | `60` | rehearsal (T2 통과 조건 1) | rehearsal §T2 |
 | `url_candidate_limit` | `3` | platform-watch (URL 이동 의심 후보) | platform-watch 라운드 5c |
-| `enum_promotion_min_count` | `2` | platform-watch (`[미분류]` enum 승격 후보 제안) | `deep-interview-platform-watch.md` §미확정 해소(2026-08-12). 1회 관측은 우연일 수 있고 그걸로 참조 파일을 고치라고 하면 제안이 소음이 된다 — **소음이면 사용자가 올릴 수 있어야 하므로 상수다.** 소비자가 하나뿐인데도 여기 있는 건 `grade_threshold_days`와 같은 이유다 |
+| `enum_promotion_min_count` | `2` | platform-watch (`[미분류]` enum 승격 후보 제안) | `platform-watch.md` §미확정 해소(2026-08-12). 1회 관측은 우연일 수 있고 그걸로 참조 파일을 고치라고 하면 제안이 소음이 된다 — **소음이면 사용자가 올릴 수 있어야 하므로 상수다.** 소비자가 하나뿐인데도 여기 있는 건 `grade_threshold_days`와 같은 이유다 |
 | `worktree_path_template` | `/tmp/rn-rehearsal-<target>-<base_sha7>` | rehearsal (worktree 생성 경로) | 신설 2026-08-18. 경로가 재현 블록·수동 정리 커맨드·충돌 판정 **세 곳에 동시에** 박힌다 — 참조 파일 예시에만 있으면 예시가 사실상의 정본이 되고, 예시를 고칠 때 나머지 둘이 안 따라온다. `<base_sha7>`은 같은 타깃을 **다른 base에서** 돌릴 때의 충돌을 없앤다 |
 | `step_timeout_install_seconds` | `1800` | rehearsal (T1 의존성 설치) | 신설 2026-08-18 |
 | `step_timeout_check_seconds` | `900` | rehearsal (T1 타입체크·테스트) | 신설 2026-08-18 |
@@ -86,7 +86,7 @@ rn-upgrade-kit/
 
 - **타임아웃이 티어가 아니라 단계 단위인 이유**는 멈추는 지점이 단계마다 다르기 때문이다. Gradle 빌드의 45분과 `pod install`이 네트워크에서 멈춘 45분은 같은 상한을 쓸 수 없다. **`boot_survival_seconds`(통과 조건)와 `step_timeout_boot_seconds`(상한)를 같게 만들면 "60초 생존"을 관측할 시간 자체가 없다** — 둘은 다른 축이다.
 - **값 변경은 이 파일 한 곳에서만.** 스킬 본문·`references/*`에 같은 숫자를 복제하지 않는다.
-- `grade_threshold_days`는 `platform-watch`만 소비한다. currency는 그 값을 다시 계산하지 않고 핸드오프 `urgency` 필드를 읽는다 (§A2 — `deep-interview-currency.md` §핸드오프).
+- `grade_threshold_days`는 `platform-watch`만 소비한다. currency는 그 값을 다시 계산하지 않고 핸드오프 `urgency` 필드를 읽는다 (§A2 — `currency.md` §핸드오프).
 
 ---
 
@@ -178,7 +178,7 @@ platform-watch  ──파일──▶  currency  ──커맨드 블록──▶
 
 ## 5. 미해결 위임 (구현 재량)
 
-- ~~`references/watch-targets.md`의 enum 초기 URL 실측 — 스펙은 슬러그만 확정했다~~ → **해소됨 (2026-08-18 · URL 14개 전수 조회.** 2차 URL 2개가 404였고, 그 결과로 `실측`·`교차` 필드와 2차 독립성 3단계가 스키마에 들어갔다 — `.omc/specs/deep-interview-platform-watch.md` §2단 URL)
+- ~~`references/watch-targets.md`의 enum 초기 URL 실측 — 스펙은 슬러그만 확정했다~~ → **해소됨 (2026-08-18 · URL 14개 전수 조회.** 2차 URL 2개가 404였고, 그 결과로 `실측`·`교차` 필드와 2차 독립성 3단계가 스키마에 들어갔다 — `docs/specs/platform-watch.md` §2단 URL)
 - `references/log-patterns.md`의 T2 로그 패턴 목록
 - `references/sources.md`의 SM·Callstack 문서 URL과 릴리즈 노트 태그 URL 조립 규칙(모노레포 접두사 변형)
 - `shared/constants.md`의 물리 포맷(마크다운 표 / YAML frontmatter) — 스킬이 Read해서 값을 뽑을 수 있으면 된다

@@ -1,16 +1,16 @@
-# Deep Interview Spec: currency — RN 스택 최신성 · 권장 버전 산정
+# Spec: currency — RN 스택 최신성 · 권장 버전 산정
 
 ## Metadata
 
 - Interview ID: `di-currency-20260809`
 - Rounds: 9
 - Final Ambiguity Score: **4.7%**
-- Type: greenfield (플러그인 신규 / 정본 `seed/rn-currency-SKILL.md`, 형제 스펙 `deep-interview-platform-watch.md`·`deep-interview-rn-rehearsal.md`)
+- Type: greenfield (플러그인 신규 / 정본 `seed/rn-currency-SKILL.md`, 형제 스펙 `platform-watch.md`·`rehearsal.md`)
 - Generated: 2026-08-09
 - Threshold: 0.20 (`--standard`)
 - Initial Context Summarized: no
 - Status: **PASSED**
-- 다음 단계: `plugin-dev:/create-plugin`. **autopilot·ralph·team 금지.**
+- 다음 단계: `plugin-dev:/create-plugin`.
 
 ## Clarity Breakdown
 
@@ -199,7 +199,7 @@ node -e "fetch('https://registry.npmjs.org/<pkg>').then(r=>r.json()).then(d=>{co
 
 > **정제 (2026-08-18 · 구현 감사 반영):** 구현은 위 2분기를 **3상태로 가른다** — `(핸드오프 없음)` / `(핸드오프 미조회 항목)` / `(핸드오프 stale — <날짜>)`. 가운데가 신설이다. `platform-watch --platform ios`를 **처음** 돌리면 파일은 있고 `android/*` 항목만 없는데, 이걸 파일 부재로 접으면 사용자는 *"`platform-watch`를 그 플랫폼으로 한 번 더 돌려야 한다"*를 못 읽는다. **세 상태는 사용자가 할 일이 각각 다르므로 표기도 갈라야 한다** — 하한을 안 쓰는 동작 자체는 파일 부재와 같으니 2분기의 판정 규칙은 그대로다.
 
-> **정제 (2026-08-19 · 감사 라운드 3 반영):** 위 표에 **상수 도달 실패** 행이 붙었다. `handoff_path`가 `shared/constants.md`에서 오므로(`.omc/specs/plugin-shell.md` §1 *"하드코딩 금지 대상: 아래 표의 모든 값"* · §2 `handoff_path` 행) **상수에 도달하지 못하면 핸드오프를 열 자리 자체를 모른다.** 파일 부재와 같은 표기로 접으면 사용자는 `platform-watch`를 다시 돌리는데 고칠 것은 상수 도달이다. 판정 규칙은 파일 부재와 같다 — 하한 없이 계산하고 대상은 남긴다. **경로를 지어내는 것은 금지다.**
+> **정제 (2026-08-19 · 감사 라운드 3 반영):** 위 표에 **상수 도달 실패** 행이 붙었다. `handoff_path`가 `shared/constants.md`에서 오므로(`docs/specs/plugin-shell.md` §1 *"하드코딩 금지 대상: 아래 표의 모든 값"* · §2 `handoff_path` 행) **상수에 도달하지 못하면 핸드오프를 열 자리 자체를 모른다.** 파일 부재와 같은 표기로 접으면 사용자는 `platform-watch`를 다시 돌리는데 고칠 것은 상수 도달이다. 판정 규칙은 파일 부재와 같다 — 하한 없이 계산하고 대상은 남긴다. **경로를 지어내는 것은 금지다.**
 
 - **`오래됨`은 상태가 아니다.** 신선도 임계값 N을 발명하지 않는다 — currency에는 N을 고를 근거가 없다. 날짜를 소유한 쪽이 날짜를 판정한다(`platform-watch`가 리포트 보존 12개를 주간 실행 기준으로 정한 것과 같은 규칙).
 - **비대칭 근거:** 정책 하한은 시간이 갈수록 오르기만 한다. 낡은 하한은 **과소평가**일 뿐이지만 하한 부재는 마감 자체를 못 본다. 안 쓰는 쪽이 낙관 편향이다 — `platform-watch` §날짜 신뢰 모델이 죽인 편향과 같은 방향.
@@ -277,7 +277,7 @@ node -e "fetch('https://registry.npmjs.org/<pkg>').then(r=>r.json()).then(d=>{co
 - **2차 (릴리즈 노트)**: gap이 있는 대상만, **검색이 아니라 정확한 태그 URL로 직행 fetch**한다(`github.com/<org>/<repo>/releases/tag/<ver>`). 읽을 범위는 버전 델타로 정해진다. 패치 수준이라 ⚪가 확정된 대상은 2차를 생략해도 된다.
 - **노트를 읽을 때 게이트 재료를 같이 건진다.** revert·hotfix 예고·"do not upgrade"·후속 패치 언급은 그 자리에서 메모한다.
 - **병렬화**: 1차는 대상당 registry 응답 1개이므로 `Agent`에 분담한다(seed의 "Bash 한 콜"이 사라졌으므로 위임 손익이 바뀐다). 2차 노트 fetch와 Track A 서사 조회도 분담하고, 메인은 취합·게이트 판정·리포트를 맡는다.
-  - `subagent_type`은 **쓰기 도구가 적은 것**을 고른다: `oh-my-claudecode:document-specialist` → 없으면 `general-purpose`.
+  - `subagent_type`은 `general-purpose`를 쓴다.
   - 각 서브에이전트 프롬프트에 **반드시** 넣는다:
     - **read-only 못박기**: "`package.json`·네이티브 설정·소스를 수정하지 마라. 파일 수정 도구와 쓰기 명령 금지. 조회 결과만 반환하라."
     - **조회 범위 잠금**: "너는 오직 `<대상>`만 조회한다. 다른 대상은 무시하라."
@@ -441,7 +441,7 @@ platform 추적은 platform-watch가 담당한다.
 
 - `platform-watch`와 **같은 값·같은 정리 보고 한 줄**. 같은 매체(마크다운 수 KB)이므로 성격이 같다.
 - `rehearsal`의 N=3은 매체가 다르므로(수십 MB) **성격에서 파생된 정당한 차이**다.
-- **N은 조정 가능한 값으로 한 곳에** 둔다. 두 advisory 스킬이 같은 상수를 참조해 한쪽만 바뀌는 드리프트를 막는다. 물리적 위치는 **플러그인 루트 `shared/constants.md`의 `report_retention_n`**으로 확정됐다 (인터뷰 후 — `.omc/specs/plugin-shell.md` §2). 스킬별 `references/`는 소유자가 하나라 공유물을 담을 수 없다. `soak_minor_days`·`soak_patch_days`·`handoff_path`·`handoff_schema_version`도 같은 파일에서 온다.
+- **N은 조정 가능한 값으로 한 곳에** 둔다. 두 advisory 스킬이 같은 상수를 참조해 한쪽만 바뀌는 드리프트를 막는다. 물리적 위치는 **플러그인 루트 `shared/constants.md`의 `report_retention_n`**으로 확정됐다 (인터뷰 후 — `docs/specs/plugin-shell.md` §2). 스킬별 `references/`는 소유자가 하나라 공유물을 담을 수 없다. `soak_minor_days`·`soak_patch_days`·`handoff_path`·`handoff_schema_version`도 같은 파일에서 온다.
 - **초과분을 지우지 않는다 — 보고만 한다 (2026-08-18 · 구현 감사 반영).** 이 스킬에는 **파일을 지울 수단이 없다**: `Write`는 덮어쓰기만 하고 `Bash`는 §수집의 `node -e` 1종으로 잠겨 있다. 그 제약은 실수가 아니라 전 호스트 지원의 구조적 근거라 도구를 늘려 풀지 않는다. **없는 수단의 실행 결과를 보고하면 그게 환각이고, 환각 금지는 이 스킬의 1번 제약이다.** 고정 표기는 `리포트 N개 유지 · 상한 초과 M개 — 수동 정리 필요`이고 그 아래 초과 파일 경로를 나열한다 — 조용히 방치하면 사용자는 파일이 쌓이는 걸 모른다.
 - **정리 커맨드는 적지 않고 경로만 낸다.** 호스트가 POSIX인지 PowerShell인지 확인할 수단이 없다 — 확인 못 한 커맨드를 적으면 사용자가 그대로 붙여넣어 엉뚱한 것을 지운다.
 - **`rehearsal`만 자동 정리를 유지한다.** 그쪽은 `Bash` 용도 제한이 없어 실제로 지울 수 있다. 세 스킬이 갈리는 근거는 정책이 아니라 **가진 도구**다.
@@ -754,7 +754,7 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 ## Technical Context
 
 - **정본:** `seed/rn-currency-SKILL.md` — frontmatter(`name`/`description`/`user-invocable`/`argument-hint`/`allowed-tools`), 번호 절 구조, 서두 불릿 원칙, `references/*.md` 지연 로드 패턴을 그대로 따른다. §0~§5 구조는 유지하되 Track C 관련 문단과 Bash 블록이 제거된다.
-- **형제 스펙:** `.omc/specs/deep-interview-platform-watch.md`(핸드오프 계약·경로 규약·degrade 원칙·⚠✅ 기호), `.omc/specs/deep-interview-rn-rehearsal.md`(어휘 소수 고정 + 직교 플래그, 사유 구분 표기, 보존 상한, 단일 복붙 블록 형태).
+- **형제 스펙:** `docs/specs/platform-watch.md`(핸드오프 계약·경로 규약·degrade 원칙·⚠✅ 기호), `docs/specs/rehearsal.md`(어휘 소수 고정 + 직교 플래그, 사유 구분 표기, 보존 상한, 단일 복붙 블록 형태).
 - `allowed-tools`: **`Read Write Glob Bash WebFetch Agent Skill`** — `WebSearch` 불포함. `Bash`는 §수집의 `node -e` 1종 용도로 본문에서 잠근다.
 - **`references/sources.md` 신설** — SM(`react-native-best-practices`)·Callstack(`react-native-perf-guide`) skill이 없을 때의 폴백 문서 URL과, 릴리즈 노트 태그 URL 조립 규칙(모노레포·태그 접두사 변형)의 정본. **`WebSearch`가 없으므로 폴백은 "검색해서 찾는다"가 될 수 없다 — URL을 미리 알고 있어야 한다.**
 - 대상 프로젝트 전제: New Architecture (`newArchEnabled=true`, Hermes, Nitro Modules, Reanimated 4), **Expo 미사용**.
@@ -786,7 +786,7 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 
 `platform-watch` 쪽 대응 기록은 그 스펙 §형제 스펙에 반영해야 할 변경 3번 표에, `rehearsal` 쪽은 §인자 검증 절과 온톨로지 정정 노트에 있다.
 
-### `.omc/specs/deep-interview-platform-watch.md`
+### `docs/specs/platform-watch.md`
 
 1. **§현재값 읽기 — "읽기 규칙은 플러그인 공유 참조 파일" 절 철회** (라운드 7a)
    - `references/native-config-read.md`를 만들지 않는다. 이 스펙의 §스냅샷 헤더가 그 안을 대체한다.
@@ -804,7 +804,7 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
    - `current`가 currency 스냅샷 헤더의 **유일한 공급원**임을 명기한다. 현재 스펙은 `current`를 platform-watch 자신의 충족 판정용으로만 서술한다.
    - §형제 스펙에 반영해야 할 변경 2번(`currency` 스킬 스펙 미적용)을 **적용 완료**로 갱신하되, 그 안의 "네이티브 설정 읽기 공유 참조 파일 채택"은 1번에 따라 철회 표기.
 
-### `.omc/specs/deep-interview-rn-rehearsal.md`
+### `docs/specs/rehearsal.md`
 
 6. **인자 검증 규칙 추가** (라운드 6c)
    - 실행 전 검증: 존재하는 stable인가 · lockstep 짝이 다 왔나 · 프리릴리즈 아닌가.
@@ -824,7 +824,7 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 
 > **해소됨 (2026-08-09 · 스펙 리뷰):**
 > **registry 응답 크기 대응** → 실측으로 확정됐다(§수집 — 실측 결과). full packument WebFetch는 **절단된다**. `dist-tags`는 전용 엔드포인트, `peerDependencies`·`deprecated`는 버전별 엔드포인트, `time`·버전 목록은 `node -e`. abbreviated packument는 WebFetch가 Accept 헤더를 못 실어 배제됐고 `time`도 없다.
-> **보존 상한 공유 상수의 물리적 위치** → `shared/constants.md`의 `report_retention_n` (`.omc/specs/plugin-shell.md` §2).
+> **보존 상한 공유 상수의 물리적 위치** → `shared/constants.md`의 `report_retention_n` (`docs/specs/plugin-shell.md` §2).
 > **soak 기본값의 조정 가능 여부** → 같은 파일의 `soak_minor_days`·`soak_patch_days`로 **조정 가능 확정**.
 > **릴리즈 노트 태그 URL 조립 규칙의 정본 위치** → `references/sources.md`.
 
@@ -959,6 +959,6 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 - **정본 `package.json` 선택 규칙을 둔다.** `Glob`으로 전부 찾고 `react-native`를 `dependencies`에 가진 것만 남긴다. 2개 이상이면 **가장 얕은 것을 정본**으로 삼고 나머지 경로를 헤더에 나열한 뒤 `미조회 (monorepo — 경로 지정 필요)`로 보낸다 — 조용히 하나만 고르면 **침묵이 점검 결과로 둔갑해** 사용자가 다른 앱의 gap을 "없다"로 읽는다. 0개거나 `dependencies`가 비었으면 리포트를 만들지 않고 종료한다 — 대상 0개인 리포트는 "gap 없음"과 겉모습이 같아서 더 나쁘다.
 - **`workspace:*`·`catalog:`와 dist-tags `latest` 부재를 따로 받는다.** 앞은 `⚠ 선언 범위 해석 불가`, 뒤는 최신을 `확인 못 함`. **한 행으로 묶지 않는 이유는 사용자가 할 일이 정반대**라서다 — 전자는 우리 쪽 선언이라 워크스페이스 설정을 보면 풀리고, 후자는 퍼블리셔 쪽 사정이라 우리가 할 수 있는 게 없다. 버전 목록의 마지막 항목을 최신으로 대신 쓰지 않는다 — **태깅하지 않은 것과 배포 순서는 다른 사실이다.**
 - **핸드오프 결손을 3상태로 가른다.** `(핸드오프 없음)` / `(핸드오프 미조회 항목)` / `(핸드오프 stale — <날짜>)`. 근거: 셋은 **사용자가 할 일이 각각 다르다** — 최초 실행 / 그 플랫폼으로 한 번 더 실행 / 값이 있으니 급하지 않음. 한 표기로 뭉치면 고쳐야 할 것과 그냥 낡은 것이 같아 보인다. `platform-watch`가 실어 보낸 고정 표기는 **그대로 옮기고 값을 지어내지 않는다** — 읽는 쪽이 채우면 두 스킬이 다른 값을 말하게 되고 핸드오프를 단방향으로 만든 이유가 사라진다.
-  - **정정 (2026-08-19 · 감사 라운드 3):** **3상태 → 4상태.** `(핸드오프 경로 미상 — 상수 도달 실패)`가 넷째다. `handoff_path`가 `shared/constants.md`에서 오므로(`.omc/specs/plugin-shell.md:47`·`:68` — 하드코딩 금지) **상수에 도달하지 못하면 핸드오프를 열 자리 자체를 모르고**, 계약 5항(§핸드오프 — 독자 계약)이 `current`를 스냅샷 헤더의 유일한 공급원으로 못박아 대체 경로도 없다. 넷째를 파일 부재로 접으면 사용자는 `platform-watch`를 다시 도는데 고칠 것은 상수 도달이다. 본문 §핸드오프 2분기 표·AC와 같이 고쳤다 — **이 절은 본문과 동기다.**
+  - **정정 (2026-08-19 · 감사 라운드 3):** **3상태 → 4상태.** `(핸드오프 경로 미상 — 상수 도달 실패)`가 넷째다. `handoff_path`가 `shared/constants.md`에서 오므로(`docs/specs/plugin-shell.md:47`·`:68` — 하드코딩 금지) **상수에 도달하지 못하면 핸드오프를 열 자리 자체를 모르고**, 계약 5항(§핸드오프 — 독자 계약)이 `current`를 스냅샷 헤더의 유일한 공급원으로 못박아 대체 경로도 없다. 넷째를 파일 부재로 접으면 사용자는 `platform-watch`를 다시 도는데 고칠 것은 상수 도달이다. 본문 §핸드오프 2분기 표·AC와 같이 고쳤다 — **이 절은 본문과 동기다.**
 - **degrade 10경로 → 18경로.** 더해진 8개는 §degrade 경로의 «재정정 (2026-08-18)»에 있다. 경로가 늘어난 건 규칙이 늘어서가 아니라 **"대상은 목록에서 사라지지 않는다"를 지키려면 새로 관측된 실패마다 자리를 하나씩 줘야 하기 때문**이다.
 - **`disallowed-tools: WebSearch Edit`을 신설한다.** 공식 문서 확인: `allowed-tools`는 *"It does not restrict which tools are available: every tool remains callable"*(https://code.claude.com/docs/en/skills «Pre-approve tools for a skill»). 즉 *"`allowed-tools`에 없으니 못 쓴다"*로 세운 이 스펙의 강제 서술은 **전부 명목뿐이었다.** 실제 강제 수단은 `disallowed-tools`뿐이다. 구분자(공백·콤마·YAML 리스트)는 전부 유효하므로 감사 #8의 구분자 파싱 우려는 **기각**이고, 진짜 문제는 파싱이 아니라 **필드의 의미를 잘못 안 것**이었다.

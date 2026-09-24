@@ -1,16 +1,16 @@
-# Deep Interview Spec: platform-watch — 플랫폼 정책 마감 감사
+# Spec: platform-watch — 플랫폼 정책 마감 감사
 
 ## Metadata
 
 - Interview ID: `di-platform-watch-20260809`
 - Rounds: 10
 - Final Ambiguity Score: **1.0%**
-- Type: greenfield (플러그인 신규 / 참조 정본 `seed/rn-currency-SKILL.md` Track C, 형제 스펙 `deep-interview-rn-rehearsal.md`)
+- Type: greenfield (플러그인 신규 / 참조 정본 `seed/rn-currency-SKILL.md` Track C, 형제 스펙 `rehearsal.md`)
 - Generated: 2026-08-09
 - Threshold: 0.20 (`--standard`)
 - Initial Context Summarized: no
 - Status: **PASSED**
-- 다음 단계: `plugin-dev:/create-plugin`. **autopilot·ralph·team 금지.**
+- 다음 단계: `plugin-dev:/create-plugin`.
 
 ## Clarity Breakdown
 
@@ -156,7 +156,7 @@ iOS/Android 플랫폼 정책 요구사항 중 **마감일이 있는 것**을 공
 
 - **철회 사유:** 규칙 공유는 *약속*이라 어긋날 수 있다. `currency`가 이 스킬의 핸드오프 `current` 필드를 재사용하면 두 스킬이 서로 다른 값을 말할 경로가 **구조적으로 없다.** 라운드 10에서 핸드오프 스키마에 `rn_floor` 필드를 두지 않은 것과 같은 수법 — 압력을 관리하지 말고 경로를 없앤다.
 - **파싱 규칙·충돌 판정(위 §복잡도 상한 · §충돌 판정)은 이 스펙 안에 그대로 자족적으로 남는다.** 삭제된 것은 공유 계약뿐이고 읽기 규칙 자체가 아니다. 이 스킬은 여전히 enum이 요구하는 값을 직접 읽는다.
-- `currency` 쪽 결론: `targetSdk`·iOS 배포 타깃은 핸드오프 `current`에서 가져오고, `newArchEnabled`·`hermesEnabled` 두 플래그만 `gradle.properties`에서 직접 Read한다(파싱 규칙이 필요한 종류가 아니다). 상세는 `deep-interview-currency.md` §스냅샷 헤더 · 네이티브 설정.
+- `currency` 쪽 결론: `targetSdk`·iOS 배포 타깃은 핸드오프 `current`에서 가져오고, `newArchEnabled`·`hermesEnabled` 두 플래그만 `gradle.properties`에서 직접 Read한다(파싱 규칙이 필요한 종류가 아니다). 상세는 `currency.md` §스냅샷 헤더 · 네이티브 설정.
 - 근거: 두 스펙에 상충하는 지시가 남으면 구현 때 예측 불가로 해소된다.
 
 ### 충돌 판정 — 병기 + 보수
@@ -332,7 +332,7 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
   - **`rehearsal`만 자동 정리를 유지한다.** 그쪽은 `Bash` 용도 제한이 없어 실제로 지울 수 있다. 세 스킬이 갈리는 근거는 정책이 아니라 **가진 도구**다 — 도구가 같아지면 규칙도 같아진다.
   - **표기는 `currency`와 글자까지 같다.** 두 advisory 스킬이 같은 보존 상수를 참조하는데 문구가 갈리면 사용자가 두 리포트를 다른 정책으로 읽는다.
   - **`currency`와 같은 상수를 참조한다** (`currency` 라운드 9a). 두 advisory 스킬은 같은 매체(마크다운 수 KB)라 성격이 같다 — 각자 하드코딩하면 한쪽만 바뀌는 드리프트가 난다. `rehearsal`의 N=3은 매체가 다르므로(수십 MB) 성격에서 파생된 정당한 차이다.
-  - 상수의 물리적 위치는 **플러그인 루트 `shared/constants.md`의 `report_retention_n`**으로 확정됐다 (인터뷰 후 — `.omc/specs/plugin-shell.md` §2). 스킬별 `references/`는 소유자가 하나라 공유물을 담을 수 없다 — 핸드오프를 `handoff/` 중립 지대에 둔 논리와 동일하다. `handoff_path`·`grade_threshold_days`·`url_candidate_limit`도 같은 파일에서 온다.
+  - 상수의 물리적 위치는 **플러그인 루트 `shared/constants.md`의 `report_retention_n`**으로 확정됐다 (인터뷰 후 — `docs/specs/plugin-shell.md` §2). 스킬별 `references/`는 소유자가 하나라 공유물을 담을 수 없다 — 핸드오프를 `handoff/` 중립 지대에 둔 논리와 동일하다. `handoff_path`·`grade_threshold_days`·`url_candidate_limit`도 같은 파일에서 온다.
 - **같은 날 두 번 실행하면 덮어쓴다** (`currency` 라운드 9c). 시각 suffix를 붙이지 않는다 — 붙이면 보존 상한 계산이 "12일"이 아니라 "12파일"로 흔들려 상한의 의미가 바뀐다. 스코프를 좁혀 돌렸어도 파일을 쪼개지 않는다(헤더의 스코프 줄이 그 사실을 담는다).
 
 ---
@@ -394,7 +394,7 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
 
 ### `currency` 쪽 계약 — **반영 완료 (2026-08-09)**
 
-계약은 양쪽에 적혀야 성립한다. 아래 5항 전부 `deep-interview-currency.md` §핸드오프 — 독자 계약에 실렸다.
+계약은 양쪽에 적혀야 성립한다. 아래 5항 전부 `currency.md` §핸드오프 — 독자 계약에 실렸다.
 
 1. `currency`는 이 파일을 읽어 게이트의 **하한**으로 쓴다. (반영 시 정제: 하한은 게이트 목록에 추가되지 않고 **범위 축**이 된다 — 게이트 6개는 전부 하강 필터라 역방향 제약과 방향이 충돌한다. `currency` 라운드 1.)
 2. 번역("targetSdk 36 → RN 0.7x")의 **근거 링크를 자기 리포트에 남긴다** — 확정 사항 6의 환각 금지가 `currency` 쪽으로 상속된다.
@@ -665,7 +665,7 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
 ## Technical Context
 
 - **자매 스킬 정본:** `seed/rn-currency-SKILL.md` — frontmatter(`name`/`description`/`user-invocable`/`argument-hint`/`allowed-tools`), 번호 절 구조, 서두 불릿 원칙, `references/*.md` 지연 로드 패턴을 그대로 따른다. seed §1 Track C와 §2의 "Track C는 registry에 아예 없다 — 웹 조회가 유일한 경로다"가 이 스킬의 직접 전신이다.
-- **형제 스펙:** `.omc/specs/deep-interview-rn-rehearsal.md` — 판정 어휘 소수 고정 + 오염 플래그 분리, 사유 구분 표기("요청 안 함"과 "못 함"은 다른 사유), 지원 호스트 매트릭스 명시, `.gitignore` 미수정 원칙, 산출물 보존 상한을 이 스펙이 계승한다.
+- **형제 스펙:** `docs/specs/rehearsal.md` — 판정 어휘 소수 고정 + 오염 플래그 분리, 사유 구분 표기("요청 안 함"과 "못 함"은 다른 사유), 지원 호스트 매트릭스 명시, `.gitignore` 미수정 원칙, 산출물 보존 상한을 이 스펙이 계승한다.
 - `allowed-tools`: **`Read Write Glob WebSearch WebFetch Agent`** — **`Bash` 불포함**(셸 의존 0).
   - **정정 (2026-08-18 · 구현 감사 반영): 목록에서 빠진 것만으로는 `Bash`가 막히지 않는다.** `allowed-tools`는 승인 스킵이지 제한이 아니다 — 공식 문서가 *"It does not restrict which tools are available: every tool remains callable"*라고 못박는다(https://code.claude.com/docs/en/skills). 그래서 구현은 **`disallowed-tools: Bash Edit`**을 신설했다. **이게 "전 호스트 지원"을 처음으로 구조적 사실로 만든다** — 그 전까지 셸 미사용은 본문 문장 하나에만 기대고 있었다.
   - **`Glob` 추가 (인터뷰 후 — 2026-08-09).** `ios/privacyinfo-required`는 `PrivacyInfo.xcprivacy`의 **존재 여부**가 현재값이고, flavor별 `build.gradle`은 경로가 프로젝트마다 다르다. `Read`만으로는 파일 탐색이 불가능해 §현재값 읽기의 *"경로 전부 부재 → `현재값 확인 못 함`"* 판정이 **부재와 못 찾음을 구분하지 못한다.** `Glob`은 셸이 아니므로 §날짜 신뢰 모델의 *셸 의존 0* 불변식을 깨지 않는다 — `date`·`cat`·`ls` 금지는 그대로다.
@@ -678,11 +678,11 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
 
 인터뷰 라운드 9(e)·10(c)에서 확정. **이 스펙 파일과 별개의 후속 작업이다.**
 
-1. ~~`.omc/specs/deep-interview-rn-rehearsal.md`~~ — **적용 완료 (2026-08-09)**
+1. ~~`docs/specs/rehearsal.md`~~ — **적용 완료 (2026-08-09)**
    - 리포트·artifacts 경로를 플러그인 공용 루트 아래로 이동
    - 스킬명 참조를 `platform-watch`·`currency`로 통일 (파일 경로 `seed/rn-currency-SKILL.md`는 유지)
    - 스킬명 `rehearsal`을 가정에서 확정으로 승격
-2. ~~`currency` 스킬 스펙~~ — **적용 완료 (2026-08-09)** — `.omc/specs/deep-interview-currency.md` 작성됨
+2. ~~`currency` 스킬 스펙~~ — **적용 완료 (2026-08-09)** — `docs/specs/currency.md` 작성됨
    - 핸드오프 파일 독자 계약 **5항** 추가 (§핸드오프 계약) — 4항에 `current` 공급원 항이 더해짐
    - ~~네이티브 설정 읽기 공유 참조 파일 채택~~ — **철회.** `currency` 라운드 7에서 핸드오프 `current` 재사용으로 대체됐다 (§현재값 읽기의 철회 문단)
    - 리포트·산출물 경로를 `.rn-upgrade-kit/currency/`로 (§산출물·경로)
@@ -710,7 +710,7 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
 
 > **해소됨 (2026-08-09):** 리포트 보존 상한 기본값 → **N=12 확정**(§산출물·경로) / 같은 날 두 번 실행 시 파일명 규칙 → **덮어쓰기 확정**(§산출물·경로) / `references/native-config-read.md` → **철회**(§현재값 읽기).
 >
-> **추가 해소 (2026-08-09 · 스펙 리뷰):** 등급 임계일 기본값 → **90 확정, `shared/constants.md`의 `grade_threshold_days`** / URL 이동 의심 후보 상한 → **3 확정, 같은 파일의 `url_candidate_limit`** / 보존 상한 공유 상수의 물리적 위치 → **`shared/constants.md`의 `report_retention_n`** (`.omc/specs/plugin-shell.md` §2가 정본).
+> **추가 해소 (2026-08-09 · 스펙 리뷰):** 등급 임계일 기본값 → **90 확정, `shared/constants.md`의 `grade_threshold_days`** / URL 이동 의심 후보 상한 → **3 확정, 같은 파일의 `url_candidate_limit`** / 보존 상한 공유 상수의 물리적 위치 → **`shared/constants.md`의 `report_retention_n`** (`docs/specs/plugin-shell.md` §2가 정본).
 
 > **해소됨 (2026-08-12 · 구현 감사):**
 > **`state.json` 스키마** → `schema_version`·`last_run`·`entries`(enum 슬러그 키) + **`unclassified`**. 마지막 것은 §추적 대상의 *enum 승격 후보 제안*이 **저장할 곳 없이 요구되고 있었기** 때문에 추가됐다 — `[미분류]`는 동일성 키가 없고 상태에도 자리가 없어 "반복 등장"을 판정할 방법이 없었다(AC의 해당 항목이 구조적으로 불통과였다).
