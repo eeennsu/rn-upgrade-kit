@@ -49,7 +49,7 @@ disallowed-tools: WebSearch Edit
 | **B. 주요 라이브러리** | Reanimated(+`react-native-worklets`) · Gesture Handler · `react-native-svg` · React Navigation · TanStack Query · Zustand · FlashList · LegendList · `@gorhom/bottom-sheet` · Tamagui · screens · safe-area-context · mmkv · keyboard-controller · permissions · Nitro Modules · Sentry · hot-updater | registry + 각 GitHub releases |
 
 - **Track A는 절반만 registry다.** `react-native`·`react`의 버전 숫자는 registry에 그대로 있다 — **이걸 웹으로 다시 찾지 마라.** registry 밖인 건 **서사**뿐이다(그 버전에서 무엇이 강제됐나). Hermes·New Arch는 패키지가 아니라 RN 내장·플래그라 숫자조차 registry에 없다.
-- `@react-native/*`는 devDependencies라 대상 밖이고 RN에 lockstep이라 독립 신호가 없다.
+- **`@react-native/*`는 gap·게이트 대상이 아니지만 lockstep 동반 대상이다** (2026-09-24). 대개 devDependencies에 있고 RN 모노레포에서 RN과 **같은 버전 번호로** 함께 배포돼 독립 신호가 없으므로 조회하지 않는다. 대신 RN 권장이 서면 정본 `package.json`에 직접 선언된 `@react-native/*` 전부가 **RN 권장과 같은 번호로** 다음 단계 블록에 실린다(`references/report-format.md` 규칙 a). 빠뜨리면 `rehearsal` 인자 검증 3이 `lockstep 짝 누락`으로 거부한다 — `references/lockstep-sets.md`의 RN 코어 세트가 이들을 포함한다.
 - 외부 skill 우선순위와 폴백 URL은 `references/sources.md`에 있다.
 
 ### 어느 `package.json`이 정본인가
@@ -73,7 +73,7 @@ disallowed-tools: WebSearch Edit
 | 대상 목록 · 선언 범위 | `package.json` **Read** |
 | 설치된 정확 버전 | lockfile **Read** (`Glob`으로 4종 중 존재하는 것 탐지) |
 | `latest` · dist-tags · 프리릴리즈 여부 | **`node -e` 1줄 출력의 dist-tags 행** — 실패 시 폴백: `registry.npmjs.org/-/package/<pkg>/dist-tags` **WebFetch** |
-| peer 상한(요구 RN 범위) · `deprecated` | **같은 `node -e` 출력의 열** — 실패 시 폴백: `registry.npmjs.org/<pkg>/<ver>` **WebFetch** |
+| peer 범위 전체(요구 RN 범위 포함) · `deprecated` | **같은 `node -e` 출력의 열** — `peerDependencies` 원문 JSON. 실패 시 폴백: `registry.npmjs.org/<pkg>/<ver>` **WebFetch** |
 | 버전 목록 · 배포일 (soak·churn 재료) | **`node -e` 1줄** — 아래. **폴백 없음** |
 | 오늘 날짜 | **컨텍스트 현재 날짜** — `date` 호출 없음 |
 
@@ -88,19 +88,21 @@ disallowed-tools: WebSearch Edit
 ### `node -e` — 유일하게 허용되는 Bash 용도
 
 ```sh
-node -e "fetch('https://registry.npmjs.org/react-native-worklets').then(r=>r.json()).then(d=>{console.log('dist-tags',JSON.stringify(d['dist-tags']));const t=d.time;Object.keys(d.versions).filter(v=>!/-/.test(v)).slice(-10).forEach(v=>{const m=d.versions[v];console.log(v,t[v].slice(0,10),(m.peerDependencies&&m.peerDependencies['react-native'])||'-',m.deprecated?'DEPRECATED':'')})})"
+node -e "const P='react-native-worklets',C='0.5.1';const n=s=>s.split('.').map(Number);const c=(a,b)=>{const x=n(a),y=n(b);for(let i=0;i<3;i++){if(x[i]-y[i])return x[i]-y[i]}return 0};fetch('https://registry.npmjs.org/'+P).then(r=>r.json()).then(d=>{if(d.versions===undefined){console.log('NOT_FOUND',P);return}console.log('dist-tags',JSON.stringify(d['dist-tags']));const t=d.time||{};Object.keys(d.versions).filter(v=>/-/.test(v)===false&&n(v)[0]===n(C)[0]&&c(v,C)>=0).sort(c).forEach(v=>{const m=d.versions[v];console.log([v,(t[v]||'?').slice(0,10),m.peerDependencies?JSON.stringify(m.peerDependencies):'-',m.deprecated?'DEPRECATED':''].join(' | '))})})"
 ```
 
-출력: 첫 줄이 dist-tags 원문(JSON), 이후 줄마다 `버전 · 배포일 · peer RN 범위(없으면 -) · DEPRECATED 여부`.
+출력: 첫 줄이 dist-tags 원문(JSON), 이후 줄마다 `버전 | 배포일 | peerDependencies 원문(JSON, 없으면 -) | DEPRECATED 여부`. **버전 줄은 현재 버전 `C`와 같은 major 라인에서 `C` 이상인 stable 전부이고 semver 오름차순이다** — 게이트 2가 허용하는 후보가 전부 창 안에 들어온다. 공개 npm에 없는 패키지는 `NOT_FOUND <pkg>` 한 줄이다.
 
-- **한 줄로 쓴다. `$`와 백틱을 넣지 마라.** 둘은 PowerShell과 POSIX 셸이 서로 다른 시점에 확장하는 문자라, 들어가는 순간 커맨드가 셸마다 다른 것이 된다.
-- **실측(2026-08-29 · Windows 11): 위 한 줄은 PowerShell 5.1과 Git Bash에서 바이트 단위로 같은 출력을 낸다.** 개행이 들어간 여러 줄 형태도 앞선 실측(2026-08-18)에서 돌았다 — 개행 자체가 깨뜨린다는 근거는 없다. 한 줄로 고정하는 건 **셸이 인자를 어떻게 넘기느냐에 덜 기대게 하려는 것**이지 관측된 실패를 피하려는 게 아니다. 근거 없는 이유를 붙이지 마라.
-- 대상 패키지만 바꿔서 그대로 쓴다. **로직을 손보지 마라** — 손보는 순간 위 실측이 무효가 된다.
+- **`P`는 대상 패키지, `C`는 현재 설치 버전**(lockfile). lockfile이 없으면 선언 범위 하단(`^5.0.2` → `5.0.2`)을 쓴다. **둘 다 정할 수 없으면**(degrade 16) 창의 기준점이 없으므로 그 대상은 돌리지 않고 soak·churn을 `확인 못 함` + `⚠ 숙성 미확인`으로 둔다.
+- **한 줄로 쓴다. `$`와 백틱을 넣지 마라.** 둘은 PowerShell과 POSIX 셸이 서로 다른 시점에 확장하는 문자라, 들어가는 순간 커맨드가 셸마다 다른 것이 된다. **`!`도 넣지 않는다** — 대화형 bash가 큰따옴표 안에서도 히스토리 확장으로 바꾼다.
+- **실측(2026-09-24 · Windows 11): 위 한 줄은 PowerShell 5.1과 Git Bash에서 같은 출력을 낸다** — `react-native-worklets`·`react-native`·`@gorhom/bottom-sheet`·존재하지 않는 패키지 4종, BOM·줄바꿈을 맞춘 뒤 내용 일치. 2026-08-29 실측은 이전 판(마지막 10개 · peer는 RN 열만) 기준이라 이 판으로 대체됐다. 개행이 들어간 여러 줄 형태도 앞선 실측(2026-08-18)에서 돌았다 — 개행 자체가 깨뜨린다는 근거는 없다. 한 줄로 고정하는 건 **셸이 인자를 어떻게 넘기느냐에 덜 기대게 하려는 것**이지 관측된 실패를 피하려는 게 아니다. 근거 없는 이유를 붙이지 마라.
+- `P`와 `C`만 바꿔서 그대로 쓴다. **로직을 고치면 양쪽 셸 재실측을 새로 하고 위 실측 날짜를 갱신한다** — 실측 없이 고친 판은 README 호스트 표의 `currency` ✅가 기대는 근거를 잃는다.
 - **Bash 출력은 원문 그대로 온다** — 요약 모델을 경유하지 않는다. 이게 이 예외의 유일한 근거다.
 - **`node`는 새 의존이 아니다** — 대상이 RN 프로젝트이므로 항상 있다. 호스트·PM 무관이고 **bash·PowerShell 양쪽에서 같은 출력이 나오는 것까지 실측했다.**
 - **다른 셸 사용은 전부 금지**: `pnpm`·`jq`·`date`·`cat`·`ls`·파이프·리다이렉트. 날짜 비교는 ISO 문자열 비교로 충분하다(`"2026-07-23" > "2026-07-17"`) — 파싱·산술 하지 마라.
 - **degrade — 부분 실패:** `node -e`가 **일부 대상에서** 실패하면 그 대상의 **soak·churn 게이트만** `확인 못 함`으로 두고 나머지 게이트(1·2·5·6)로 산정한다. 그 대상의 `latest`·peer·`deprecated`는 §2 표의 WebFetch 폴백으로 채운다 — 배포일만은 폴백이 없다(full packument 절단). 대상을 빼지 말고 권장 줄에 `⚠ 숙성 미확인`을 병기한다 — 근거 없이 "충분히 익었다"고 말하지 않는다.
-- **후보 버전이 출력 범위 밖이면 같은 처리다.** 라인 병행 패키지(4.3.x·4.4.x·4.5.x 혼재 — 실측: worklets 0.9.x~0.12.x 혼재)에서는 후보의 배포일이 마지막 10개 밖으로 밀릴 수 있다. 그 대상의 soak·churn을 `확인 못 함` + `⚠ 숙성 미확인`으로 두지, **범위를 늘리려고 원라이너를 고치지 마라** — 로직을 손보면 실측이 무효가 된다.
+- **출력이 잘렸으면 같은 처리다.** 창은 게이트 2 후보를 전부 담지만, 현재가 많이 뒤처진 패키지는 줄이 많아 셸 도구의 출력 한도에 걸릴 수 있다. 셸 도구가 절단을 표시하면 그 대상의 soak·churn을 `확인 못 함` + `⚠ 숙성 미확인`으로 두고 잘린 사실을 ⚠ 블록에 적는다 — 잘린 목록의 끝을 최신 라인으로 읽지 마라. (이전 판은 게시 순서 마지막 10개만 찍어서, 라인이 병행 배포되는 패키지 — 실측: worklets 0.9.x~0.12.x 혼재 — 에서 뒤처진 프로젝트의 호환 후보가 창 밖으로 밀렸다.)
+- **`NOT_FOUND`면 공개 npm에 없는 패키지다** — 사설 레지스트리·`npm:` 별칭·`github:`·`file:` 선언 등. degrade 4(`registry 도달 실패`)로 가고 **대상은 남긴다.**
 - **degrade — 전면 실패:** `node -e`가 **전 대상에서** 실패하면(셸 인용 깨짐·`node` 부재·네트워크 차단) 대상마다 붙는 `⚠ 숙성 미확인` 외에 **헤더에 고정 문구를 싣는다**: `soak·churn 게이트 전면 미확인 (node -e 실행 실패) — 게이트 2개가 판정에서 빠졌다`.
 - **부분과 전면을 같은 표기로 뭉개지 마라.** 대상마다 붙는 ⚠는 개별 대상의 사정처럼 읽힌다 — 게이트 6개 중 2개가 통째로 죽은 리포트가 정상 리포트와 **겉보기에 같아지는** 자리가 여기다. 헤더 문구가 그 차이를 드러내는 유일한 수단이다.
 - **dist-tags에 `latest`가 없으면** 최신을 `확인 못 함`으로 두고 **대상은 남긴다.** 버전 목록의 마지막 항목을 최신으로 대신 쓰지 마라 — 퍼블리셔가 태깅하지 않은 것과 배포 순서는 다른 사실이다.
@@ -283,13 +285,13 @@ platform 추적은 platform-watch가 담당한다.
 
 ## 8. 병렬화
 
-1차 registry 조회는 대상당 응답 1개이므로 `Agent`에 분담한다. 2차 노트 fetch와 Track A 서사 조회도 분담하고 **메인은 취합·게이트 판정·리포트를 맡는다.**
+**1차 registry 조회(`node -e`)는 메인이 직접 돈다** (2026-09-24). 대상마다 Bash 1콜이고 서로 독립이라 한 번에 병렬로 부른다. **서브에이전트에 넘기지 않는다** — 아래 잠금이 서브에이전트의 셸을 막으므로, 넘기면 `node -e`를 못 돌리고 WebFetch 요약 채널로 돌아간다. 배포일은 폴백이 없어 soak·churn이 전부 죽는다(§2). **분담하는 건 2차 노트 fetch와 Track A 서사 조회뿐이다.** 메인은 1차 조회·취합·게이트 판정·리포트를 맡는다.
 
 - `subagent_type`은 `general-purpose`를 쓴다.
 - **쓰기 불가 에이전트는 없다** — 도구 선택은 완화책일 뿐이고 실효 통제는 프롬프트 잠금이다. 각 서브에이전트 프롬프트에 **반드시** 넣는다:
   - **read-only 못박기**: "`package.json`·네이티브 설정·소스를 수정하지 마라. 파일 수정 도구와 쓰기 명령 금지. **셸 호출도 금지 — 조회는 WebFetch·Read로만 한다.** 조회 결과만 반환하라." (셸까지 막는 이유: 본문의 셸 계약은 메인에게만 걸린다 — 서브에이전트가 셸을 쓰면 `node -e` 1종 잠금이 한 겹 아래서 명목이 된다.)
   - **조회 범위 잠금**: "너는 오직 `<대상>`만 조회한다. 다른 대상은 무시하라."
-  - **반환 형식**: `[대상] 현재 vX → 최신 vY | gap 분류 | 영향 | 관측: <배포일·후속 패치·revert/known issue> | 근거: <링크>` 한 줄씩. 실패·불명확은 `확인 못 함: <대상> — <사유>`로 분리. **근거 링크 없는 최신성 주장은 반환 금지.**
+  - **반환 형식**: `[대상] vX → vY 노트 | 관측: <breaking·deprecated·revert·hotfix 예고·"do not upgrade"·known issue> | 영향: <우리가 쓰는 기능이면 그 기능> | 근거: <링크>` 한 줄씩. 버전 숫자·배포일은 메인의 1차 조회가 정본이므로 넘기지 않는다. 실패·불명확은 `확인 못 함: <대상> — <사유>`로 분리. **근거 링크 없는 주장은 반환 금지.**
   - **판정 금지**: "권장 버전은 Z다"라고 결론 내지 마라 — 게이트 해석은 메인 몫이다. **대상마다 다른 에이전트가 각자 기준을 세우면 리포트의 권장 버전이 서로 다른 잣대로 나온다.**
 
 ## 실행 원칙

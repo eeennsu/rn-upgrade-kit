@@ -98,7 +98,7 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 
 | # | 규칙 | 근거 |
 | --- | --- | --- |
-| a | **lockstep 세트 전체**를 넣는다 | 게이트 6 — 짝이 빠지면 리허설이 무의미해진다 |
+| a | **lockstep 세트 전체**를 넣는다 — 세트 구성원 중 정본 `package.json`에 직접 선언된 것 전부(`devDependencies` 포함). **`@react-native/*`는 조회 대상이 아니므로 RN 권장과 같은 버전 번호로 싣는다** | 게이트 6 — 짝이 빠지면 리허설이 무의미해지고 `rehearsal` 인자 검증 3이 `lockstep 짝 누락`으로 거부한다 |
 | b | **`# 산정 시각:` 주석을 박는다** | 파일이 없으니 `rehearsal`이 낡음을 알 길이 그것뿐이다 |
 | c | 권장이 `유지`·`도달 불가`인 대상은 **뺀다** | 안 올릴 걸 리허설하지 않는다 |
 | d | **단일 블록 하나** | 여러 줄로 흩어지면 복붙 오타가 실제로 난다 |

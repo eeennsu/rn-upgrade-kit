@@ -86,6 +86,7 @@ seed §2는 🔴·🟠의 주 공급원을 Track C로 지목했다. Track C 이�
 
 - **Track A는 절반만 registry다.** `react-native`·`react`의 버전 숫자는 registry에 그대로 있다 — 이걸 웹 검색으로 다시 찾지 않는다. registry 밖인 건 **서사**뿐이다(그 버전에서 무엇이 강제됐나). Hermes·New Arch는 패키지가 아니라 RN 내장·플래그이므로 숫자조차 registry에 없다.
 - `@react-native/*`(codegen 등)는 devDependencies라 대상 밖이지만 RN 버전에 lockstep이라 독립 신호가 없다.
+  - **정정 (2026-09-24 · 감사):** 대상 밖이어도 **lockstep 동반 대상**이다. 2026-08-31 실행 검증이 RN 코어 세트에 `@react-native/*`를 넣었는데(`shared/lockstep-sets.md` · 실행 검증 F-4), 이 줄은 "대상 밖"에서 멈춰 있었다. 그대로면 다음 단계 블록에서 이들이 빠지고, `rehearsal` 인자 검증 3이 `lockstep 짝 누락`으로 거부한다 — 당시 수정 기록의 *"currency 파급 0"*은 틀렸다. 조회는 여전히 하지 않는다(RN과 같은 번호로 함께 배포돼 독립 신호가 없다). 대신 정본 `package.json`에 직접 선언된 `@react-native/*` 전부를 **RN 권장과 같은 번호로** 블록에 싣는다(§rehearsal 간선 규칙 a). «설치된 것»의 정의(직접 선언만 · 전이 의존 제외)는 `shared/lockstep-sets.md`에 있다.
 - **SM(Software Mansion) 라이브러리**(Reanimated·Gesture Handler·SVG·worklets)의 정본 API·사실은 `react-native-best-practices`(SM) skill을 1차로 쓰고, 불일치·불명확 시 SM 공식 문서를 webfetch로 검증한다. skill이 없으면 SM 문서 webfetch 폴백.
 - **성능 진단성 정보**(FlashList·Hermes mmap·R8·16KB 정렬 등)는 `react-native-perf-guide`(Callstack) skill 관점을 참고한다.
 
@@ -120,10 +121,21 @@ seed §2는 🔴·🟠의 주 공급원을 Track C로 지목했다. Track C 이�
 ### `node -e` — 유일하게 허용되는 Bash 용도
 
 ```sh
-node -e "fetch('https://registry.npmjs.org/<pkg>').then(r=>r.json()).then(d=>{console.log('dist-tags',JSON.stringify(d['dist-tags']));const t=d.time;Object.keys(d.versions).filter(v=>!/-/.test(v)).slice(-10).forEach(v=>{const m=d.versions[v];console.log(v,t[v].slice(0,10),(m.peerDependencies&&m.peerDependencies['react-native'])||'-',m.deprecated?'DEPRECATED':'')})})"
+node -e "const P='<pkg>',C='<현재>';const n=s=>s.split('.').map(Number);const c=(a,b)=>{const x=n(a),y=n(b);for(let i=0;i<3;i++){if(x[i]-y[i])return x[i]-y[i]}return 0};fetch('https://registry.npmjs.org/'+P).then(r=>r.json()).then(d=>{if(d.versions===undefined){console.log('NOT_FOUND',P);return}console.log('dist-tags',JSON.stringify(d['dist-tags']));const t=d.time||{};Object.keys(d.versions).filter(v=>/-/.test(v)===false&&n(v)[0]===n(C)[0]&&c(v,C)>=0).sort(c).forEach(v=>{const m=d.versions[v];console.log([v,(t[v]||'?').slice(0,10),m.peerDependencies?JSON.stringify(m.peerDependencies):'-',m.deprecated?'DEPRECATED':''].join(' | '))})})"
 ```
 
+> 위는 2026-09-24 판이다. 이전 판(게시 순서 마지막 10개 · peer는 RN 열만)과 바뀐 이유는 아래 «정제 (2026-09-24)».
+
 > **정제 (2026-08-29) — 판정 재료 전부를 원문 채널로:** 원안은 `latest`·peer 상한·`deprecated`를 WebFetch(요약 채널)로 받았다. 그런데 그 셋은 전부 **게이트 판정 재료**다 — semver 범위 문자열(`">=0.79 <0.83"`) 하나가 오요약되면 peer ceiling이 조용히 틀리고 그 위에서 권장 전체가 계산된다. 위 실측이 잡은 날짜 오변환과 같은 유형의 위험이고, full packument는 `node -e` 안에 이미 raw로 와 있어 **추가 왕복 0으로** 같은 출력에서 뽑을 수 있다. 그래서 원라이너가 dist-tags 행과 peer(react-native 범위)·deprecated 열을 함께 출력하도록 확장했다. WebFetch의 두 엔드포인트는 **`node -e` 실패 시 폴백**으로 강등된다 — 요약 채널이 판정 경로에 남는 건 degrade일 때뿐이고, 그때는 이미 `⚠ 숙성 미확인`·헤더 문구가 리포트를 정상 실행과 갈라놓는다. **확장 원라이너 실측 (2026-08-29 · Windows 11 · `react-native-worklets`): PowerShell 5.1과 Git Bash 출력이 바이트 단위로 동일.** 2026-08-18 실측은 구 원라이너에 대한 것이라 이 형태를 보증하지 않으므로 재실측했다.
+
+> **정제 (2026-09-24 · 감사) — 창을 게이트 2 범위로, peer를 전체로:** 이전 판은 게시 순서로 마지막 10개만 찍었고, peer는 `react-native` 열만 냈다. 감사가 실측으로 두 구멍을 짚었다.
+>
+> 1. **라인이 병행 배포되는 패키지**(worklets 0.9.x~0.12.x 혼재)에서는 뒤처진 프로젝트의 호환 후보가 창 밖으로 밀렸다. 창 밖 후보는 soak·churn `확인 못 함`으로만 처리됐다 — 게이트가 재료 없이 도는 게 정상 경로였다. 실측(`react-native-worklets`): 마지막 10개가 전부 peer RN ≥ 0.83이라 RN 0.81 호환 라인이 보이지 않았다.
+> 2. **seed는 peer 전체를 봤다**(`pnpm info … peerDependencies`). 포트가 RN 열만 남겨 RN 밖 peer(`@gorhom/bottom-sheet` → `react-native-reanimated` 등)가 상한 계산에서 빠졌다.
+>
+> 새 판은 **현재 버전 `C`와 같은 major 라인에서 `C` 이상인 stable 전부를 semver 오름차순으로** 찍고, peer는 `peerDependencies` 원문 JSON으로 낸다. 게이트 2가 허용하는 후보는 항상 창 안에 있다. 공개 npm에 없는 패키지는 `NOT_FOUND <pkg>`로 끝난다(이전 판은 TypeError로 죽었다). `!`도 뺐다 — 대화형 bash가 큰따옴표 안에서도 히스토리 확장으로 바꾼다.
+>
+> 이전 판의 *"로직을 손보지 마라 — 손보는 순간 실측이 무효가 된다"*는 실측 한 번을 족쇄로 만들었다 — 위 두 구멍을 고칠 길을 막았다. *"고치면 양쪽 셸을 다시 실측한다"*로 바꾼다. **재실측 (2026-09-24 · Windows 11): PowerShell 5.1과 Git Bash 출력이 같다** — `react-native-worklets`·`react-native`·`@gorhom/bottom-sheet`·존재하지 않는 패키지, BOM·줄바꿈 정규화 후 비교.
 
 - **Bash 출력은 원문 그대로 컨텍스트에 들어온다** — 요약 모델을 경유하지 않는다. 이게 WebFetch와의 결정적 차이이고, 이 예외의 유일한 근거다.
 - **`node`는 새 의존이 아니다.** 대상이 React Native 프로젝트이므로 100% 존재한다. `jq`·`pnpm`·`curl`과 달리 호스트·PM에 무관하고 Windows Git Bash에서도 동작한다 — §호스트 지원의 전 호스트 ✅가 유지된다.
@@ -276,12 +288,18 @@ node -e "fetch('https://registry.npmjs.org/<pkg>').then(r=>r.json()).then(d=>{co
 - **1차 (registry)**: `현재 → 최신 → peer 상한`을 확정한다. 최신 = 현재인 대상은 gap 0이므로 2차 대상이 아니다.
 - **2차 (릴리즈 노트)**: gap이 있는 대상만, **검색이 아니라 정확한 태그 URL로 직행 fetch**한다(`github.com/<org>/<repo>/releases/tag/<ver>`). 읽을 범위는 버전 델타로 정해진다. 패치 수준이라 ⚪가 확정된 대상은 2차를 생략해도 된다.
 - **노트를 읽을 때 게이트 재료를 같이 건진다.** revert·hotfix 예고·"do not upgrade"·후속 패치 언급은 그 자리에서 메모한다.
-- **병렬화**: 1차는 대상당 registry 응답 1개이므로 `Agent`에 분담한다(seed의 "Bash 한 콜"이 사라졌으므로 위임 손익이 바뀐다). 2차 노트 fetch와 Track A 서사 조회도 분담하고, 메인은 취합·게이트 판정·리포트를 맡는다.
+- **병렬화**: **1차 registry 조회(`node -e`)는 메인이 직접 돈다** — 대상마다 Bash 1콜이고 서로 독립이라 병렬로 부른다. **2차 노트 fetch와 Track A 서사 조회만 `Agent`에 분담한다.** 메인은 1차 조회·취합·게이트 판정·리포트를 맡는다.
   - `subagent_type`은 `general-purpose`를 쓴다.
   - 각 서브에이전트 프롬프트에 **반드시** 넣는다:
-    - **read-only 못박기**: "`package.json`·네이티브 설정·소스를 수정하지 마라. 파일 수정 도구와 쓰기 명령 금지. 조회 결과만 반환하라."
+    - **read-only 못박기**: "`package.json`·네이티브 설정·소스를 수정하지 마라. 파일 수정 도구와 쓰기 명령 금지. **셸 호출도 금지 — 조회는 WebFetch·Read로만 한다.** 조회 결과만 반환하라."
     - **조회 범위 잠금**: "너는 오직 `<대상>`만 조회한다. 다른 대상은 무시하라."
-    - **반환 형식**: `[대상] 현재 vX → 최신 vY | gap 분류 | 영향 | 관측: <배포일·후속 패치·revert/known issue> | 근거: <링크>` 한 줄씩. 실패·불명확은 `확인 못 함: <대상> — <사유>`로 분리. 근거 링크 없는 최신성 주장은 반환 금지.
+    - **반환 형식**: `[대상] vX → vY 노트 | 관측: <breaking·deprecated·revert·hotfix 예고·"do not upgrade"·known issue> | 영향: <우리가 쓰는 기능이면 그 기능> | 근거: <링크>` 한 줄씩. 버전 숫자·배포일은 메인의 1차 조회가 정본이므로 넘기지 않는다. 실패·불명확은 `확인 못 함: <대상> — <사유>`로 분리. 근거 링크 없는 주장은 반환 금지.
+
+> **정정 (2026-09-24 · 감사):** 원안은 1차 registry 조회를 `Agent`에 분담했다 — 근거는 *"seed의 'Bash 한 콜'이 사라졌다"*였다. 그런데 그 전제는 §수집의 2026-08-09 실측으로 이미 깨졌다. 1차 조회가 `node -e` 셸 호출로 돌아왔기 때문이다.
+>
+> 2026-08-29 총점검은 구현의 서브에이전트 잠금에 **셸 금지**를 더했다. 셸 계약은 메인에게만 걸리므로, 서브에이전트가 셸을 쓰면 `node -e` 1종 잠금이 한 겹 아래에서 명목이 된다는 이유였다. 다만 이 스펙에는 반영하지 않았다. 그 결과 두 규칙이 만나 **위임받은 서브에이전트가 `node -e`를 못 돌리고 WebFetch 요약 채널로 돌아가는** 상태가 됐다 — 배포일은 폴백이 없어 soak·churn이 죽는다.
+>
+> 그래서 1차 조회를 메인으로 되돌리고, 셸 금지를 스펙에도 싣는다. 반환 형식에서 버전 숫자·배포일을 뺀 것도 같은 이유다 — 정본은 메인의 1차 조회다.
     - **판정 금지**: "권장 버전은 Z다"라고 결론 내지 마라 — 게이트 해석은 메인 몫이다. 대상마다 다른 에이전트가 각자 기준을 세우면 리포트의 권장 버전이 서로 다른 잣대로 나온다.
 
 ### gap 분류 → 기본 등급
@@ -362,7 +380,7 @@ node -e "fetch('https://registry.npmjs.org/<pkg>').then(r=>r.json()).then(d=>{co
 
 | # | 규칙 | 근거 |
 | --- | --- | --- |
-| a | **lockstep 세트 전체**를 넣는다 | 게이트 6 — 짝 하나가 빠지면 리허설이 무의미해진다 |
+| a | **lockstep 세트 전체**를 넣는다 — 세트 구성원 중 정본 `package.json`에 직접 선언된 것 전부(`devDependencies` 포함). `@react-native/*`는 조회 대상이 아니므로 **RN 권장과 같은 번호로** 싣는다 (2026-09-24 정정 — §점검 대상) | 게이트 6 — 짝 하나가 빠지면 리허설이 무의미해지고 `rehearsal` 인자 검증 3이 `lockstep 짝 누락`으로 거부한다 |
 | b | **생성 시각을 주석으로 박는다** | 파일이 없으니 `rehearsal`이 낡음을 알 길이 그것뿐이다. 신선도 문제를 새 스키마 없이 소비자로 넘긴다 |
 | c | 권장이 `유지`·`도달 불가`인 대상은 **커맨드에서 뺀다** | 안 올릴 걸 리허설하지 않는다 |
 | d | **단일 블록 하나** | 여러 줄로 흩어지면 복붙 오타가 실제로 난다. `rehearsal`의 "POSIX 단일 복붙 재현 블록"과 형태를 맞춘다 |
@@ -605,6 +623,8 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 - [ ] `_npmOperationalInternal` 등 비공식 필드를 배포일 근거로 쓰지 않는다
 - [ ] `node -e`가 실패하면 soak·churn만 `확인 못 함`이 되고 대상이 리포트에서 빠지지 않으며 `⚠ 숙성 미확인`이 병기된다
 - [ ] `node`가 없는 환경에서도 게이트 1·2·5·6으로 권장이 산정된다
+- [ ] `node -e` 출력이 현재 major 라인에서 현재 이상인 stable **전부**와 `peerDependencies` 원문을 담는다 — 게시 순서 N개로 자르는 창이 없다 (2026-09-24)
+- [ ] 원라이너에 `$`·백틱·`!`이 없고, 공개 npm에 없는 패키지에서 예외로 죽지 않고 `NOT_FOUND`를 낸다 (2026-09-24)
 
 **핸드오프 — `urgency`·`stale` (계약 6·7항)**
 
@@ -697,6 +717,7 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 - [ ] 리포트에 rehearsal 호출 라인이 단일 복사 블록으로 출력된다
 - [ ] 그 블록에 산정 시각 주석이 포함된다
 - [ ] 그 블록에 lockstep 세트 전체가 포함된다 — 짝 하나만 실리지 않는다
+- [ ] 정본 `package.json`에 직접 선언된 `@react-native/*`가 RN 권장과 같은 번호로 그 블록에 실린다 — `devDependencies`에 있어도 빠지지 않는다 (2026-09-24)
 - [ ] 권장이 `유지`·`도달 불가`인 대상이 그 블록에 실리지 않는다
 
 **스코프 인자**
@@ -728,6 +749,7 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 
 - [ ] 서브에이전트 프롬프트에 read-only 못박기·조회 범위 잠금·반환 형식·판정 금지가 전부 포함된다
 - [ ] 서브에이전트가 권장 버전을 결론 내지 않는다 — 게이트 판정이 메인에서만 일어난다
+- [ ] 1차 registry 조회(`node -e`)가 메인에서만 일어나고, 서브에이전트 프롬프트에 셸 금지가 들어 있다 — 1차 조회를 서브에이전트에 위임하는 코드 경로가 없다 (2026-09-24)
 
 ---
 
@@ -964,3 +986,11 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
   - **정정 (2026-08-19 · 감사 라운드 3):** **3상태 → 4상태.** `(핸드오프 경로 미상 — 상수 도달 실패)`가 넷째다. `handoff_path`가 `shared/constants.md`에서 오므로(`docs/specs/plugin-shell.md:47`·`:68` — 하드코딩 금지) **상수에 도달하지 못하면 핸드오프를 열 자리 자체를 모르고**, 계약 5항(§핸드오프 — 독자 계약)이 `current`를 스냅샷 헤더의 유일한 공급원으로 못박아 대체 경로도 없다. 넷째를 파일 부재로 접으면 사용자는 `platform-watch`를 다시 도는데 고칠 것은 상수 도달이다. 본문 §핸드오프 2분기 표·AC와 같이 고쳤다 — **이 절은 본문과 동기다.**
 - **degrade 10경로 → 18경로.** 더해진 8개는 §degrade 경로의 «재정정 (2026-08-18)»에 있다. 경로가 늘어난 건 규칙이 늘어서가 아니라 **"대상은 목록에서 사라지지 않는다"를 지키려면 새로 관측된 실패마다 자리를 하나씩 줘야 하기 때문**이다.
 - **`disallowed-tools: WebSearch Edit`을 신설한다.** 공식 문서 확인: `allowed-tools`는 *"It does not restrict which tools are available: every tool remains callable"*(https://code.claude.com/docs/en/skills «Pre-approve tools for a skill»). 즉 *"`allowed-tools`에 없으니 못 쓴다"*로 세운 이 스펙의 강제 서술은 **전부 명목뿐이었다.** 실제 강제 수단은 `disallowed-tools`뿐이다. 구분자(공백·콤마·YAML 리스트)는 전부 유효하므로 감사 #8의 구분자 파싱 우려는 **기각**이고, 진짜 문제는 파싱이 아니라 **필드의 의미를 잘못 안 것**이었다.
+
+## 감사 반영 — 2026-09-24
+
+스펙 대조 감사가 **스킬 간 계약**과 **registry 실측**에서 찾은 결함이다. 본문 정정은 각 자리의 2026-09-24 블록에 있고, 여기는 목록만 둔다. **무서명** — 독립 리뷰어 검증과 실제 RN 프로젝트 실행을 거치지 않았다.
+
+- **`@react-native/*` lockstep 동반** — §점검 대상 정정 · §rehearsal 간선 규칙 a. 2026-08-31의 RN 코어 세트 확장이 이 스킬에 닿지 않아 `rehearsal` 인자 검증 3과 어긋나 있었다.
+- **`node -e` 창·peer 확장** — §수집 «정제 (2026-09-24)». 뒤처진 프로젝트의 호환 후보가 창 밖으로 밀리던 것과, RN 밖 peer가 상한 계산에서 빠지던 것.
+- **1차 조회는 메인 전담** — §조회 순서 병렬화 정정. 서브에이전트 셸 금지(2026-08-29 · 구현에만 반영됐다)와 1차 조회 위임이 서로를 무력화하던 것.

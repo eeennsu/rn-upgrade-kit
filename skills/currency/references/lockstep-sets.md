@@ -12,7 +12,10 @@
 | Reanimated | `react-native-reanimated` · `react-native-worklets` | v4에서 워클릿 런타임이 분리됐다 — 버전이 어긋나면 런타임에서 깨진다 |
 | React Navigation | `@react-navigation/*` 전체 (`native` · `stack` · `bottom-tabs` · `drawer` · `native-stack` …) | 단일 모노레포에서 메이저를 함께 올린다 |
 
-**세트 구성원 중 프로젝트에 설치된 것만** 대상이다. `@react-navigation/drawer`를 안 쓰면 그 짝을 요구하지 않는다 — 없는 패키지를 "누락"이라 부르지 않는다.
+**세트 구성원 중 정본 `package.json`의 `dependencies`·`devDependencies`에 직접 선언된 것만** 대상이다. `@react-navigation/drawer`를 안 쓰면 그 짝을 요구하지 않는다 — 없는 패키지를 "누락"이라 부르지 않는다.
+
+- **전이 의존은 세지 않는다** (2026-09-24 정의). `node_modules`에 끌어올려진 것까지 "설치됨"으로 세면 PM의 호이스팅 방식에 따라 세트가 달라지고, `currency`와 `rehearsal`이 서로 다른 세트를 요구하게 된다. 둘 다 같은 `package.json` 선언을 본다.
+- **`@react-native/*`는 대개 `devDependencies`에 있다 — 위 정의대로 세트에 든다.** `currency`는 이들을 따로 조회하지 않고 RN 권장과 같은 버전 번호로 다음 단계 블록에 동반시킨다. 번호가 RN과 같다는 것이 위 표의 근거다.
 
 **`@react-native-community/cli*`는 확정 세트가 아니다** (2026-08-31): 버전 축이 RN과 다르고(20.x 꼴), `@react-native/community-cli-plugin@0.85.3`의 peerDependencies가 `"@react-native-community/cli": "*"`로 열려 있음을 실측했다 — 한 버전 고정이 아니므로 확정 근거(신호 1)가 성립하지 않는다. RN 릴리즈 노트가 특정 CLI 버전을 지정하면 그때 그 버전을 따르되, 게이트가 거부 근거로 쓰지는 않는다.
 
