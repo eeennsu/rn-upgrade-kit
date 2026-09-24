@@ -1,8 +1,9 @@
 ---
 name: platform-watch
 description: iOS/Android 플랫폼 정책 중 마감일이 있는 요구사항을 공식 문서 실시간 조회로 확인하고, 마감일·프로젝트 현재값·충족 여부를 D-day 축으로 정리한 advisory 리포트를 낸다. 동시에 currency가 읽을 핸드오프 파일을 남긴다. "플랫폼 정책", "targetSdk 마감", "스토어 심사 요구", "platform watch"에 사용. 패키지 버전 추천·업그레이드 실행에는 쓰지 않는다.
-user-invocable: true
-argument-hint: [--platform android|ios] [--target <슬러그>]
+license: MIT
+compatibility: 웹 검색과 웹 페이지 조회가 필요하고 셸은 쓰지 않는다. 전 호스트(macOS·Linux·Windows). Claude Code 기준으로 설계했다 — disallowed-tools의 도구 제한은 Claude Code에서만 강제되고, 다른 에이전트에서는 본문 규칙으로만 남는다.
+argument-hint: "[--platform android|ios] [--target <슬러그>]"
 allowed-tools: Read Write Glob WebSearch WebFetch Agent
 disallowed-tools: Bash Edit
 ---
@@ -57,7 +58,7 @@ disallowed-tools: Bash Edit
 
 - **"1차 실패"에 내용 실패를 포함한다.** HTTP 200이어도 그 페이지에서 해당 항목이 요구하는 재료(임계값·날짜 문구)를 못 찾으면 실패로 취급하고 2차로 넘어간다. **리다이렉트로 무관한 페이지를 받아 거기서 아무 숫자나 읽는 것이 이 스킬의 최악 실패다.**
 - **내용 검증은 자기 완결적이어야 한다** — "이 페이지에 이 항목의 재료가 있는가"만 본다. **이전 스냅샷과 비교하지 않는다.**
-- **둘 다 실패하면**: 웹검색으로 새 URL 후보를 찾되(상한 = `../../shared/constants.md`의 `url_candidate_limit`) **자동 채택하지 않는다.** `URL 이동 의심: <후보>`로 리포트에 올려 사용자가 참조 파일을 고치게 한다. **후보에서 값을 읽어 리포트 본문에 쓰는 것은 금지한다** — 후보는 주소일 뿐 근거가 아니다. 판정은 후보 유무와 무관하게 `확인 못 함 (소스 도달 실패)`다.
+- **둘 다 실패하면**: 웹검색으로 새 URL 후보를 찾되(상한 = `references/constants.md`의 `url_candidate_limit`) **자동 채택하지 않는다.** `URL 이동 의심: <후보>`로 리포트에 올려 사용자가 참조 파일을 고치게 한다. **후보에서 값을 읽어 리포트 본문에 쓰는 것은 금지한다** — 후보는 주소일 뿐 근거가 아니다. 판정은 후보 유무와 무관하게 `확인 못 함 (소스 도달 실패)`다.
 
 ## 3. 날짜 신뢰 모델
 
@@ -95,7 +96,7 @@ disallowed-tools: Bash Edit
 | ✅ | 이미 충족 |
 | ⚠ | 어느 축이든 확인 못 함 |
 
-- 임계일은 `../../shared/constants.md`의 `grade_threshold_days`에서 온다(항목별 덮어쓰기는 참조 파일). **본문에 숫자를 적지 마라.**
+- 임계일은 `references/constants.md`의 `grade_threshold_days`에서 온다(항목별 덮어쓰기는 참조 파일). **본문에 숫자를 적지 마라.**
 - 이모지는 **스캔용 시각 보조**일 뿐 새 정보를 넣지 않는다. 독립 판정이 아니다.
 - 🟡·⚪는 날짜 축에서 의미가 없어 쓰지 않는다.
 
@@ -108,7 +109,7 @@ disallowed-tools: Bash Edit
 ```
 .rn-upgrade-kit/platform-watch/reports/YYYY-MM-DD.md
 .rn-upgrade-kit/platform-watch/state.json
-.rn-upgrade-kit/handoff/platform-requirements.md   ← 경로는 shared/constants.md의 handoff_path
+.rn-upgrade-kit/handoff/platform-requirements.md   ← 경로는 references/constants.md의 handoff_path
 ```
 
 **쓰기 순서는 핸드오프 → state → 리포트로 못박는다.** 리포트가 마지막인 이유는 **앞의 두 실패를 리포트가 보고할 수 있어야** 하기 때문이다. 반대 순서면 리포트가 "핸드오프 갱신됨"이라고 적고 나간 뒤에 핸드오프가 깨지고, `currency`는 **낡은 하한을 현재 값으로 읽는다** — `currency`는 신선도 임계값을 두지 않기로 했으므로 이걸 감지할 수단이 없다.
@@ -129,7 +130,7 @@ disallowed-tools: Bash Edit
 | 5 | 소스 1차·2차 모두 실패 | `확인 못 함 (소스 도달 실패)` + 이동 의심 후보 | 블록 2 (⚠) |
 | 6 | 사용자 스코프 제외 | `미조회 (사용자 지정 스코프)` | 블록 4 (별도) |
 | 7 | 스코프 제외 항목의 **파일 반영** | 이전 값 보존 + `stale: <날짜>` · 이전 값이 없으면 `미조회 (한 번도 조회되지 않음)` | 파일 (§5) |
-| 8 | `shared/constants.md` 도달 실패 (상대경로·`Glob` 폴백 둘 다) | 상수에 기대는 판정만 `확인 못 함`, 전수 리포트는 정상 산출 | 헤더 + 제자리 |
+| 8 | `references/constants.md` 도달 실패 (상대경로·`Glob` 폴백 둘 다) | 상수에 기대는 판정만 `확인 못 함`, 전수 리포트는 정상 산출 | 헤더 + 제자리 |
 | 9 | `.rn-upgrade-kit/` 쓰기 실패 (권한·read-only FS·디스크 참) | 실패한 산출물을 이름으로 지목하고 나머지 쓰기는 계속 | 리포트 말미 |
 
 **8은 추정 기본값을 쓰지 마라.** 임계일·보존 상한·후보 상한·승격 하한을 "흔한 값"으로 때우면, 드리프트를 막으려고 둔 파일이 없을 때 **드리프트를 대신 만들어낸다.** 헤더에 `상수 도달 실패 — 임계값 미적용`을 적고 🔴/🟠 분기는 ⚠로 내린다 — 마감일과 현재값 자체는 조회로 나왔으므로 그대로 싣는다. `handoff_path`를 못 읽으면 핸드오프 쓰기만 9와 같이 처리한다 — 경로를 지어내 엉뚱한 자리에 쓰면 `currency`는 갱신을 영영 못 본다.

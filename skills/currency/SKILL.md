@@ -1,8 +1,9 @@
 ---
 name: currency
 description: RN 스택(코어·주요 라이브러리)이 registry 최신 릴리즈 대비 얼마나 뒤처졌는지 점검하고, 최신과 별개로 안전한 권장 버전(safe target)을 게이트로 산정하는 advisory — gap 리포트만 내고 스택은 고치지 않는다. "RN 최신성", "버전 gap", "권장 버전", "currency"에 사용. 플랫폼 정책 마감은 platform-watch, 업그레이드 실행은 rehearsal 소관이다.
-user-invocable: true
-argument-hint: [--track core|lib] [--target <pkg>] | platform
+license: MIT
+compatibility: node와 웹 페이지 조회가 필요하다. 전 호스트(macOS·Linux·Windows). Claude Code 기준으로 설계했다 — disallowed-tools의 도구 제한은 Claude Code에서만 강제되고, 다른 에이전트에서는 본문 규칙으로만 남는다.
+argument-hint: "[--track core|lib] [--target <pkg>] | platform"
 allowed-tools: Read Write Glob Bash WebFetch Agent Skill
 disallowed-tools: WebSearch Edit
 ---
@@ -23,14 +24,14 @@ disallowed-tools: WebSearch Edit
 | `platform` (bare) 또는 `--track platform` | §5 범위 안내 후 **종료**. 리포트를 생성하지 않는다 |
 | `--track core\|lib` | 트랙 좁히기. **단일값만** 받는다 |
 | `--target <pkg>` · bare `<pkg>` | 대상 좁히기. 둘은 같은 뜻이다 |
-| `--target <pkg>`가 lockstep 짝의 한쪽 | **세트 전체가 조회 대상**이 된다 — 세트 정의는 `../../shared/lockstep-sets.md`. 아래 |
+| `--target <pkg>`가 lockstep 짝의 한쪽 | **세트 전체가 조회 대상**이 된다 — 세트 정의는 `references/lockstep-sets.md`. 아래 |
 | 유효하지 않은 bare 토큰 | `지정 스코프에 해당 대상 없음` + 유효 값 목록 |
 
 - **기본값은 항상 전체다. 넓히는 방향의 인자는 두지 않는다.**
 - 두 인자를 동시에 주면 **AND(교집합)**. 공집합이면 빈 리포트가 아니라 안내문 + 유효 값 목록.
 - 제외된 트랙·대상은 조용히 빠지지 않고 `미조회 (사용자 지정 스코프)` 블록에 남는다.
 - **`--target`이 lockstep 세트의 한쪽만 가리키면 세트 전체를 조회한다.** 넓히기가 아니다 — §4 게이트 6이 *"짝 하나가 걸리면 세트 전체가 걸린 것"*이라 **짝을 안 보면 게이트 6을 판정할 수 없다.** 인자는 좁히기 전용이되 **lockstep 세트 경계에서 반올림한다.**
-- **세트 판별은 `../../shared/lockstep-sets.md`를 Read해서 한다 — 여기에 세트를 나열하지 마라.** 인자 확장과 게이트 6이 각자 목록을 가지면 한쪽만 늘어나고, 그러면 **조회는 짝을 안 데려왔는데 게이트는 짝을 요구하는** 상태가 된다. 그 파일에 도달하지 못했을 때의 처리도 그쪽에 있다.
+- **세트 판별은 `references/lockstep-sets.md`를 Read해서 한다 — 여기에 세트를 나열하지 마라.** 인자 확장과 게이트 6이 각자 목록을 가지면 한쪽만 늘어나고, 그러면 **조회는 짝을 안 데려왔는데 게이트는 짝을 요구하는** 상태가 된다. 그 파일에 도달하지 못했을 때의 처리도 그쪽에 있다.
 - 자동 포함분은 조용히 늘리지 않고 헤더 스코프 줄에 명시한다: `--target react-native-reanimated (+lockstep: react-native-worklets)`.
 - **인자는 이 둘로 닫는다.** `--since`·`--format`·`--json`은 범위 밖이다.
 
@@ -131,7 +132,7 @@ node -e "fetch('https://registry.npmjs.org/react-native-worklets').then(r=>r.jso
 
 ### 핸드오프 읽기
 
-경로는 `../../shared/constants.md`의 `handoff_path`. **소유자는 `platform-watch`, 독자는 이 스킬. 단방향이다.**
+경로는 `references/constants.md`의 `handoff_path`. **소유자는 `platform-watch`, 독자는 이 스킬. 단방향이다.**
 
 **기대 스키마 버전도 같은 파일의 `handoff_schema_version`에서 온다.** 파일 앞머리의 `schema_version`을 그 값과 비교한다 — **숫자를 본문에 적거나 "1이겠지"로 때우지 마라.** 기대값을 이쪽이 지어내면 생산자가 스키마를 올렸을 때 불일치가 안 잡히고, `스키마 불일치` degrade가 영영 안 뜬다. 상수를 못 읽으면 `handoff_schema_version`뿐 아니라 **`handoff_path`도 못 읽으므로 핸드오프 자체를 열 수 없다.** 이때는 degrade 12로 가고 하한 없이 계산하되, 사유를 파일 부재와 구분해 `플랫폼 하한 미반영 (핸드오프 경로 미상 — 상수 도달 실패)`로 적는다. **경로를 지어내지 마라** — 지어낸 자리에서 못 찾은 것을 파일 부재로 보고하면 생산자가 정상 기록한 갱신을 영영 못 본다. 못 읽은 것을 불일치로 취급하지 않는다.
 
@@ -187,9 +188,9 @@ node -e "fetch('https://registry.npmjs.org/react-native-worklets').then(r=>r.jso
 | 3 | **soak(숙성)** | 배포 후 경과일이 `soak_minor_days` · `soak_patch_days` 미만이면 이르다. 미달이면 그 전 stable로 내린다 |
 | 4 | **churn 없음** | 그 버전 직후 며칠 새 패치가 연달아 나왔으면 아직 회귀 사냥 중이다. 마지막 패치가 soak를 채울 때까지 **라인 전체 보류** |
 | 5 | **known issue 0** | 노트에 revert·hotfix 예고·"do not upgrade", 이슈 트래커에 **우리가 쓰는 기능**의 크래시 → 고쳐진 버전까지 보류. 우리가 안 쓰는 기능의 이슈는 게이트가 아니다 |
-| 6 | **lockstep 동반** | 짝이 있는 패키지는 세트로만 권장한다. 세트 목록은 `../../shared/lockstep-sets.md`를 **Read해서 얻는다** — 여기 나열하지 않는다. **짝 하나가 걸리면 세트 전체가 걸린 것** |
+| 6 | **lockstep 동반** | 짝이 있는 패키지는 세트로만 권장한다. 세트 목록은 `references/lockstep-sets.md`를 **Read해서 얻는다** — 여기 나열하지 않는다. **짝 하나가 걸리면 세트 전체가 걸린 것** |
 
-- soak 임계값은 `../../shared/constants.md`에서 온다. **본문에 숫자를 적지 마라.**
+- soak 임계값은 `references/constants.md`에서 온다. **본문에 숫자를 적지 마라.**
 - **게이트 6의 세트를 이 파일에 박지 않는 이유**는 §1이 *"새 라이브러리가 들어와도 이 파일을 고칠 일이 없어야 한다"*고 못박았기 때문이다. 세트를 본문에 두면 새 짝 라이브러리가 짝 없이 조용히 권장되고, 게이트 6이 그걸 못 잡는다 — 게이트가 막겠다고 한 사고가 게이트를 통과한다. 같은 파일을 `rehearsal` 인자 검증도 읽으므로 **양쪽이 어긋날 자리도 같이 사라진다.**
 - **확정 목록에 없는 짝을 만나면 그 파일의 «감지 규칙 3신호»를 적용한다.** 신호가 잡히면 **판정하지 말고** ⚠ 블록에 고정 문구로 제안만 낸다: `잠정 lockstep 후보: <pkg A> ↔ <pkg B> (신호 <#>) — shared/lockstep-sets.md 확정 목록에 추가 검토`. 감지는 휴리스틱이라 오탐이 있고, **오탐으로 권장을 내리면 사용자는 근거 없이 막힌 걸 풀 방법이 없다.**
 - **그 파일에 도달하지 못하면** 게이트 6을 `확인 못 함`으로 두고 권장 줄에 `⚠ lockstep 미확인`을 병기하되 **권장 자체는 막지 않는다.** 세부는 그 파일의 «도달 실패» 절이 정본이다.
@@ -224,7 +225,7 @@ node -e "fetch('https://registry.npmjs.org/react-native-worklets').then(r=>r.jso
 | New Arch · Hermes | `newArchEnabled`·`hermesEnabled` — `Glob`으로 `gradle.properties` 전부 + CI 워크플로 override 탐색 |
 
 - 핸드오프에서 값을 못 얻으면 비우지 말고 **사유를 병기하되 네 상태를 구분한다**: `targetSdk — (핸드오프 없음)` / `targetSdk — (핸드오프 미조회 항목)` / `targetSdk — (핸드오프 stale — <날짜>)` / `targetSdk — (핸드오프 경로 미상 — 상수 도달 실패)`. "읽기 실패"와 "안 읽음"과 "낡음"과 "경로를 몰라 못 열었음"은 사용자가 할 일이 다르다 — §3 «핸드오프 읽기»가 정본이다.
-- **네 번째는 degrade 12의 파급이다.** `handoff_path`가 `shared/constants.md`에서 오므로(§3) 상수에 도달하지 못하면 핸드오프를 열 자리 자체를 모른다. 계약 5항이 `current`를 이 헤더의 **유일한 공급원**으로 못박았으니 대체 경로도 없다 — 파일 부재로 접으면 사용자는 `platform-watch`를 다시 돌리는데, 고칠 것은 상수 도달이다.
+- **네 번째는 degrade 12의 파급이다.** `handoff_path`가 `references/constants.md`에서 오므로(§3) 상수에 도달하지 못하면 핸드오프를 열 자리 자체를 모른다. 계약 5항이 `current`를 이 헤더의 **유일한 공급원**으로 못박았으니 대체 경로도 없다 — 파일 부재로 접으면 사용자는 `platform-watch`를 다시 돌리는데, 고칠 것은 상수 도달이다.
 - **읽는 경로는 하나가 아니다.** `Glob`으로 `android/gradle.properties`·`gradle.properties`·flavor별 오버라이드 파일을 전부 찾고, `.github/workflows/*.yml`의 `-PnewArchEnabled`·`ORG_GRADLE_PROJECT_newArchEnabled` 문자열도 본다. **한 경로만 읽으면 충돌이 관측되지 않아 §7 degrade 5가 사문화된다.**
 - **런타임 env는 판정 대상이 아니다.** repo 안에서 읽을 수 있는 것만 읽고, 그래서 판정이 안 서면 `확인 못 함`이다 — 못 본 것을 없는 것으로 세지 않는다.
 - **boolean 충돌은 "가장 낮은 값" 규칙이 적용되지 않는다.** `newArchEnabled`·`hermesEnabled`가 flavor·CI env로 갈리면 **모두 병기하고 판정은 `확인 못 함`**으로 둔다 — `false`로 가정하면 New Arch 강제 항목을 놓치고 `true`로 가정하면 없는 전제 위에서 권장한다.
@@ -265,8 +266,8 @@ platform 추적은 platform-watch가 담당한다.
 | 9 | `node -e` 실패 (배포일 미확보) — **일부 대상** | soak·churn만 `확인 못 함` + `⚠ 숙성 미확인` | 제자리 |
 | 10 | **lockfile 부재·미지원·2종** | 선언 범위로 대체 + `⚠ 설치 버전 미확정` | 제자리 |
 | 11 | `node -e` 실패 — **전 대상** | 9에 더해 `soak·churn 게이트 전면 미확인 (node -e 실행 실패) — 게이트 2개가 판정에서 빠졌다`. `latest`·peer·`deprecated`는 WebFetch 폴백(§2)으로 계속 | 헤더 |
-| 12 | **`shared/constants.md` 도달 실패** | 상수에 기대는 판정만 `확인 못 함`, 리포트는 정상 산출. `상수 도달 실패 — 임계값 미적용`. **`handoff_path`도 못 읽으므로 핸드오프를 열 수 없다** — 하한 없이 계산 + `플랫폼 하한 미반영 (핸드오프 경로 미상 — 상수 도달 실패)` | 헤더 |
-| 13 | **`shared/lockstep-sets.md` 도달 실패** | 게이트 6만 `확인 못 함` + `⚠ lockstep 미확인`. 권장은 막지 않음 | 제자리 |
+| 12 | **`references/constants.md` 도달 실패** | 상수에 기대는 판정만 `확인 못 함`, 리포트는 정상 산출. `상수 도달 실패 — 임계값 미적용`. **`handoff_path`도 못 읽으므로 핸드오프를 열 수 없다** — 하한 없이 계산 + `플랫폼 하한 미반영 (핸드오프 경로 미상 — 상수 도달 실패)` | 헤더 |
+| 13 | **`references/lockstep-sets.md` 도달 실패** | 게이트 6만 `확인 못 함` + `⚠ lockstep 미확인`. 권장은 막지 않음 | 제자리 |
 | 14 | 핸드오프에 **그 항목이 없음** (좁힌 첫 실행) | 그 항목만 하한 없이 계산 + `(핸드오프 미조회 항목)` | 헤더 · 제자리 |
 | 15 | `react-native`를 가진 `package.json`이 **2개 이상** | 가장 얕은 것을 정본으로, 나머지 경로 나열 + `미조회 (monorepo — 경로 지정 필요)` | 헤더 · 별도 블록 |
 | 16 | 선언 범위가 `workspace:*`·`catalog:` | `⚠ 선언 범위 해석 불가`. **대상을 빼지 않는다** | 제자리 |
@@ -276,7 +277,7 @@ platform 추적은 platform-watch가 담당한다.
 3·4·5는 같은 ⚠ 블록에 가되 **사용자가 할 일로 갈라 적는다**. 7은 할 일이 없으므로 ⚠와 섞지 않는다.
 
 - **16과 17을 한 행으로 묶지 마라.** 둘 다 "버전 하나를 못 읽는다"로 보이지만 사용자가 할 일이 정반대다 — 16은 **우리 쪽 선언**이라 lockfile이나 워크스페이스 설정을 보면 풀리고, 17은 **퍼블리셔 쪽 사정**이라 우리가 할 수 있는 게 없다. 묶으면 할 수 있는 일과 없는 일이 같은 줄에 앉는다.
-- **12에서 추정 기본값을 쓰지 마라.** 상수를 못 읽었는데 "흔한 값"으로 때우면 `shared/constants.md`가 막으려던 드리프트를 막는 대신 **만들어낸다.**
+- **12에서 추정 기본값을 쓰지 마라.** 상수를 못 읽었는데 "흔한 값"으로 때우면 `references/constants.md`가 막으려던 드리프트를 막는 대신 **만들어낸다.**
 - **18은 조용히 넘어가면 안 된다.** 쓰기가 실패했는데 성공한 것처럼 끝나면 다음 실행의 델타가 존재하지 않는 직전 리포트를 기준으로 계산된다. 본문을 대화에 뱉는 건 사용자가 그것을 손으로 남길 수 있게 하려는 것이다.
 - **정본 `package.json`이 0개거나 `dependencies`가 비었으면 degrade가 아니라 종료다** — §1 참조. 대상 0개인 리포트는 "gap 없음"과 겉모습이 같아서 내지 않는 게 맞다.
 

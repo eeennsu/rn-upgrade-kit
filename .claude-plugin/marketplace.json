@@ -1,0 +1,12 @@
+{
+  "name": "rn-upgrade-kit",
+  "owner": {
+    "name": "eeennsu"
+  },
+  "plugins": [
+    {
+      "name": "rn-upgrade-kit",
+      "source": "./"
+    }
+  ]
+}

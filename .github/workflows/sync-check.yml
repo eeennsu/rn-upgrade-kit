@@ -1,0 +1,16 @@
+name: sync-check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # shared/ 사본 · 루트 plugin.json이 정본과 같은지, 스킬 폴더가 자기 안에서 닫혀 있는지 검사
+      - run: node scripts/sync.mjs --check

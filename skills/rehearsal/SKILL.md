@@ -1,8 +1,9 @@
 ---
 name: rehearsal
 description: 격리된 git worktree에서 지정한 RN 버전 세트로의 업그레이드를 실제로 끝까지 실행하고, 티어별 통과·실패·미실행 판정과 재현 커맨드를 담은 리포트를 낸 뒤 worktree를 폐기한다. 모든 게이트를 통과한 경우에만 전용 브랜치 채택을 제안한다. "RN 업그레이드 리허설", "업그레이드 시험", "rehearsal"에 사용. macOS·Linux 전용 — Windows에서는 실행을 거부한다.
-user-invocable: true
-argument-hint: <pkg@ver>... [--platform android|ios]
+license: MIT
+compatibility: macOS·Linux 전용(Windows는 실행 거부). 셸·git·node와 RN 네이티브 빌드 툴체인(Android SDK · iOS는 Xcode·CocoaPods)이 필요하다. Claude Code 기준으로 설계했다.
+argument-hint: "<pkg@ver>... [--platform android|ios]"
 allowed-tools: Read Write Glob Bash WebFetch
 ---
 
@@ -38,7 +39,7 @@ allowed-tools: Read Write Glob Bash WebFetch
 | - | --- | --- |
 | 1 | 각 인자가 registry에 **존재하는 버전**인가 — `node -e`로 상태 코드를 직접 읽는다 (아래) | `실행 거부 — 존재하지 않는 버전: <pkg>@<ver>` |
 | 2 | **프리릴리즈가 아닌가** (`-rc`·`-beta`·`-next`·`-canary`) | `실행 거부 — 프리릴리즈: <pkg>@<ver>` |
-| 3 | **lockstep 짝이 전부 왔나** — 세트 목록은 `../../shared/lockstep-sets.md`를 Read해서 쓴다 | `실행 거부 — lockstep 짝 누락: <빠진 패키지>` |
+| 3 | **lockstep 짝이 전부 왔나** — 세트 목록은 `references/lockstep-sets.md`를 Read해서 쓴다 | `실행 거부 — lockstep 짝 누락: <빠진 패키지>` |
 
 **짝 하나만 올리는 리허설은 무의미하다** — 반쯤 맞춘 세트로 T2까지 돌면 그 관측이 무엇을 뜻하는지 아무도 모른다.
 
@@ -65,7 +66,7 @@ node -e "fetch('https://registry.npmjs.org/react-native/0.83.4').then(r=>console
 
 **`base_sha`는 실행 시작 시점의 현재 브랜치 HEAD다.** 인자로 받지 않는다 — 이 플러그인의 인자는 **좁히기 전용**이고(§1 `--platform`), base를 인자로 열면 넓히는 인자가 된다. 리허설 시작 전에 `git rev-parse HEAD`로 **한 번 읽어 고정**하고, worktree 경로·브랜치명·리포트 헤더·머지 선행 확인이 전부 그 고정된 값을 쓴다. 도중에 다시 읽으면 네 곳이 서로 다른 커밋을 가리킬 수 있다.
 
-이 검사가 «인자 검증 3종»에 번호로 들어가지 않는 이유는 **인자가 아니라 트리 상태**이기 때문이다. `../../shared/lockstep-sets.md`가 `인자 검증 3`을 이름으로 참조하므로 번호를 밀지 않는다.
+이 검사가 «인자 검증 3종»에 번호로 들어가지 않는 이유는 **인자가 아니라 트리 상태**이기 때문이다. `references/lockstep-sets.md`가 `인자 검증 3`을 이름으로 참조하므로 번호를 밀지 않는다.
 
 `git status --porcelain`으로 판정한다. **untracked 파일도 tracked 변경과 같은 기준으로 다룬다** — 커밋 안 된 `patches/foo.patch`는 tracked 여부와 무관하게 업그레이드 결과를 바꾼다.
 
@@ -105,7 +106,7 @@ worktree는 커밋된 트리다. **커밋 밖에 있지만 실행에 필요한 �
 `currency` 커맨드 블록에는 `# 산정 시각: YYYY-MM-DD`가 붙는다. 그대로 복붙하면 함께 온다.
 
 - 주석이 오면 **경과일을 리포트 헤더에 남긴다**: `타깃 산정: 2026-08-09 (21일 경과)`.
-- 경과일이 `../../shared/constants.md`의 `target_staleness_warn_days`를 넘으면 **실행 전에 경고한다. 거부가 아니라 경고다** — 낡은 타깃도 리허설 자체는 유효하다.
+- 경과일이 `references/constants.md`의 `target_staleness_warn_days`를 넘으면 **실행 전에 경고한다. 거부가 아니라 경고다** — 낡은 타깃도 리허설 자체는 유효하다.
 - **주석이 없으면 경고하지 않는다**(손으로 친 경우). 없는 것을 실패로 만들지 않는다.
 
 ## 1. 티어 모델
@@ -155,7 +156,7 @@ worktree는 커밋된 트리다. **커밋 밖에 있지만 실행에 필요한 �
 
 **어느 단계도 무한정 기다리지 않는다.** Gradle 빌드·`pod install`·에뮬레이터 부팅은 네트워크나 데몬에서 멈추면 스스로 끝나지 않고, 상한이 없으면 스킬 전체가 거기 갇힌다.
 
-| 단계 | 상한 (`../../shared/constants.md`) |
+| 단계 | 상한 (`references/constants.md`) |
 | --- | --- |
 | T1 의존성 설치 | `step_timeout_install_seconds` |
 | T1 타입체크 · 테스트 (각각) | `step_timeout_check_seconds` |
@@ -249,7 +250,7 @@ worktree는 매번 신규 생성되므로 `node_modules`·`Pods`는 매번 새�
 
 통과 조건 (전부 충족):
 
-1. 앱 프로세스가 `boot_survival_seconds`(`../../shared/constants.md`) 동안 생존
+1. 앱 프로세스가 `boot_survival_seconds`(`references/constants.md`) 동안 생존
 2. **첫 프레임 렌더 신호 관측** — RN 브리지/Fabric 마운트 완료
 3. **로그 스캔 클린** — 패턴 목록은 `references/log-patterns.md`
 
@@ -274,7 +275,7 @@ worktree는 매번 신규 생성되므로 `node_modules`·`Pods`는 매번 새�
 | android | `adb exec-out screencap -p > <artifacts>/android-boot.png` |
 | ios | `xcrun simctl io booted screenshot <artifacts>/ios-boot.png` |
 
-- **플랫폼당 1장.** 여러 장은 판정에 안 쓰이는 증거물의 용량만 늘린다 — `artifact_retention_n`이 `report_retention_n`보다 훨씬 작은 이유가 이 스킬이 쌓는 매체의 크기다(`../../shared/constants.md`).
+- **플랫폼당 1장.** 여러 장은 판정에 안 쓰이는 증거물의 용량만 늘린다 — `artifact_retention_n`이 `report_retention_n`보다 훨씬 작은 이유가 이 스킬이 쌓는 매체의 크기다(`references/constants.md`).
 - **시점은 `boot_survival_seconds` 생존 확인 직후.** 그 전에 찍으면 스플래시가 찍히고, 증거물이 §3의 판정선(첫 프레임 이후 생존한 화면)과 어긋난 화면을 남긴다.
 - **수집 실패는 T3를 실패로 만들지 않는다.** `미실행 (스크린샷 수집 실패: <사유>)`로 남긴다 — 스크린샷은 판정에 절대 쓰지 않으므로(위) 그 부재는 업그레이드에 대한 관측이 아니다. 이미 난 T2 판정도 바뀌지 않는다.
 
@@ -282,7 +283,7 @@ worktree는 매번 신규 생성되므로 `node_modules`·`Pods`는 매번 새�
 
 **매번 신규 생성 → 항상 즉시 폐기.** 실패해도 보존하지 않는다. 채택해도 폐기하고 **커밋만 남는다.**
 
-- 생성 경로는 `../../shared/constants.md`의 `worktree_path_template`이다. **본문에도 리포트에도 경로를 직접 적지 마라** — 그 경로는 재현 블록·수동 정리 커맨드·충돌 판정 **세 곳에 동시에** 박히고, 한 곳만 고치면 나머지 둘이 조용히 거짓이 된다.
+- 생성 경로는 `references/constants.md`의 `worktree_path_template`이다. **본문에도 리포트에도 경로를 직접 적지 마라** — 그 경로는 재현 블록·수동 정리 커맨드·충돌 판정 **세 곳에 동시에** 박히고, 한 곳만 고치면 나머지 둘이 조용히 거짓이 된다.
 - 폐기 전에 진단 증거(빌드 로그·logcat·tsc 출력·테스트 출력·스크린샷)를 worktree 밖 `artifacts/`로 복사한다.
 - **폐기 실패를 조용히 넘기지 마라.** 리포트에 명시 + 수동 정리 커맨드 제공(`git worktree remove --force <path>`, `git worktree prune`). 조용히 넘기면 "항상 폐기"라는 계약이 거짓말이 되고 누적 문제가 그대로 돌아온다.
 - **`artifacts/` 보존 상한 초과분은 자동으로 지운다.** 자매 두 스킬(`platform-watch`·`currency`)은 같은 자리에서 수동 정리 커맨드만 내는데, 그 둘에는 파일 삭제 수단이 없고 이 스킬은 `Bash`에 용도 제한이 없기 때문이다. **세 스킬이 달라지는 게 맞다 — 도구가 다르다.**
@@ -369,8 +370,8 @@ git merge rn-upgrade/0.86.2-a3f9c21
 
 | # | 조건 | 결과 | 위치 |
 | - | --- | --- | --- |
-| 1 | `shared/constants.md` 도달 실패 | **실행 거부** (아래 특례) | 출력만 |
-| 2 | `shared/lockstep-sets.md` 도달 실패 | 인자 검증 3을 `미실행`으로 두고 진행 | 헤더 |
+| 1 | `references/constants.md` 도달 실패 | **실행 거부** (아래 특례) | 출력만 |
+| 2 | `references/lockstep-sets.md` 도달 실패 | 인자 검증 3을 `미실행`으로 두고 진행 | 헤더 |
 | 3 | `node -e` registry 조회 실패 | 인자 검증 1을 `미실행`으로 두고 진행 | 헤더 |
 | 4 | `.rn-upgrade-kit/` 쓰기 실패 | 아래 «산출물 쓰기 실패» | 헤더 · 출력 |
 
@@ -381,9 +382,9 @@ git merge rn-upgrade/0.86.2-a3f9c21
 - **상수가 판정 임계값이 아니라 실행 파라미터다.** `step_timeout_*` 없이는 단계를 돌리다 무한정 멈추고, `boot_survival_seconds` 없이는 T2 통과 조건 자체가 정의되지 않으며, `worktree_path_template` 없이는 격리 공간을 어디에 만들지도 모른다. **실행이 성립하지 않는다.**
 - **지어내면 실행 전체가 근거 없는 판정이 된다.** advisory 스킬의 추정값은 한 줄을 틀리게 하지만, 여기서는 수십 분을 돌린 리허설이 무엇을 검증한 것인지 알 수 없게 된다.
 - **`확인 못 함`은 이 스킬의 어휘가 아니다.** 3값 고정을 깨지 않으려면 남는 선택지는 거부뿐이고, **거부는 판정이 아니다**(§0) — 티어를 시작하지 않고 리포트 파일도 만들지 않는다.
-- 사유 문구: `실행 거부 — 상수 도달 실패: shared/constants.md`. 그 파일의 «이 파일에 도달하는 법»이 정한 `Glob` 폴백을 **먼저 시도한 뒤에만** 이 결론을 낸다.
+- 사유 문구: `실행 거부 — 상수 도달 실패: references/constants.md`. 그 파일의 «이 파일에 도달하는 법»이 정한 `Glob` 폴백을 **먼저 시도한 뒤에만** 이 결론을 낸다.
 
-2를 같이 거부로 다루지 않는 이유는 `shared/lockstep-sets.md`가 **한 검사의 재료**일 뿐 실행 파라미터가 아니기 때문이다. 못 읽어도 티어는 그대로 돈다.
+2를 같이 거부로 다루지 않는 이유는 `references/lockstep-sets.md`가 **한 검사의 재료**일 뿐 실행 파라미터가 아니기 때문이다. 못 읽어도 티어는 그대로 돈다.
 
 ### 4 — 산출물 쓰기 실패
 
