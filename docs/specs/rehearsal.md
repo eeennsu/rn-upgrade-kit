@@ -667,6 +667,35 @@ artifacts: 보존 3개, 자동 정리 1개
 
 > **해소됨 (2026-08-18 · 구현 감사):** **Android SDK·에뮬레이터 부재 탐지** → 환경변수(`ANDROID_HOME`/`ANDROID_SDK_ROOT`)와 실행 가능 여부(`adb version`·`emulator -version`)를 **둘 다** 보고 **티어 시작 전에** 1회 판정 / **채택 커밋 메시지 형식** → 검증 티어 목록·`미검증`·`검증 기준`·`베이스라인`을 **전부 싣는다** / **`base_sha` 표기 자릿수** → 브랜치명과 worktree 경로는 **7자리**(`worktree_path_template`의 `<base_sha7>`), 리포트 본문은 전체. 근거는 전부 §구현 감사 반영 — 2026-08-18.
 
+### 미해결 — 2026-09-24 (다음 작업의 출발점)
+
+2026-09-24 감사에서 반영하지 않은 것이다. 전에는 로컬 메모리에만 있어서 다른 기기의 세션이 볼 수 없었다. **해소하면 여기서 지우고 해당 절에 정정 블록을 단다.** 무서명 — 독립 검증을 거치지 않은 관찰이다.
+
+**HIGH — 맥에서 T2까지 실제로 돌린 뒤에 쓴다 (사용자 몫)**
+
+- **T2 절차가 규범으로 정의되지 않았다.** 빌드·설치·실행 커맨드, AVD·시뮬레이터 선택, flavor·scheme, applicationId가 예시와 placeholder에만 있다. 이 스펙은 2026-08-31 실행에서 T1 fail-fast로 멈춘 뒤 **T2/ios·T3·§채택 경로의 실행 관측이 0이다**(«실행 검증 반영 — 2026-08-31»).
+- 같이 정할 것: Expo 프로젝트의 `expo-dev-client` debug 빌드가 개발 런처를 띄워 판정선이 거짓 통과를 낼 수 있는 경우(«Expo 대응» T2 절). CNG 플랫폼의 prebuild 단계는 T2 앞에 이미 정해 뒀다.
+- 실행 방법 메모: 맥에서 대상 앱 repo를 열고 `/rn-upgrade-kit:rehearsal <pkg@ver>...`를 부른다. 결과 리포트와 막힌 지점(어느 커맨드를 지어내야 했나)이 T2 규범의 재료다. Expo 경로도 보려면 `create-expo-app`으로 만든 SDK 56 샘플에 `currency`의 SDK 업그레이드 블록을 그대로 넣어 본다.
+
+**MED**
+
+- 검사 커맨드 오류: `npm tsc`(npm에는 `tsc` 하위 커맨드가 없다 — `npx tsc`), `bun test`(bun 내장 러너가 돈다). yarn 1과 berry를 구분하지 않는다.
+- 환경 전제 탐지에 JDK · AVD 존재 · 시뮬레이터 런타임이 빠졌다.
+- 업그레이드 표면(dirty 거부)에 `.yarn/patches` · `.npmrc` · `pnpm-workspace.yaml`이 없다.
+- `.rn-upgrade-kit/`를 gitignore하지 않은 프로젝트는 이 스킬의 산출물 자체가 매번 표면 밖 dirty로 잡혀 경고가 뜬다.
+- 리포트·artifacts 경로 키에 base가 없어, 같은 타깃을 다른 base에서 같은 날 돌리면 서로 덮어쓴다(worktree 경로는 `<base_sha7>`로 갈라 놨다).
+- `references/report-format.md`를 읽는 시점("실행이 끝난 뒤에만")이 실행 중에 필요한 규칙(재현 블록 추출 등)과 모순된다.
+- 채택: 사용자 확인을 얼마나 기다리는지, 무엇을 스테이징하는지(`git add` 범위)가 정해져 있지 않다.
+- iOS 첫 프레임 신호가 RN 마운트를 관측하지 않는다.
+- lockstep 버전 **일치**(`@react-native/*` == `react-native`)를 검사하지 않는다 — 인자 검증 3은 짝이 왔는지만 본다.
+- 재현 블록 규칙이 충돌한다 — "실패한 티어에서 끝난다" vs 플랫폼은 서로 독립. 예시에서 `cd android` 다음의 `cd ios`가 경로상 깨져 있다.
+
+**LOW**
+
+- `references/constants.md` 도달 실패 문구가 자리마다 다르다.
+- 미실행 사유는 "5종"인데 6번째(`test 스크립트 없음`)가 쓰이고 있다.
+- AC에 `원래 깨져 있었음` 잔재가 있다(현행 어휘는 `베이스라인: 측정됨`).
+
 ---
 
 ## Ontology (Key Entities)
