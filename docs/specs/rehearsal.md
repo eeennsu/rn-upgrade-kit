@@ -675,6 +675,7 @@ artifacts: 보존 3개, 자동 정리 1개
 
 - **T2 절차가 규범으로 정의되지 않았다.** 빌드·설치·실행 커맨드, AVD·시뮬레이터 선택, flavor·scheme, applicationId가 예시와 placeholder에만 있다. 이 스펙은 2026-08-31 실행에서 T1 fail-fast로 멈춘 뒤 **T2/ios·T3·§채택 경로의 실행 관측이 0이다**(«실행 검증 반영 — 2026-08-31»).
 - 같이 정할 것: Expo 프로젝트의 `expo-dev-client` debug 빌드가 개발 런처를 띄워 판정선이 거짓 통과를 낼 수 있는 경우(«Expo 대응» T2 절). CNG 플랫폼의 prebuild 단계는 T2 앞에 이미 정해 뒀다.
+- **초안 재료 (미실측)** — 태그 `archive/omc-team-skill-validation`(2026-08-30~09-02 omc team 검증 · main에 머지 안 됨)의 `skills/rehearsal/SKILL.md` §3 «기동»에 T2 설치·기동 초안이 있다: android `adb install`·기동, ios `simctl install`·`launch`와 `PlistBuddy`로 읽는 bundleId, applicationId·앱 이름·bundleId 도출 규칙, 기기 2대 이상, flavor APK 경로. 같은 태그의 §0 인자·`<target>` 문자 제약과 삭제 전 확인, §2 yarn 1/berry 구분은 아래 MED와 겹친다. 꺼내기: `git show archive/omc-team-skill-validation:skills/rehearsal/SKILL.md`. 분기 뒤 main이 크게 바뀌어(8/31 실행 검증 · 스킬 폴더 자족화 · Expo) **머지하지 않고 골라 옮긴다** — 그 브랜치 기록도 *"실행 검증은 여전히 0"*이라 커맨드를 맥에서 실측한 뒤에 규범으로 올린다.
 - 실행 방법 메모: 맥에서 대상 앱 repo를 열고 `/rn-upgrade-kit:rehearsal <pkg@ver>...`를 부른다. 결과 리포트와 막힌 지점(어느 커맨드를 지어내야 했나)이 T2 규범의 재료다. Expo 경로도 보려면 `create-expo-app`으로 만든 SDK 56 샘플에 `currency`의 SDK 업그레이드 블록을 그대로 넣어 본다.
 
 **MED**
