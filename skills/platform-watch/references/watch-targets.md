@@ -12,6 +12,7 @@
 | `1차 URL` | ✔ | 공식 정책 본문 |
 | `2차 URL` | ✔ | 독립 이중화. 만족시킬 페이지가 없으면 **`없음 (<사유>)`**을 명시적으로 적는다 — 아래 «2차의 독립성» |
 | `교차` | ✖ | 이 항목의 2차가 **다른 항목의 1차**와 같을 때, 또는 이 항목의 1차가 다른 항목의 1차와 같은 페이지일 때(`(1차 공유)`) 그 슬러그를 적는다. 비워두지 말고 명시한다 |
+| `예고 URL` | ✖ | 공급자가 **다음 요구**를 1차보다 먼저 싣는 페이지. 1차 성공 여부와 무관하게 매 실행 함께 읽고, 예고 요구(미래 날짜)만 가져온다 — SKILL.md §2 «예고 URL». 2차와 달리 이중화가 아니라 **다른 사실의 출처**라서 독립성 요건을 받지 않는다 |
 | `실측` | ✔ | 마지막으로 URL 도달을 확인한 날짜와 결과. 확인 안 했으면 `미실측` |
 | `현재값 읽기 지시` | ✔ | 프로젝트 어디를 어떻게 읽나 |
 | `등급 임계일` | ✖ | 미지정 시 `references/constants.md`의 `grade_threshold_days` |
@@ -66,8 +67,9 @@ URL을 추가·수정할 때는 **2차를 고르기 전에 이미 다른 항목�
 - **요구:** 심사 제출용 최소 Xcode / SDK 버전
 - **1차:** https://developer.apple.com/news/upcoming-requirements/ — «SDK minimum requirements» 절
 - **2차:** https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds — ② 같은 호스트·다른 성격(제출 도움말). 대상 유형별 *"Built using Xcode"* 표에 같은 요구가 있다. **날짜는 없다** — 1차가 죽으면 요구값은 확인되지만 마감은 `확인 못 함`으로 떨어진다
+- **예고 URL:** https://developer.apple.com/app-store/submitting/ — 제출 안내. 1차의 두 절이 *"Learn about submitting apps"*로 이 페이지를 가리킨다. 주제 판정 재료: 제출 SDK 요구 문단(*"… apps must be built with the … SDK or later"*)
 - **교차:** `ios/min-deployment-target` (1차 공유 — 같은 페이지의 다른 절)
-- **실측:** 2026-09-24 · 1차 도달, 요구 확인: *"SDK minimum requirements — Since April 28, 2026 Apps uploaded to App Store Connect must be built with Xcode 26 or later using an SDK for iOS 26, iPadOS 26, tvOS 26, visionOS 26, or watchOS 26."* 2차 도달, `iOS app` 행 `Xcode 26 or later`. **예고 요구 미포착 — 알려진 한계:** 제출 안내 페이지(https://developer.apple.com/app-store/submitting/)가 *"Starting April 2027, … iOS and iPadOS apps must be built with the iOS & iPadOS 27 SDK or later"*를 싣는데, 1차에는 아직 없다(`2027` 언급 0). 이 스킬은 1차가 성공하면 다른 페이지를 읽지 않으므로 1차에 실릴 때까지 이 예고를 보고하지 못한다. 1차에 실리면 SKILL.md §3 «발효와 예고»가 받는다.
+- **실측:** 2026-09-24 · 1차 도달, 요구 확인: *"SDK minimum requirements — Since April 28, 2026 Apps uploaded to App Store Connect must be built with Xcode 26 or later using an SDK for iOS 26, iPadOS 26, tvOS 26, visionOS 26, or watchOS 26."* 2차 도달, `iOS app` 행 `Xcode 26 or later`. 예고 URL 도달, 예고 요구 확인: *"Starting April 2027, apps and games uploaded to App Store Connect need to meet the following minimum requirements. iOS and iPadOS apps must be built with the iOS & iPadOS 27 SDK or later"* — **1차에는 아직 없다**(`2027` 언급 0). 예고 URL 필드가 생긴 계기다.
 - **현재값:** repo 안에서 읽을 수 있는 건 CI 설정(`.github/workflows/*.yml`의 `xcode-version`)뿐이다. 없으면 `현재값 확인 못 함 (경로 부재)` — **로컬 Xcode 버전을 셸로 확인하지 않는다.**
 - **통합 이력 (2026-08-29) — 2026-09-24 분리로 해제:** `ios/min-deployment-target`을 이 항목으로 흡수했었다(사유: Apple이 최소 배포 타깃을 정책 본문으로 게시하지 않았다 — 감사 원장 A-29·A-30, git 태그 `audit-2026-08`의 `docs/audit-ledger.md`). 배포 타깃 하한은 `support/xcode/` 표의 `Deployment Targets` 열에서 파생했다. 2026-09-09에 Apple이 그 요구를 정책 문장으로 게시해 흡수 사유가 사라졌으므로 되돌렸다 — 아래 `ios/min-deployment-target`의 «재도입 이력».
 
@@ -76,6 +78,7 @@ URL을 추가·수정할 때는 **2차를 고르기 전에 이미 다른 항목�
 - **platform:** ios
 - **요구:** 심사 제출용 최소 배포 타깃 (iOS·iPadOS)
 - **1차:** https://developer.apple.com/news/upcoming-requirements/ — «iOS and iPadOS minimum system requirements» 절
+- **예고 URL:** 없음 — 배포 타깃 예고를 싣는 페이지를 실측에서 못 찾았다(2026-09-24 · `app-store/submitting/`은 SDK 예고만 싣는다). 주제가 없는 페이지를 붙이면 매 실행 `예고 확인 못 함`이 떠 신호가 소음이 된다
 - **2차:** **없음** (후보 실측 탈락 — `upload-builds`는 Xcode 요구만 싣고, `app-store/submitting/`은 SDK 예고만 싣는다(2026-09-24). `support/xcode/` 표의 `Deployment Targets` 열은 Xcode의 **지원 범위**이지 제출 정책이 아니다) — 리포트에 `이중화 없음` 병기 대상
 - **교차:** `ios/min-xcode` (1차 공유 — 같은 페이지의 다른 절)
 - **실측:** 2026-09-24 · 1차 도달, 요구 확인: *"iOS and iPadOS minimum system requirements — Since September 9, 2026 iOS and iPadOS apps uploaded to App Store Connect must target iOS 13 or later."*
@@ -150,7 +153,7 @@ URL을 추가·수정할 때는 **2차를 고르기 전에 이미 다른 항목�
 | --- | --- |
 | `upcoming-requirements`에 «iOS and iPadOS minimum system requirements — Since September 9, 2026 … must target iOS 13 or later»가 새로 실렸다 | `ios/min-deployment-target` 재도입, 1차 공유를 `교차:`로 표기 |
 | `upload-builds`가 `iOS app — Built using Xcode 26 or later`를 싣는다 | `ios/min-xcode`의 2차로 투입 (② 강도 · 날짜 없음) |
-| `app-store/submitting/`이 `Starting April 2027 — iOS & iPadOS 27 SDK`를 싣는데 1차엔 없다 | 알려진 한계로 `ios/min-xcode` 실측 필드에 기록 — 2차 요건(1차와 같은 사실)을 만족하지 않아 2차로 쓰지 않았다 |
+| `app-store/submitting/`이 `Starting April 2027 — iOS & iPadOS 27 SDK`를 싣는데 1차엔 없다 | 2차 요건(1차와 같은 사실)을 만족하지 않아 2차로는 못 쓴다. 스키마에 **`예고 URL`** 필드를 신설해 `ios/min-xcode`에 붙였다(사용자 결정) — 1차만 읽는 소스 모델로는 1차에 실릴 때까지 이 예고를 못 보기 때문이다 |
 | `support/xcode/`가 `/xcode/system-requirements`로 리다이렉트된다. 최상단 행은 Xcode 27.1 beta(`Deployment Targets` = `iOS 15–27`) | 파생 규칙 폐기로 이 파일의 URL 목록에서 빠졌다 |
 
 URL이 죽으면 §소스 도달의 수리 루프(`URL 이동 의심` → 이 파일 수정 → `--target`으로 해당 항목만 재확인)를 타라. 그게 이 파일이 스킬 본문 밖에 있는 이유다. **고칠 때 `실측` 필드도 같이 갱신한다** — 안 하면 다음 사람이 이 표를 믿는다.
