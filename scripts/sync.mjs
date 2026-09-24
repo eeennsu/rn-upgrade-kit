@@ -14,9 +14,9 @@ const CHECK = process.argv.includes('--check');
 // 스킬별 번들 대상 — shared/constants.md «값» 표의 소비자 열과 맞춘다.
 // 본문이 references/<파일>을 참조하는데 여기 없거나, 여기 있는데 참조가 없으면 §3이 잡는다.
 const BUNDLE = {
-  'platform-watch': ['constants.md'],
-  currency: ['constants.md', 'lockstep-sets.md'],
-  rehearsal: ['constants.md', 'lockstep-sets.md'],
+  'platform-watch': ['constants.md', 'expo.md'],
+  currency: ['constants.md', 'lockstep-sets.md', 'expo.md'],
+  rehearsal: ['constants.md', 'lockstep-sets.md', 'expo.md'],
 };
 
 // Agent Plugins 1.0 스키마는 루트 additionalProperties: false라 허용 필드만 옮긴다.

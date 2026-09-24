@@ -76,7 +76,7 @@ npx skills add eeennsu/rn-upgrade-kit -s '*' -a codex -a cursor
 
 - **`rehearsal`: POSIX 전용 — 네이티브 빌드를 실제 실행하기 때문이다.** RN 빌드·CocoaPods·에뮬레이터 제어·worktree 폐기가 전부 Windows에서 별도 경로를 요구하고, 그 경로는 유지보수자가 검증할 수 없다. *검증 못 한 실행 경로를 사실로 쓰지 않는다*는 원칙과 정면 충돌한다.
 - **`platform-watch`: 전 호스트 — 웹 조회와 텍스트 파일 읽기만 한다.** 셸을 호출하지 않는다.
-- **`currency`: 전 호스트 — 조회·파일 읽기 + registry 조회용 `node -e` 한 줄.** 대상이 RN 프로젝트이므로 node는 항상 존재한다. **커맨드는 `$`·백틱·`!`이 없는 한 줄로 고정돼 있고, PowerShell 5.1과 Git Bash에서 같은 출력이 나오는 것을 실측했다**(2026-09-24 · Windows 11 · 현행 원라이너 기준 — 현재 major 라인 전체 · peer 전체 판). 이 표의 `currency` ✅는 그 실측에 기대고 있다.
+- **`currency`: 전 호스트 — 조회·파일 읽기 + registry·Expo API 조회용 `node -e` 한 줄씩.** 대상이 RN 프로젝트이므로 node는 항상 존재한다. **커맨드는 `$`·백틱·`!`이 없는 한 줄로 고정돼 있고, PowerShell 5.1과 Git Bash에서 같은 출력이 나오는 것을 실측했다**(2026-09-24 · Windows 11 · registry 원라이너 현행 판 + Expo 조회 3종). 이 표의 `currency` ✅는 그 실측에 기대고 있다.
 
 > **`node -e`가 실패해도 리포트는 나온다. 대신 그 사실이 헤더에 박힌다.** soak·churn 게이트 2개가 판정에서 빠지고 헤더에 `soak·churn 게이트 전면 미확인`이 실린다 — **게이트 둘이 죽은 리포트와 정상 리포트가 겉보기에 같으면 안 되기 때문이다.** 위 표의 ✅는 *"돈다"*는 뜻이지 *"게이트가 전부 산다"*는 보장이 아니다.
 
@@ -105,8 +105,25 @@ npx skills add eeennsu/rn-upgrade-kit -s '*' -a codex -a cursor
 ## 전제
 
 - New Architecture (`newArchEnabled=true` · Hermes · Nitro Modules · Reanimated 4)
-- **Expo 미사용** — `expo-*` 대안을 제시하지 않는다
 - 패키지 매니저 무관 (pnpm · npm · yarn · bun 4종)
+- **RN CLI · Expo bare · Expo managed(CNG) 셋 다 받는다** — 아래
+
+## Expo 프로젝트
+
+세 스킬이 프로젝트 유형을 **플랫폼마다** 감지한다. 기준은 `package.json`의 `expo` 의존성과, `android/`·`ios/`의 커밋 여부다.
+
+| 유형 | 판정 | 달라지는 것 |
+| --- | --- | --- |
+| RN (Expo 아님) | `expo` 없음 | 없다 — 리포트 헤더에 `프로젝트: RN (Expo 아님)` 한 줄만 붙는다 |
+| Expo bare | `expo` 있음 + 네이티브 디렉토리 커밋됨 | 네이티브 파일이 정본. Expo가 덮어쓴 값(`gradle.properties` · `Podfile.properties.json`)과 SDK 기본값을 같이 본다 |
+| Expo CNG | `expo` 있음 + 네이티브 디렉토리 없음 또는 gitignored | 값은 app config와 SDK 기본값에서 온다. **로컬에 남은 `android/`·`ios/`(prebuild 생성물)는 읽지 않는다** |
+
+- **SDK↔RN 대응, SDK 호환 범위, SDK 기본 targetSdk·배포 타깃은 실행할 때마다 조회한다** — `api.expo.dev` · registry · Expo 공식 문서. 스킬에는 버전 값이 없다. 다음 SDK가 나와도 스킬을 고칠 일이 없어야 한다.
+- **`platform-watch`**: CNG의 현재값은 app config 명시값 → SDK 기본값 순이다. `app.config.js`·`.ts`는 **평가하지 않는다**(셸 없음). 식으로 된 값은 `확인 못 함`으로 남긴다.
+- **`currency`**: SDK가 고정하는 범위가 상한이 된다. **새 SDK는 권장하지 않는다** — 🟡로 알리고, SDK 업그레이드를 리허설할 커맨드 블록을 그 아래에 따로 붙인다.
+- **`rehearsal`**: 인자 세트가 목표 SDK 범위와 맞는지 티어 전에 검사한다(인자 검증 4). CNG 플랫폼의 T2는 `expo prebuild`로 시작한다. 채택 커밋에는 prebuild 산물이 들어가지 않는다. EAS Build는 부르지 않는다.
+- Expo가 아닌 프로젝트에는 여전히 `expo-*` 대안을 제시하지 않는다.
+- **Expo 경로는 실행 검증 전이다.** 규칙은 `shared/expo.md`와 각 스펙의 «Expo 대응» 절에 있다.
 
 ## 설계 원칙
 
@@ -143,9 +160,10 @@ jobs:
 | --- | --- |
 | `skills/*/SKILL.md` | 스킬 3개 |
 | `skills/*/references/*.md` | 지연 로드 참조 — 조회가 끝난 뒤에만 Read |
-| `skills/*/references/{constants,lockstep-sets}.md` | `shared/` 사본 — **직접 고치지 마라** (`scripts/sync.mjs`가 생성) |
+| `skills/*/references/{constants,lockstep-sets,expo}.md` | `shared/` 사본 — **직접 고치지 마라** (`scripts/sync.mjs`가 생성) |
 | `shared/constants.md` | 3스킬 공용 상수 정본 (보존 상한 · 임계일 · 핸드오프 경로 · worktree 경로 · 단계 타임아웃) |
 | `shared/lockstep-sets.md` | 짝으로만 올려야 하는 패키지 집합 정본 — `currency` 게이트 6과 `rehearsal` 인자 검증이 **같은 목록을 본다** |
+| `shared/expo.md` | Expo 규칙 정본 — 유형 판별 · SDK 조회 원라이너 · SDK 정합 판정. 버전 값은 없다 |
 | `skills/*/LICENSE` | 루트 `LICENSE` 사본 — 스킬 폴더만 설치돼도 고지가 따라가게 |
 | `scripts/sync.mjs` | `shared/`·`LICENSE` → 스킬별 사본, `.claude-plugin/plugin.json` → 루트 `plugin.json` 생성 + 스킬 검사. `--check`는 CI |
 | `.claude-plugin/` | Claude Code 플러그인 · 마켓플레이스 매니페스트 |

@@ -40,6 +40,11 @@ allowed-tools: Read Write Glob Bash WebFetch
 | 1 | 각 인자가 registry에 **존재하는 버전**인가 — `node -e`로 상태 코드를 직접 읽는다 (아래) | `실행 거부 — 존재하지 않는 버전: <pkg>@<ver>` |
 | 2 | **정확한 stable 버전인가** — 숫자 세 자리 `x.y.z`만 받는다. `-` 꼬리가 붙으면(`-rc`·`-beta`·`-alpha`·`-next`·`-canary`·`-nightly` …) 프리릴리즈이고, dist-tag(`latest`·`next`·`nightly`)·범위(`^`·`~`·`x`)는 정확 버전이 아니다 | `실행 거부 — 프리릴리즈: <pkg>@<ver>` / `실행 거부 — 정확 버전 아님: <pkg>@<ver>` |
 | 3 | **lockstep 짝이 전부 왔나** — 세트 목록은 `references/lockstep-sets.md`를 Read해서 쓴다 | `실행 거부 — lockstep 짝 누락: <빠진 패키지>` |
+| 4 | **Expo SDK 정합** (Expo 프로젝트만) — `references/expo.md` §5 규칙 둘. 아래 | `실행 거부 — SDK 범위 밖: <pkg>@<ver> (SDK <n>: <range>)` / `실행 거부 — SDK 정합 누락: <pkg> (현재 <ver> · SDK <n>: <range>)` |
+
+**순서는 2 → 1 → 3 → 4다.** 제목은 "3종"이지만 Expo 프로젝트는 4가 더 돈다.
+
+**`#` 줄은 `# 산정 시각:`만 읽는다.** 그 밖의 `#`로 시작하는 줄은 무시한다 — `currency`의 SDK 업그레이드 블록은 첫 줄에 "권장 아님" 안내 주석을 싣는다. 그 줄을 인자로 읽으면 안 된다.
 
 **짝 하나만 올리는 리허설은 무의미하다** — 반쯤 맞춘 세트로 T2까지 돌면 그 관측이 무엇을 뜻하는지 아무도 모른다.
 
@@ -63,6 +68,23 @@ node -e "fetch('https://registry.npmjs.org/react-native/0.83.4').then(r=>console
 - **잠정 lockstep 후보로는 거부하지 않는다.** 거부는 확정 세트로만 한다 — 인자 검증은 사용자가 손으로 친 것을 막는 자리고, 휴리스틱으로 막으면 우회 수단이 없다.
 - 파일 도달 실패 시 처리는 그 파일의 «도달 실패» 절을 따른다: 인자 검증 3을 **미실행**으로 두고 헤더에 `인자 검증 3 미실행 (lockstep 목록 도달 실패)`를 적는다. **거부하지 않는다** — 확인 못 한 것을 위반으로 취급하지 않는다.
 
+#### 프로젝트 유형 — 검사 4보다 먼저, 1회
+
+**`references/expo.md`를 Read해서 프로젝트 유형을 플랫폼마다 판정한다.** 이 스킬은 git을 쓰므로 `base_sha`의 트리로 본다(그 파일 §1 — `git ls-tree`). SDK는 lockfile의 `expo` 설치 버전 major다. 결과는 리포트 헤더 `프로젝트:` 줄에 **항상** 싣는다.
+
+- **Expo가 아니면 검사 4 · §3 prebuild · §6 CNG 채택 범위를 전부 건너뛴다.** 달라지는 건 헤더 `프로젝트: RN (Expo 아님)` 한 줄뿐이다.
+- **Expo 프로젝트인데 `references/expo.md`에 도달하지 못하면 실행 거부다** — §8 degrade 5.
+
+#### 검사 4 — Expo SDK 정합
+
+- **목표 SDK**: 인자에 `expo@<ver>`가 있으면 그 major, 없으면 현재 SDK.
+- **범위 조회는 `references/expo.md` §4의 E2**(`S` = 목표 SDK), 실패하면 **E2′**(`V` = 인자의 `expo` 버전, 없으면 설치 버전)다. **WebFetch로 대신하지 마라** — 범위 문자열 하나가 요약되며 바뀌면 거부 판정이 틀린다. 검사 1을 `node -e`로 둔 이유와 같다.
+- **판정은 그 파일 §5 규칙 둘이다.** 인자로 온 정합 대상이 목표 범위 밖이면 `SDK 범위 밖`이다. 목표 SDK가 현재와 다른데, 인자에 없는 직접 선언 패키지가 목표 범위 밖이면 `SDK 정합 누락`이다.
+- **기존 어긋남은 거부하지 마라.** 목표 SDK가 현재와 같을 때 인자 밖 패키지가 이미 범위 밖이면 헤더 `SDK 정합 어긋남 (기존): <pkg> <현재> — SDK <n> 범위 <range>`로만 남긴다 — 이번 업그레이드가 만든 어긋남이 아니다.
+- **범위를 해석할 수 없는 패키지**는 헤더 `인자 검증 4 일부 미판정: <pkg> <range>`로 남기고 그 패키지만 판정하지 않는다.
+- **조회 실패는 거부가 아니다** — `인자 검증 4 미실행 (Expo SDK 범위 조회 실패)`. SDK를 정할 수 없으면(lockfile에 `expo` 없음 · 인자에도 없음) `인자 검증 4 미실행 (SDK 확인 못 함)`.
+- **`npx expo install --check`·`--fix`를 쓰지 마라.** 앞은 설치가 끝난 뒤에야 판정이 나서, 수십 분 뒤에 누락을 발견한다. 뒤는 버전을 스스로 고른다 — 타깃 추측이다.
+
 ### 작업 트리 검증 — `base_sha` 고정 · dirty tree
 
 **`base_sha`는 실행 시작 시점의 현재 브랜치 HEAD다.** 인자로 받지 않는다 — 이 플러그인의 인자는 **좁히기 전용**이고(§1 `--platform`), base를 인자로 열면 넓히는 인자가 된다. 리허설 시작 전에 `git rev-parse HEAD`로 **한 번 읽어 고정**하고, worktree 경로·브랜치명·리포트 헤더·머지 선행 확인이 전부 그 고정된 값을 쓴다. 도중에 다시 읽으면 네 곳이 서로 다른 커밋을 가리킬 수 있다.
@@ -73,9 +95,10 @@ node -e "fetch('https://registry.npmjs.org/react-native/0.83.4').then(r=>console
 
 | 조건 | 처리 |
 | --- | --- |
-| **업그레이드 표면**(`package.json` · lockfile · `android/**` · `ios/**` · `patches/**`)에 uncommitted 변경 또는 untracked 파일 | `실행 거부 — 작업 트리 dirty: <경로 목록>` |
+| **업그레이드 표면**(`package.json` · lockfile · `android/**` · `ios/**` · `patches/**` · Expo 프로젝트면 app config)에 uncommitted 변경 또는 untracked 파일 | `실행 거부 — 작업 트리 dirty: <경로 목록>` |
 | 그 밖의 경로만 dirty | **경고 + 진행.** 리포트 헤더에 dirty 경로 목록을 싣는다 |
 
+- **Expo 프로젝트의 app config 표면**: 앱 루트의 `app.json`·`app.config.*`, 그리고 app config가 리터럴 경로(`./…`)로 가리키는 로컬 config plugin 파일. prebuild의 입력이라 `android/**`를 표면에 둔 이유와 같다.
 - **표면이 dirty면 거부하는 이유**: `git worktree add`는 커밋된 것만 가져간다. 그 변경이 빠진 트리를 검증해놓고 "우리 프로젝트"라고 부를 수 없다 — 서두가 정의한 이 스킬의 질문이 그 자리에서 거짓이 된다. §6의 base 신선도 절은 이 누수를 **미래 방향으로만** 막는다(검증 후 쌓인 커밋). 과거 방향 — 커밋 안 된 현재 — 은 여기서 막는다.
 - **그 밖의 경로를 거부하지 않는 이유**: 소스 한 줄 고쳐둔 상태로 리허설을 못 돌리게 하면 스킬이 실용성을 잃는다. 표면 밖 변경은 설치·빌드·부팅 결과를 바꾸지 않으므로 **비례적으로 갈라 경고로 끝낸다.** 대신 무엇이 검증에서 빠졌는지 리포트가 말한다.
 - **거부 출력에는 우회 경로를 함께 싣는다** (2026-08-31 · 실행 검증 반영): dev/beta/pro 환경을 파일 치환으로 전환하는 RN 프로젝트는 `ios/**`가 평상시에 항상 dirty라, 안내 없는 거부는 사실상 영구 차단이다. 고정 문구 — `커밋하거나 git stash -u 후 재실행하라. worktree는 커밋된 트리만 가져가므로 이 변경은 어차피 검증에 포함되지 않는다.`
@@ -95,7 +118,7 @@ worktree는 커밋된 트리다. **커밋 밖에 있지만 실행에 필요한 �
 
 | 검사 | 방법 | 출력 (리포트 헤더) |
 | --- | --- | --- |
-| 커밋 외 파일 | `git status --porcelain --ignored`의 `!!` 항목을 최상위 경로로 접는다. **설치·빌드가 재생성하는 산물은 제외**: `node_modules/` · `Pods/` · `build/` · `.gradle/` · `dist/` · `DerivedData/` · `.rn-upgrade-kit/` | `커밋 외 파일: worktree 미포함 N개 — <목록>` (0개면 `커밋 외 파일: 없음`) |
+| 커밋 외 파일 | `git status --porcelain --ignored`의 `!!` 항목을 최상위 경로로 접는다. **설치·빌드가 재생성하는 산물은 제외**: `node_modules/` · `Pods/` · `build/` · `.gradle/` · `dist/` · `DerivedData/` · `.rn-upgrade-kit/` · Expo 프로젝트면 `.expo/`와 **CNG 플랫폼의** `android/`·`ios/`(prebuild가 다시 만든다) | `커밋 외 파일: worktree 미포함 N개 — <목록>` (0개면 `커밋 외 파일: 없음`) |
 | 격리 누수 | PM 설정(`pnpm-workspace.yaml` · `package.json` · `.yarnrc.yml`)에서 **worktree 밖을 가리키는 절대경로** | `격리 누수: <파일> <N>건 — <경로 예시 1개>` (없으면 줄 생략) |
 
 - **거부하지 않는다.** 대부분의 RN 프로젝트가 이 상태다 — 환경 설정·시크릿은 원래 커밋 밖에 산다. 거부하면 스킬이 실용성을 잃는다.
@@ -118,6 +141,8 @@ worktree는 커밋된 트리다. **커밋 밖에 있지만 실행에 필요한 �
 | **T2/android** | Gradle 빌드 → 에뮬레이터/기기 설치 → 부팅 → 로그 스캔 | android |
 | **T2/ios** | `pod install` → `xcodebuild` → 시뮬레이터 부팅 → 로그 스캔 | ios (macOS 호스트만) |
 | **T3/\<platform\>** | 스크린샷 수집 — **증거물 전용, 판정 근거 아님** | 부팅 성공한 플랫폼마다 |
+
+**Expo CNG 플랫폼의 T2는 `expo prebuild`로 시작한다** — §3 «Expo CNG — prebuild». worktree에는 커밋된 트리만 오므로 그 플랫폼의 네이티브 디렉토리가 없다.
 
 ### fail-fast는 수직에만
 
@@ -161,7 +186,7 @@ worktree는 커밋된 트리다. **커밋 밖에 있지만 실행에 필요한 �
 | --- | --- |
 | T1 의존성 설치 | `step_timeout_install_seconds` |
 | T1 타입체크 · 테스트 (각각) | `step_timeout_check_seconds` |
-| T2 `pod install` · 네이티브 빌드 (각각) | `step_timeout_build_seconds` |
+| T2 `pod install` · 네이티브 빌드 · Expo CNG의 `expo prebuild` (각각) | `step_timeout_build_seconds` |
 | T2 부팅 + 로그 스캔 | `step_timeout_boot_seconds` |
 
 - 초과 시 판정은 **`실패 (타임아웃 <상수명>)`**이지 미실행이 아니다. **멈춘 건 관측된 사실이다** — 미실행은 "안 돌렸다"는 뜻인데 돌았고 안 끝났다. 미실행으로 적으면 리포트 독자가 이 실행을 "그 축을 안 봤다"로 읽는다.
@@ -240,6 +265,10 @@ lockfile 기반 1회 감지. `Glob`으로 탐지한다.
 
 > 이 절이 없으면 이미 깨져 있는 레포에서 T1은 영원히 실패로 나오고 스킬 전체가 쓸모없어진다.
 
+### T1 종료 백업 — Expo CNG
+
+CNG 플랫폼이 하나라도 있으면 **T1이 끝날 때** 업그레이드 상태의 `package.json`·lockfile을 worktree 밖 `artifacts/`에 백업한다. §3의 prebuild가 추적 파일을 고칠 수 있어서, §6 채택 커밋을 T1 결과로 되돌릴 재료가 필요하다. 베이스라인 백업(위 2)과는 목적이 다르다 — 그쪽은 복원용이고 이쪽은 채택 범위용이다.
+
 ### 캐시
 
 worktree는 매번 신규 생성되므로 `node_modules`·`Pods`는 매번 새로 깔린다. **worktree 내부에 캐시를 남기지 않는다.**
@@ -256,6 +285,25 @@ worktree는 매번 신규 생성되므로 `node_modules`·`Pods`는 매번 새�
 1. 앱 프로세스가 `boot_survival_seconds`(`references/constants.md`) 동안 생존
 2. **첫 프레임 렌더 신호 관측** — RN 브리지/Fabric 마운트 완료
 3. **로그 스캔 클린** — 패턴 목록은 `references/log-patterns.md`
+
+### Expo CNG — prebuild
+
+CNG 플랫폼의 T2는 이 단계로 시작한다. bare 플랫폼은 하지 않는다 — 커밋된 네이티브 디렉토리가 정본이다.
+
+| PM | 커맨드 |
+| --- | --- |
+| npm | `npx expo prebuild --platform <android\|ios> --no-install` |
+| pnpm | `pnpm expo prebuild --platform <android\|ios> --no-install` |
+| yarn | `yarn expo prebuild --platform <android\|ios> --no-install` |
+| bun | `bun expo prebuild --platform <android\|ios> --no-install` |
+
+- **T2/<플랫폼>의 첫 단계다. T1에 두지 마라** — 한 플랫폼의 prebuild 실패가 다른 플랫폼을 막으면 수평 fail-fast가 된다. `--platform`으로 제외한 플랫폼은 prebuild도 하지 않는다.
+- **실패는 그 플랫폼의 `T2 실패`다.** 새 SDK와 맞지 않는 config plugin은 실제 업그레이드 회귀다. 발췌를 싣는다.
+- `--no-install`: npm 설치는 T1이 했고 CocoaPods 설치는 뒤의 `pod install` 단계가 한다. `--clean`은 쓰지 않는다 — worktree에는 네이티브 디렉토리가 애초에 없다.
+- 상한은 `step_timeout_build_seconds`다. `cd <worktree 절대경로> && …` 규칙(§5)도 그대로 적용된다.
+- 셸 도구에는 TTY가 없다. prebuild가 대화형 입력을 요구하면 실패로 끝나고, 그 실패도 발췌로 싣는다 — 사유를 지어내지 않는다.
+- **prebuild가 바꾼 추적 파일을 기록한다.** T1 종료 직후와 각 prebuild 뒤의 `git -C <worktree> status --porcelain`을 비교해, 새로 바뀐 추적 파일을 헤더 `prebuild 변경: <파일 목록>`에 싣는다(없으면 줄 생략). §6 채택이 이 목록으로 prebuild 산물을 걸러 낸다.
+- **아직 정하지 않은 것**: `expo-dev-client`가 든 앱의 debug 빌드는 앱 대신 개발 런처를 띄울 수 있다. 그러면 판정선(첫 프레임 + 생존 + 로그 클린)이 런처 화면을 관측해 거짓 통과를 낼 수 있다. 빌드 변형과 JS 번들 공급은 T2 절차를 규범으로 정할 때 이 경우까지 포함해 정한다. 그 전에 Expo 프로젝트의 T2 통과를 인용할 때는 이 한계를 판정 해석에 병기한다.
 
 ### 인증은 스킬 책임이 아니다
 
@@ -333,6 +381,15 @@ worktree 안에서 커밋  →  worktree 폐기  →  브랜치만 살아남음
 - 리포트에 **항상** 싣는다(채택 여부와 무관): `베이스라인: 미측정` 또는 `베이스라인: 측정됨 (<사유>)`. 채택하지 않은 실행에서도 게이트가 왜 막혔는지가 읽혀야 한다.
 - **채택 커밋 메시지에도 싣는다.** 리포트는 같은 타깃 재실행에서 덮어쓰이고 `artifacts/`는 보존 상한에 밀리며 worktree는 폐기된다 — **커밋만 남는다.** 사후 감사가 가능한 유일한 자리다.
 
+### Expo CNG — 채택 커밋은 T1 결과만 담는다
+
+prebuild가 만든 네이티브 디렉토리와 추적 파일 변경은 CNG에서 **빌드마다 다시 생기는 산물**이다. 커밋하면 사용자 프로젝트가 CNG가 아니게 되거나, 다음 prebuild가 덮어쓸 변경이 커밋에 섞인다.
+
+1. 채택 커밋 직전에 §2 «T1 종료 백업»으로 `package.json`·lockfile을 되돌린다.
+2. 헤더 `prebuild 변경:` 목록의 다른 파일은 `git -C <worktree> checkout -- <파일>`로 되돌린다.
+3. 생성된 `android/`·`ios/`는 gitignored라 스테이징되지 않는다. **`git add -f`로 강제 추가하지 마라.**
+4. 채택 커밋 메시지에 `프로젝트:` 줄을 싣는다 — 이 브랜치가 CNG 프로젝트의 검증이었고, 그래서 네이티브 디렉토리가 커밋에 없다는 게 읽혀야 한다.
+
 ### 금지
 
 - **자동 머지·자동 push** — 어떤 조건에서도
@@ -369,7 +426,7 @@ git merge rn-upgrade/0.86.2-a3f9c21
 
 > 이 리포트는 **시도한 범위 안에서 관측된 사실**만 담는다. 전 티어 통과는 "업그레이드해도 된다"는 뜻이 아니라 **"자동으로 검사 가능한 지점에서는 멈추지 않았다"**는 뜻이다. 인증 이후 화면·런타임 회귀·실기기 동작·성능은 검사 범위 밖이다.
 
-## 8. degrade — 4경로
+## 8. degrade — 6경로
 
 **degrade는 판정이 아니다.** 판정 어휘는 3값(통과·실패·미실행) 그대로고, 아래는 그 판정을 **낼 수 있는지**에 관한 것이다. 4번째 어휘를 만들지 않는다.
 
@@ -379,6 +436,8 @@ git merge rn-upgrade/0.86.2-a3f9c21
 | 2 | `references/lockstep-sets.md` 도달 실패 | 인자 검증 3을 `미실행`으로 두고 진행 | 헤더 |
 | 3 | `node -e` registry 조회 실패 | 인자 검증 1을 `미실행`으로 두고 진행 | 헤더 |
 | 4 | `.rn-upgrade-kit/` 쓰기 실패 | 아래 «산출물 쓰기 실패» | 헤더 · 출력 |
+| 5 | `references/expo.md` 도달 실패 · **Expo 프로젝트** | **실행 거부** — `실행 거부 — Expo 규칙 도달 실패: references/expo.md` | 출력만 |
+| 6 | E2·E2′(SDK 호환 범위) 둘 다 실패 | 인자 검증 4를 `미실행`으로 두고 진행 | 헤더 |
 
 ### 1 — 상수 도달 실패는 이 스킬에서만 실행 거부다
 
@@ -390,6 +449,10 @@ git merge rn-upgrade/0.86.2-a3f9c21
 - 사유 문구: `실행 거부 — 상수 도달 실패: references/constants.md`. 그 파일의 «이 파일에 도달하는 법»이 정한 `Glob` 폴백을 **먼저 시도한 뒤에만** 이 결론을 낸다.
 
 2를 같이 거부로 다루지 않는 이유는 `references/lockstep-sets.md`가 **한 검사의 재료**일 뿐 실행 파라미터가 아니기 때문이다. 못 읽어도 티어는 그대로 돈다.
+
+### 5 — Expo 규칙 도달 실패는 Expo 프로젝트에서만 거부다
+
+1과 같은 이유다. **CNG 판별과 prebuild 여부가 실행 파라미터다.** 모르고 돌리면 네이티브 디렉토리 없이 T2를 시작하고, 그 실패가 업그레이드 회귀처럼 보인다. Expo 여부는 `package.json`만 보고도 알 수 있으므로, Expo가 아닌 프로젝트는 이 파일에 기대지 않고 영향도 없다. 6은 2와 같은 모양이다 — 검사의 재료를 못 얻은 것이지 실행 파라미터를 못 얻은 게 아니다.
 
 ### 4 — 산출물 쓰기 실패
 

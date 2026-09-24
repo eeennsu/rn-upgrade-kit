@@ -30,6 +30,7 @@
 # RN 최신성 점검 — 2026-08-09
 스코프: 전체 (Track A·B, 대상 34개) · 핸드오프 2026-08-02 (일부 항목 stale) · 직전 실행 2026-08-02
 스냅샷: RN 0.81.1 · React 19.1.0 · New Arch on · Hermes on · targetSdk 35 · iOS min 15.1
+프로젝트: RN (Expo 아님)
 권장 요약: 승격 6건 · 유지 4건(soak 1 / churn 1 / RN상한 2) · major 점프 3건 · 도달 불가 1건
 델타: 신규 gap 2 · 해소 1 · 등급 상향 1 · 유지 해제 1 (reanimated soak 만료) (비교 제외 0건)
 
@@ -82,6 +83,7 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 
 - **스냅샷 헤더의 `targetSdk`·`iOS min`은 핸드오프 `current` 필드에서만 온다.** 네이티브 설정을 직접 파싱하지 않는다 — 두 스킬이 다른 값을 말할 경로를 구조적으로 없앤 결과다. 값을 못 얻으면 비우지 말고 사유를 병기하되 **네 상태를 구분한다**: `targetSdk — (핸드오프 없음)` / `targetSdk — (핸드오프 미조회 항목)` / `targetSdk — (핸드오프 stale — <날짜>)` / `targetSdk — (핸드오프 경로 미상 — 상수 도달 실패)`. **넷은 사용자가 할 일이 다르다** — 파일 자체가 없으면 `platform-watch` 최초 실행, 파일은 있고 항목만 없으면(`--platform ios`만 돌린 첫 실행) 그 플랫폼으로 한 번 더 실행, stale이면 값이 있으니 급하지 않다. 네 번째는 `handoff_path`를 못 읽어 **파일을 열 자리를 모르는** 상태라 고칠 것이 `platform-watch`가 아니라 상수 도달이다(SKILL.md §7 degrade 12). 넷을 한 표기로 뭉치면 **고쳐야 할 것과 그냥 낡은 것이 같아 보인다.**
   - `platform-watch`가 미조회 항목을 고정 표기로 실어 보내면 **그 표기를 그대로 옮긴다.** 읽는 쪽이 값을 지어내면 두 스킬이 다른 값을 말하고, 핸드오프를 단방향으로 만든 이유가 사라진다.
+- **`프로젝트:` 줄은 항상 싣는다** — `references/expo.md` §1의 형식이다. Expo 프로젝트면 스냅샷 줄이 `Expo SDK <n>`으로 시작하고, New Arch·Hermes가 app config에 없으면 `미지정 (Expo SDK 기본값)`으로 적는다(`SKILL.md` §5).
 - 스코프 줄은 실제 조회 범위를 그대로 적는다. lockstep 자동 포함분도 숨기지 않는다: `스코프: --target react-native-reanimated (+lockstep: react-native-worklets)`.
 - **0건인 등급 섹션은 통째로 생략한다.** 빈 헤더를 남기지 않는다.
 - **`⚠ 확인 못 함`은 0건이어도 `없음`으로 남긴다.** 조회가 전부 성공했다는 사실 자체가 정보이고, 생략하면 "빠뜨린 것"과 구분되지 않는다.
@@ -103,5 +105,32 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 | c | 권장이 `유지`·`도달 불가`인 대상은 **뺀다** | 안 올릴 걸 리허설하지 않는다 |
 | d | **단일 블록 하나** | 여러 줄로 흩어지면 복붙 오타가 실제로 난다 |
 | e | 게이트 6이 `확인 못 함`이면 블록에 `# lockstep 세트 미확인 — 짝을 손으로 확인하라` 주석을 단다 | `references/lockstep-sets.md`에 도달하지 못한 상태다. 조용히 넘기면 "짝을 확인했다"는 계약이 거짓이 된다 |
+| f | **SDK 업그레이드 블록은 이 블록과 별개다** — 🟡 SDK 항목 아래에 붙는다(아래 절). 이 블록에는 권장 세트만 싣는다 | 권장과 권장 아님이 한 블록에 섞이면 사용자가 SDK 업그레이드를 권장으로 읽는다 |
 
 **파일을 만들면 신선도 문제가 딸려온다.** 권장 버전은 soak·churn 게이트 산물이라 마감일보다 훨씬 빨리 썩는다. 그리고 **사람용 리포트를 기계 스키마로 겸용하지 않는다** — 겸용하면 리포트 문구 개선이 `rehearsal`의 회귀가 된다.
+
+## SDK 업그레이드 블록 — 🟡 SDK 항목 아래 (Expo 프로젝트)
+
+새 SDK는 **권장 버전이 아니다**(게이트 2). 🟡 항목으로 알리고, 그 항목 바로 아래에 리허설할 블록을 붙인다. 구성 규칙은 `SKILL.md` §4 «Expo SDK 업그레이드»가 정본이다.
+
+```
+## 🟡 Recommended
+- [expo SDK] 현재 SDK 56 (expo 56.0.22) → 다음 SDK 57 (RN 0.86.3 · React 19.2.3) | major 점프 — 권장 대상 아님(게이트 2)
+  마이그레이션 노트: https://expo.dev/changelog/sdk-57 · 더 새 SDK: 없음
+  ​```
+  # SDK 업그레이드 리허설용 — 권장 아님(게이트 2). 버전은 SDK 57 범위의 최고 stable이고 soak·churn·known issue는 적용하지 않았다
+  # 산정 시각: 2026-09-24
+  /rn-upgrade-kit:rehearsal expo@57.0.25 react-native@0.86.3 react@19.2.3 \
+                            react-native-reanimated@4.5.1 react-native-worklets@0.10.1 \
+                            expo-router@57.0.23
+  ​```
+```
+
+> 위 SDK·버전·URL은 전부 값이 아니라 예시다 — 실제 값은 `references/expo.md` §4의 E1·E2와 registry 조회에서 온다.
+
+- **첫 줄 주석은 필수다.** 권장이 아니라는 것과 게이트 3~5를 적용하지 않았다는 것을 적는다 — 없으면 이 블록이 권장처럼 읽힌다. `rehearsal`은 `# 산정 시각:` 외의 `#` 줄을 무시하므로 인자를 깨뜨리지 않는다.
+- **`# 산정 시각:`을 박는다**(규칙 b와 같다).
+- **범위를 판정할 수 없는 패키지**는 블록에 넣지 않고 블록 안에 `# 정합 확인 못 함: <pkg> <range> — 손으로 확인` 주석으로 남긴다.
+- **SDK 범위 밖 lockstep 짝이 딸려 오면** `# lockstep 동반: <pkg> — SDK 범위 밖` 주석을 단다.
+- **블록을 못 만들면 자리를 비우지 않는다** — 🟡 항목 아래에 사유 한 줄을 적는다(`SDK 업그레이드 블록 없음 — 다음 SDK 호환 범위 조회 실패`). 블록 없이 항목만 있으면 사용자는 빠뜨린 걸로 읽는다.
+- 다음 SDK가 없으면 🟡 SDK 항목 자체를 내지 않고 `✅ 점검함` 블록에 `expo SDK`를 넣는다.

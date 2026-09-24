@@ -14,7 +14,7 @@ disallowed-tools: WebSearch Edit
 
 - **advisory 전용.** 아무것도 막지 않는다. 코드·`package.json`·네이티브 설정·`.gitignore`를 수정하지 않는다. 쓰기는 §6 리포트 파일 1개뿐이다.
 - **환각 금지 (핵심 제약).** 최신성 주장은 registry 응답 또는 webfetch로 확인한 릴리즈 노트 링크가 근거다. 확인 못 한 항목은 `확인 못 함`으로 분리한다.
-- **대상은 목록에서 사라지지 않는다. 자리를 옮길 뿐이다.** §7 degrade 18경로가 전부 이 원칙에서 나온다.
+- **대상은 목록에서 사라지지 않는다. 자리를 옮길 뿐이다.** §7 degrade 23경로가 전부 이 원칙에서 나온다.
 - **플랫폼 정책(Track C)은 이 스킬에 없다.** `platform-watch` 소관이다 — `platform` 인자는 받되 안내만 한다(§5).
 
 ## 0. 인자 문법
@@ -40,6 +40,7 @@ disallowed-tools: WebSearch Edit
 대상 목록은 **`package.json`의 `dependencies` 키에서 산정한다.** 하드코딩하지 않는다 — `dependencies`만 읽으면 devDependencies(eslint·babel·jest·`@types`)가 자동 배제된다.
 
 - **Track A는 `react-native`·`react` 둘로 닫힌다.** Hermes·New Arch는 패키지가 아니라 RN 내장·플래그라 `dependencies`에 없다.
+- **Expo 프로젝트면 Track A에 `expo`가 더해진다.** `expo`의 major가 곧 SDK이고, SDK가 `react-native`·`react`를 고정한다. `expo-*`는 Track B의 일반 대상이다. Expo 여부와 유형은 `references/expo.md` §1로 판정한다 — 이 스킬에서 Expo가 바꾸는 건 §3 상한 · §4 SDK 업그레이드 · §5 New Arch 읽기 셋이다. **Expo가 아니면 달라지는 건 헤더 `프로젝트:` 줄뿐이다.**
 - **나머지 `dependencies` 전부가 Track B다.** 아래 표의 B 열은 **예시이지 목록이 아니다** — "하드코딩하지 않는다"는 건 이 말이다. 새 라이브러리가 들어와도 이 파일을 고칠 일이 없어야 한다.
 - `--track`의 유효 값은 `core`·`lib` 둘뿐이다.
 
@@ -75,6 +76,7 @@ disallowed-tools: WebSearch Edit
 | `latest` · dist-tags · 프리릴리즈 여부 | **`node -e` 1줄 출력의 dist-tags 행** — 실패 시 폴백: `registry.npmjs.org/-/package/<pkg>/dist-tags` **WebFetch** |
 | peer 범위 전체(요구 RN 범위 포함) · `deprecated` | **같은 `node -e` 출력의 열** — `peerDependencies` 원문 JSON. 실패 시 폴백: `registry.npmjs.org/<pkg>/<ver>` **WebFetch** |
 | 버전 목록 · 배포일 (soak·churn 재료) | **`node -e` 1줄** — 아래. **폴백 없음** |
+| Expo SDK 목록 · SDK별 RN·React · SDK 호환 범위 (Expo 프로젝트만) | **`node -e`** — `references/expo.md` §4의 E1·E2(폴백 E2′). 그 원라이너를 `S`·`V`만 바꿔 쓴다 |
 | 오늘 날짜 | **컨텍스트 현재 날짜** — `date` 호출 없음 |
 
 **판정 재료는 원문 채널이 정본이다.** `latest`·peer 범위·`deprecated`는 전부 게이트 판정 재료인데 WebFetch는 요약 채널이라 semver 범위 문자열 하나가 오요약되면 peer ceiling이 조용히 틀린다 — 아래 실측이 잡은 날짜 오변환과 같은 유형이다. full packument는 `node -e` 안에 raw로 이미 와 있으므로 **추가 왕복 0으로** 같은 출력에서 뽑는다. WebFetch 두 엔드포인트는 `node -e` 실패 시 폴백으로만 쓴다.
@@ -99,7 +101,8 @@ node -e "const P='react-native-worklets',C='0.5.1';const n=s=>s.split('.').map(N
 - `P`와 `C`만 바꿔서 그대로 쓴다. **로직을 고치면 양쪽 셸 재실측을 새로 하고 위 실측 날짜를 갱신한다** — 실측 없이 고친 판은 README 호스트 표의 `currency` ✅가 기대는 근거를 잃는다.
 - **Bash 출력은 원문 그대로 온다** — 요약 모델을 경유하지 않는다. 이게 이 예외의 유일한 근거다.
 - **`node`는 새 의존이 아니다** — 대상이 RN 프로젝트이므로 항상 있다. 호스트·PM 무관이고 **bash·PowerShell 양쪽에서 같은 출력이 나오는 것까지 실측했다.**
-- **다른 셸 사용은 전부 금지**: `pnpm`·`jq`·`date`·`cat`·`ls`·파이프·리다이렉트. 날짜 비교는 ISO 문자열 비교로 충분하다(`"2026-07-23" > "2026-07-17"`) — 파싱·산술 하지 마라.
+- **허용되는 `node -e`는 위 한 줄과 `references/expo.md` §4의 E1·E2·E2′뿐이다.** 용도는 원문 채널 조회 하나다. Expo 셋도 양쪽 셸 실측을 거쳤다(그 파일 §4).
+- **다른 셸 사용은 전부 금지**: `pnpm`·`jq`·`date`·`cat`·`ls`·파이프·리다이렉트·`npx expo`(`install --check`·`--fix`·`expo-doctor` 포함). 날짜 비교는 ISO 문자열 비교로 충분하다(`"2026-07-23" > "2026-07-17"`) — 파싱·산술 하지 마라.
 - **degrade — 부분 실패:** `node -e`가 **일부 대상에서** 실패하면 그 대상의 **soak·churn 게이트만** `확인 못 함`으로 두고 나머지 게이트(1·2·5·6)로 산정한다. 그 대상의 `latest`·peer·`deprecated`는 §2 표의 WebFetch 폴백으로 채운다 — 배포일만은 폴백이 없다(full packument 절단). 대상을 빼지 말고 권장 줄에 `⚠ 숙성 미확인`을 병기한다 — 근거 없이 "충분히 익었다"고 말하지 않는다.
 - **출력이 잘렸으면 같은 처리다.** 창은 게이트 2 후보를 전부 담지만, 현재가 많이 뒤처진 패키지는 줄이 많아 셸 도구의 출력 한도에 걸릴 수 있다. 셸 도구가 절단을 표시하면 그 대상의 soak·churn을 `확인 못 함` + `⚠ 숙성 미확인`으로 두고 잘린 사실을 ⚠ 블록에 적는다 — 잘린 목록의 끝을 최신 라인으로 읽지 마라. (이전 판은 게시 순서 마지막 10개만 찍어서, 라인이 병행 배포되는 패키지 — 실측: worklets 0.9.x~0.12.x 혼재 — 에서 뒤처진 프로젝트의 호환 후보가 창 밖으로 밀렸다.)
 - **`NOT_FOUND`면 공개 npm에 없는 패키지다** — 사설 레지스트리·`npm:` 별칭·`github:`·`file:` 선언 등. degrade 4(`registry 도달 실패`)로 가고 **대상은 남긴다.**
@@ -131,6 +134,13 @@ node -e "const P='react-native-worklets',C='0.5.1';const n=s=>s.split('.').map(N
 
 - **상한을 잠근 패키지를 반드시 지목한다.** 지목이 없으면 사용자가 손댈 지점을 모른다.
 - 등급은 🔴다. 마감이 있고 경로가 없다.
+
+### Expo 프로젝트 — SDK가 상한이다
+
+- **현재 SDK 호환 범위(E2)에 든 패키지는 `상한 = min(peer ceiling, SDK 범위 상단)`이다.** `react-native`·`react`도 든다 — SDK가 고정한다. 범위 상단은 `references/expo.md` §5의 범위 해석대로다. 잠근 쪽이 SDK면 `expo SDK <n> (<pkg> <range>)`로 지목한다.
+- **범위를 해석할 수 없는 패키지**(그 절 표의 «그 밖»)는 peer ceiling만으로 산정하고 `⚠ SDK 범위 해석 불가 — <range>`를 병기한다.
+- **정책 하한이 현재 SDK major 밖이면** `권장: 유지(현재)`가 아니다 — `산정 불가 — 도달 불가 (SDK 업그레이드 필요)` 🔴다. 잠근 것으로 `게이트 2 (SDK major 고정)`을 지목하고 🟡 SDK 항목의 블록(§4)을 가리킨다. 하한 SDK가 다음 SDK보다 멀면 `정책 하한 SDK <m> — 블록은 한 단계(SDK <n+1>)`를 병기한다.
+- **SDK를 추정하지 마라.** `expo` major를 못 정하면(`references/expo.md` §2) `react-native` 버전으로 SDK를 거꾸로 짚지 않는다 — 그러려면 SDK↔RN 대응표를 스킬이 가져야 하고, 그 표는 다음 SDK가 나오는 날 낡는다.
 
 ### 핸드오프 읽기
 
@@ -166,6 +176,7 @@ node -e "const P='react-native-worklets',C='0.5.1';const n=s=>s.split('.').map(N
 - **매핑표를 보유하지 않는다.** 보유하면 낡을 수 있고 환각 금지가 낡은 표를 근거로 삼는 걸 막지 못한다. 매 실행 노트를 근거로 단다.
 - **②는 정보 부재가 아니라 행동 지시다.** "이건 버전 문제가 아니라 설정 한 줄"은 유용한 결론이다 — ③과 같은 자리에 두면 그 정보를 잃는다.
 - ①의 대상은 RN에 한정되지 않는다. 정책 요구가 라이브러리 하한을 만들 수도 있다.
+- **Expo 프로젝트에서 ①의 대상은 `expo`(SDK)다.** RN은 SDK가 고정하므로 RN 하한을 따로 만들지 않는다. 근거는 SDK 기본값 표(`references/expo.md` §4)나 E1이 주는 SDK 마이그레이션 노트다 — 매 실행 조회해 링크를 단다. **②가 가능하면 ②가 먼저다**: CNG면 app config의 `expo-build-properties`, bare면 `gradle.properties`·`Podfile.properties.json`이 설정 경로다. 요구 targetSdk가 현재 SDK의 compileSdk 이하라서 설정으로 올릴 수 있으면 SDK 업그레이드를 하한으로 세우지 않는다 — 과한 처방이다.
 
 ### 임박도는 계산하지 않는다
 
@@ -204,6 +215,22 @@ node -e "const P='react-native-worklets',C='0.5.1';const n=s=>s.split('.').map(N
 - **권장 < 최신이면 사유를 반드시 적는다** — 어느 게이트에 걸렸나 + **언제 풀리나**(soak면 해제 날짜, churn·known issue면 기다리는 대상). 사유 없는 하향은 근거 없는 몸사림이고 환각 금지에 걸린다.
 - **등급과 권장 버전은 별개 축이다.** 🔴이어도 권장이 `유지`일 수 있고(고칠 버전이 아직 없음) ⚪여도 승격이 뜬다.
 - **RN 권장 버전을 먼저 확정하고 나머지를 그 위에서 계산한다.** RN은 lockstep 반경이 가장 넓다 — RN이 오르면 상한에 잠겨 있던 라이브러리들의 권장이 통째로 바뀐다.
+- **Expo 프로젝트는 SDK가 한 칸 앞이다.** 현재 SDK를 정하고(`references/expo.md` §2) E1·E2를 먼저 돌린 뒤, 그 범위 위에서 RN과 나머지를 계산한다. RN은 SDK에 고정되기 때문이다.
+
+### Expo SDK 업그레이드 — 🟡 + 리허설 블록
+
+**새 SDK(`expo`의 major 점프)는 권장 버전이 아니다 — 게이트 2 그대로다.** 대신 🟡 항목으로 알리고, 그 아래에 SDK 업그레이드를 리허설할 **별도 블록**을 붙인다. 포맷은 `references/report-format.md` «SDK 업그레이드 블록».
+
+- **다음 SDK** = E1 출력에서 현재 SDK보다 큰 SDK 중 `expo` 열이 `-`가 아닌 가장 작은 것. `expo -`는 아직 나오지 않은 프리뷰 SDK다. 그보다 새 SDK가 더 있으면 항목에 `더 새 SDK: <목록>`을 적는다.
+- **블록은 바로 다음 SDK 하나만 겨냥한다.** 두 단계를 한 번에 건너뛰면 리허설이 실패했을 때 어느 SDK의 변경인지 못 가린다.
+- **블록 구성** — 다음 SDK의 호환 범위(E2 `S=<n+1>`, 폴백 E2′ `V`=E1의 `expo` 열)를 조회해서:
+  - `expo@<E1의 다음 SDK expo 열>`
+  - 정합 대상(`references/expo.md` §5) 중 **현재 버전이 다음 SDK 범위를 만족하지 않는 것 전부**. 버전은 그 범위를 만족하는 최고 stable이다 — 정확 버전 범위면 그 버전, 아니면 §2 registry 원라이너를 `C` = 범위 하단으로 돌려 고른다.
+  - 위에 딸린 lockstep 확정 세트의 나머지 구성원(`references/lockstep-sets.md`). SDK 범위에 있으면 그 범위의 최고 stable을 쓴다. `@react-native/*`는 블록의 `react-native`와 같은 번호다. SDK 범위 밖이면 이 리포트의 권장값(없으면 현재값)을 쓰고 `# lockstep 동반: <pkg> — SDK 범위 밖` 주석을 단다.
+- **이미 다음 SDK 범위를 만족하는 패키지는 싣지 않는다.** 올릴 필요 없는 것까지 올리면 리허설이 SDK와 무관한 변경까지 검증한다.
+- **게이트는 1(stable only)만 적용한다. 3~5(soak·churn·known issue)는 적용하지 않고 블록 첫 줄 주석에 그 사실을 적는다.** 이 블록은 권장이 아니라 리허설 수단이다 — 새 SDK가 우리 프로젝트에서 도는지는 `rehearsal`이 본다. 주석이 없으면 권장처럼 읽힌다.
+- 이렇게 만든 블록은 `rehearsal` 인자 검증 3(lockstep)·4(SDK 정합)를 통과한다. **어느 하나라도 통과하지 못하게 만들었다면 구성 규칙을 어긴 것이다.**
+- **다음 SDK가 없으면** 🟡 SDK 항목을 내지 않고 `✅ 점검함` 블록에 `expo SDK`를 넣는다.
 
 ### gap 분류 → 기본 등급
 
@@ -238,6 +265,13 @@ node -e "const P='react-native-worklets',C='0.5.1';const n=s=>s.split('.').map(N
 - **degrade:** New Arch가 `확인 못 함`이면 New Arch 전제에 걸린 gap 항목을 **등급 축에 올리지 않고 ⚠ 블록으로** 보낸다.
 - **"이 프로젝트는 New Architecture 기반"은 전제이고 `gradle.properties`는 관측이다. 전제로 관측을 덮지 마라.**
 
+### Expo 프로젝트의 헤더
+
+- 스냅샷 줄이 `Expo SDK <n>`으로 시작하고, 그 아래 `프로젝트:` 줄(`references/expo.md` §1)이 붙는다. `프로젝트:` 줄은 Expo가 아니어도 항상 싣는다 — `프로젝트: RN (Expo 아님)`.
+- **New Arch·Hermes는 유형마다 읽는 곳이 다르다.** bare 플랫폼은 위 규칙 그대로 `gradle.properties`를 읽는다. CNG 플랫폼은 app config의 `newArchEnabled`·`jsEngine`(`references/expo.md` §3)을 읽는다 — **로컬에 남은 `android/gradle.properties`는 prebuild 생성물이라 읽지 마라.**
+- **CNG에서 app config에 키가 없으면** `미지정 (Expo SDK 기본값)`으로 적고 판정은 `확인 못 함`이다(degrade 5). SDK 기본값을 알려 줄 런타임 출처가 없다 — 기본값을 지어내지 않는다.
+- targetSdk·iOS min은 여전히 핸드오프 `current`에서만 온다. `platform-watch`가 붙인 `(Expo SDK <n> 기본값)` 같은 출처 꼬리를 그대로 옮긴다.
+
 ### `platform` — 범위 안내 (수명 영구)
 
 ```
@@ -257,7 +291,7 @@ platform 추적은 platform-watch가 담당한다.
 
 - **쓰기는 메인만, `Write` 1회.** 서브에이전트는 read-only다.
 
-## 7. degrade — 18경로
+## 7. degrade — 23경로
 
 | # | 조건 | 결과 | 위치 |
 | - | --- | --- | --- |
@@ -279,6 +313,11 @@ platform 추적은 platform-watch가 담당한다.
 | 16 | 선언 범위가 `workspace:*`·`catalog:` | `⚠ 선언 범위 해석 불가`. **대상을 빼지 않는다** | 제자리 |
 | 17 | dist-tags에 **`latest` 부재** | 최신을 `확인 못 함`. 버전 목록 끝을 최신으로 대신 쓰지 않는다 | 제자리 |
 | 18 | **리포트 쓰기 실패** (권한·read-only FS·디스크 참) | 파일을 만들지 못했다고 말하고 **리포트 본문을 대화에 그대로 출력**한다 | 대화 |
+| 19 | **`references/expo.md` 도달 실패** · Expo 프로젝트 | SDK 상한 미적용(대상별 `⚠ SDK 범위 미확인`) · 🟡 SDK 항목 없음 · `Expo 규칙 도달 실패 — SDK 판정 미적용` | 헤더 · 제자리 |
+| 20 | **SDK 확인 못 함** (`expo` major를 못 정함) | 19와 같은 결과 + `SDK 확인 못 함 — <사유>`. RN 버전으로 SDK를 짚지 않는다 | 헤더 · 제자리 |
+| 21 | **E1(SDK 목록) 조회 실패** | 🟡 SDK 항목 대신 ⚠ `SDK 목록 조회 실패 — 다음 SDK 판정 불가`. 현재 SDK 상한(E2)은 영향 없음 | ⚠ 블록 |
+| 22 | **E2·E2′(SDK 호환 범위) 둘 다 실패** | 현재 SDK면 상한 미적용 + 대상별 `⚠ SDK 범위 미확인`. 다음 SDK면 🟡 항목은 두고 블록 자리에 사유 | 제자리 · 🟡 항목 |
+| 23 | **Expo 유형 확인 못 함** | New Arch·Hermes 읽기만 영향 — `확인 못 함`(5와 같은 경로). SDK 판정은 영향 없음 | 헤더 |
 
 3·4·5는 같은 ⚠ 블록에 가되 **사용자가 할 일로 갈라 적는다**. 7은 할 일이 없으므로 ⚠와 섞지 않는다.
 
@@ -286,10 +325,11 @@ platform 추적은 platform-watch가 담당한다.
 - **12에서 추정 기본값을 쓰지 마라.** 상수를 못 읽었는데 "흔한 값"으로 때우면 `references/constants.md`가 막으려던 드리프트를 막는 대신 **만들어낸다.**
 - **18은 조용히 넘어가면 안 된다.** 쓰기가 실패했는데 성공한 것처럼 끝나면 다음 실행의 델타가 존재하지 않는 직전 리포트를 기준으로 계산된다. 본문을 대화에 뱉는 건 사용자가 그것을 손으로 남길 수 있게 하려는 것이다.
 - **정본 `package.json`이 0개거나 `dependencies`가 비었으면 degrade가 아니라 종료다** — §1 참조. 대상 0개인 리포트는 "gap 없음"과 겉모습이 같아서 내지 않는 게 맞다.
+- **19~23에서도 대상은 사라지지 않는다.** SDK 상한이 빠지면 peer ceiling만으로 산정하고 그 사실을 적는다. **Expo가 아닌 프로젝트는 19~23에 걸리지 않는다.**
 
 ## 8. 병렬화
 
-**1차 registry 조회(`node -e`)는 메인이 직접 돈다** (2026-09-24). 대상마다 Bash 1콜이고 서로 독립이라 한 번에 병렬로 부른다. **서브에이전트에 넘기지 않는다** — 아래 잠금이 서브에이전트의 셸을 막으므로, 넘기면 `node -e`를 못 돌리고 WebFetch 요약 채널로 돌아간다. 배포일은 폴백이 없어 soak·churn이 전부 죽는다(§2). **분담하는 건 2차 노트 fetch와 Track A 서사 조회뿐이다.** 메인은 1차 조회·취합·게이트 판정·리포트를 맡는다.
+**1차 registry 조회(`node -e`)는 메인이 직접 돈다** (2026-09-24). Expo 조회(E1·E2·E2′)도 같다 — 원문 채널이고 서브에이전트는 셸 금지다. 대상마다 Bash 1콜이고 서로 독립이라 한 번에 병렬로 부른다. **서브에이전트에 넘기지 않는다** — 아래 잠금이 서브에이전트의 셸을 막으므로, 넘기면 `node -e`를 못 돌리고 WebFetch 요약 채널로 돌아간다. 배포일은 폴백이 없어 soak·churn이 전부 죽는다(§2). **분담하는 건 2차 노트 fetch와 Track A 서사 조회뿐이다.** 메인은 1차 조회·취합·게이트 판정·리포트를 맡는다.
 
 - `subagent_type`은 `general-purpose`를 쓴다.
 - **쓰기 불가 에이전트는 없다** — 도구 선택은 완화책일 뿐이고 실효 통제는 프롬프트 잠금이다. 각 서브에이전트 프롬프트에 **반드시** 넣는다:
@@ -305,6 +345,7 @@ platform 추적은 platform-watch가 담당한다.
 - **웹 검색을 쓰지 않는다.** frontmatter의 `disallowed-tools`가 `WebSearch`를 도구 풀에서 빼서, "최신이 몇이냐"를 검색으로 찾지 않는다는 규칙을 **실제로** 강제한다. 릴리즈 노트 URL이 죽으면 대안 검색 대신 `확인 못 함`으로 간다.
 - **`allowed-tools`에 없다는 사실은 아무것도 막지 않는다.** 그 필드는 *승인 스킵*이지 제한이 아니다 — 목록에 없는 도구도 여전히 호출 가능하고 사용자 권한 설정만 적용된다. 규칙을 도구로 강제하려면 `disallowed-tools`여야 한다. **"목록에 없으니 못 쓴다"를 근거로 설계를 세우지 마라** — 그 문장을 믿고 세운 제약은 전부 명목뿐이다.
 - **`disallowed-tools`도 스킬을 부른 그 턴에만 걸린다.** 다음 사용자 메시지에서 풀리므로, 여러 턴에 걸쳐 도는 실행에서는 **위 규칙 문장만 남는다.** 필드가 생겼다고 문장을 지우지 마라 — 강제는 한 턴짜리고 계약은 실행 전체에 걸린다.
-- **Expo 관련 제안 금지** — 이 프로젝트는 Expo 미사용. `expo-*` 대안을 제시하지 않는다.
+- **Expo가 아닌 프로젝트에 `expo-*` 대안을 제시하지 않는다.** 쓰지 않는 프레임워크로 갈아타라는 제안은 이 스킬의 질문 밖이다. Expo 프로젝트에서는 `expo-*`가 일반 대상이다.
+- **SDK↔RN 대응·SDK 호환 범위·SDK 기본값을 기억으로 쓰지 마라.** 매 실행 `references/expo.md` §4로 조회하고 근거를 단다 — 기억한 값은 다음 SDK가 나오는 날 낡는다.
 - **프로젝트 결정·컨벤션은 이 스킬의 판단 대상이 아니다.**
 - 다음 실행 시점을 정할 때만 `references/cadence.md`를 Read한다.

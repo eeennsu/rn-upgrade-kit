@@ -13,6 +13,7 @@
 
 | 조건 | 값 |
 | --- | --- |
+| 세트에 `expo`가 있음 (Expo 프로젝트) | `expo-<ver>` (`expo-57.0.25`) — Expo에서 업그레이드의 주어는 SDK다 |
 | 세트에 `react-native`가 있음 | 그 버전 (`0.83.4`) |
 | 없음 | 패키지명 사전순 첫 항목의 `<pkg>-<ver>` (`@`·`/`를 `-`로 치환) |
 
@@ -98,6 +99,8 @@ artifacts: 보존 3개, 자동 정리 1개
 > 위 예시의 `3`은 값이 아니라 예시다 — 실제 보존 개수는 `references/constants.md`의 `artifact_retention_n`에서 온다.
 
 > 위 경로는 값이 아니라 예시다 — 실제 경로는 `references/constants.md`의 `worktree_path_template`에서 온다.
+>
+> Expo CNG 플랫폼이면 재현 블록의 그 플랫폼 구획 첫 줄이 실제로 실행한 prebuild 커맨드다(`../SKILL.md` §3 «Expo CNG — prebuild»). 예: `pnpm expo prebuild --platform android --no-install`. 다른 줄과 마찬가지로 실행한 것에서 그대로 옮긴다.
 
 - **요약 한 줄을 플랫폼별로 분리한다.** 한 플랫폼 통과를 전체 통과로 접지 않는다.
 - 실패 상세는 **발췌문**으로 인용한다(상위 N줄). 전체 로그는 `artifacts/`에 있고 **경로만 적는다.**
@@ -112,6 +115,10 @@ artifacts: 보존 3개, 자동 정리 1개
 | `타깃 산정: <날짜> (<N>일 경과)` | 산정 시각 주석이 온 경우에만 |
 | `인자 검증 1 미실행 (registry 조회 실패)` | `node -e` 실패 시 |
 | `인자 검증 3 미실행 (lockstep 목록 도달 실패)` | `references/lockstep-sets.md` 도달 실패 시 |
+| `프로젝트: RN (Expo 아님)` 또는 `프로젝트: Expo SDK <n> — android <bare\|CNG> · ios <bare\|CNG>` | **항상** (`../SKILL.md` §0 «프로젝트 유형») |
+| `인자 검증 4 미실행 (<사유>)` · `인자 검증 4 일부 미판정: <pkg> <range>` | Expo 프로젝트에서 해당 시 |
+| `SDK 정합 어긋남 (기존): <pkg> <현재> — SDK <n> 범위 <range>` | 목표 SDK = 현재 SDK일 때 인자 밖 기존 어긋남 발견 시 |
+| `prebuild 변경: <파일 목록>` | CNG 플랫폼의 prebuild가 추적 파일을 바꿨을 때 |
 | `artifacts 쓰기 실패: <사유> — 전체 로그 없음` | `artifacts/` 쓰기 실패 시 |
 | `기존 worktree 디렉토리 삭제: <경로>` | 고아 디렉토리를 지우고 진행한 경우 |
 | `격리 누수: <파일> <N>건 — <경로 예시 1개>` | PM 설정에서 worktree 밖 절대경로 발견 시 |

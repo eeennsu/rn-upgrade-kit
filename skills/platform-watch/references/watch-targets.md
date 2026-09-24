@@ -14,7 +14,7 @@
 | `교차` | ✖ | 이 항목의 2차가 **다른 항목의 1차**와 같을 때, 또는 이 항목의 1차가 다른 항목의 1차와 같은 페이지일 때(`(1차 공유)`) 그 슬러그를 적는다. 비워두지 말고 명시한다 |
 | `예고 URL` | ✖ | 공급자가 **다음 요구**를 1차보다 먼저 싣는 페이지. 1차 성공 여부와 무관하게 매 실행 함께 읽고, 예고 요구(미래 날짜)만 가져온다 — SKILL.md §2 «예고 URL». 2차와 달리 이중화가 아니라 **다른 사실의 출처**라서 독립성 요건을 받지 않는다 |
 | `실측` | ✔ | 마지막으로 URL 도달을 확인한 날짜와 결과. 확인 안 했으면 `미실측` |
-| `현재값 읽기 지시` | ✔ | 프로젝트 어디를 어떻게 읽나 |
+| `현재값 읽기 지시` | ✔ | 프로젝트 어디를 어떻게 읽나. Expo 프로젝트에서 달라지는 자리는 `Expo:` 줄로 적는다 — 아래 «Expo 프로젝트의 현재값» |
 | `등급 임계일` | ✖ | 미지정 시 `references/constants.md`의 `grade_threshold_days` |
 
 ### 2차의 독립성 — 세 단계로 갈린다
@@ -41,6 +41,31 @@
 
 URL을 추가·수정할 때는 **2차를 고르기 전에 이미 다른 항목이 쓰는 페이지인지 먼저 본다.** 1차 목록과 2차 목록 양쪽을 봐야 한다 — 2차끼리만 비교하면 ③ 교차를 못 잡는다.
 
+## Expo 프로젝트의 현재값
+
+프로젝트 유형은 `references/expo.md` §1로 **플랫폼마다** 판정한다 — RN · Expo bare · Expo CNG. **RN이면 항목별 `현재값` 지시만 따른다.** Expo면 항목의 `Expo:` 줄이 먼저다.
+
+- **CNG 플랫폼의 로컬 `android/`·`ios/`는 읽지 않는다.** prebuild 생성물이라 app config보다 낡았을 수 있다(`references/expo.md` §1).
+- **명시값 → SDK 기본값 순이다.** 명시값은 CNG면 app config(`references/expo.md` §3), bare면 Expo가 덮어쓴 값을 두는 속성 파일(같은 절 «bare 플랫폼»)이다. **Expo 템플릿의 `build.gradle`에 targetSdk 리터럴이 없는 건 정상이다** — 기본값은 SDK 안에 있다.
+- **SDK 기본값은 매 실행 조회한다 — 이 파일에 적지 않는다.** https://docs.expo.dev/versions/latest/ 의 «Support for Android and iOS versions» 표를 WebFetch로 읽고 프로젝트 SDK 행을 **원문 그대로 인용**한다. targetSdk는 `targetSdkVersion` 열, iOS 배포 타깃은 `iOS version` 열의 `X.Y+`에서 `X.Y`다 — 그 SDK의 최소 지원 iOS가 기본 배포 타깃이다(실측 2026-09-24: 템플릿 `Podfile`의 폴백 리터럴이 표와 같았다).
+  - **내용 검증**: 표 머리(`Expo SDK version` · `targetSdkVersion` · `iOS version`)가 없으면 도달 실패, 프로젝트 SDK 행이 없으면 `현재값 확인 못 함 (SDK 기본값 — 표에 SDK <n> 없음)`. **가까운 다른 SDK 행으로 대신하지 않는다** — 표는 최근 SDK만 싣는다.
+  - 표기: `현재: <값> (Expo SDK <n> 기본값)` + 그 표 링크를 근거로 단다.
+- **SDK를 못 정하면**(`references/expo.md` §2) SDK 기본값에 기대는 값만 `현재값 확인 못 함 (SDK 기본값 — SDK 확인 못 함)`이다.
+
+### `eas.json` iOS 이미지 → Xcode (`ios/min-xcode`)
+
+EAS로 빌드하는 프로젝트(Expo 여부와 무관)는 `eas.json`의 `build.<프로필>.ios.image`가 Xcode를 정한다.
+
+| 값 | 현재값 |
+| --- | --- |
+| 이름에 `xcode-<X.Y>`가 있다 | 그 값 |
+| `auto` · 키 없음(기본 `auto`) · `sdk-<n>` | https://docs.expo.dev/build-reference/infrastructure/ 에서 SDK 행의 Xcode를 인용한다 — `auto`는 프로젝트 SDK 행. `(auto — SDK <n> 이미지 기준)`을 병기한다. 문서는 `auto`가 SDK 외에 프로젝트 설정·RN 버전도 본다고 적으므로 근사다 |
+| `latest` | `현재값 확인 못 함 (EAS latest 별칭 — 가리키는 이미지가 바뀐다)` |
+
+- **프로필이 여럿이면 전부 병기하고 가장 낮은 값으로 판정한다.** 어느 프로필이 제출용인지는 판정하지 않는다 — flavor 규칙과 같다.
+- CI 워크플로의 `xcode-version`과 둘 다 있으면 둘 다 병기한다.
+- 실측: 2026-09-24 · 도달, SDK별 이미지명·Xcode 표와 별칭 설명 확인(`references/expo.md` §4).
+
 ## 항목
 
 ### `android/target-sdk`
@@ -51,6 +76,7 @@ URL을 추가·수정할 때는 **2차를 고르기 전에 이미 다른 항목�
 - **2차:** https://support.google.com/googleplay/android-developer/answer/11926878 — ① 다른 호스트
 - **실측:** 2026-08-19 · 1차·2차 모두 도달, 요구 내용 일치 (양쪽 다 `targetSdk ≥ 36` · 마감 `2026-08-31` · 연장 `2026-11-01`). 2026-08-18 실측과 값 동일
 - **현재값:** `android/build.gradle`의 `targetSdkVersion` 또는 `android/app/build.gradle`의 `targetSdk`. flavor 분기가 있으면 전부 병기하고 가장 낮은 값 기준으로 판정.
+- **Expo:** bare는 `android/gradle.properties`의 `android.targetSdkVersion`을 먼저 본다. CNG는 app config `expo-build-properties`의 `android.targetSdkVersion`. 명시값이 없으면 SDK 기본값(«Expo 프로젝트의 현재값»).
 
 ### `android/16kb-page-size`
 
@@ -60,6 +86,7 @@ URL을 추가·수정할 때는 **2차를 고르기 전에 이미 다른 항목�
 - **2차:** **없음** (후보 3개가 전부 실측에서 탈락 — Play Console 도움말 `answer/16513766` 404 · `source.android.com/docs/core/architecture/16kb-page-size` 404 · AGP 릴리즈 노트는 도달하나 16KB 요구를 싣지 않음)
 - **실측:** 2026-08-19 · 1차 도달, 요구 내용 일치 (마감 `2027-02-01` 명시). 2026-08-18 실측과 값 동일. **2차 없음 — 리포트에 `이중화 없음` 병기 대상**
 - **현재값:** AGP 버전(`android/build.gradle`의 classpath 또는 `gradle/libs.versions.toml`) + `android/gradle.properties`의 관련 플래그. 네이티브 `.so` 정렬은 빌드 산물이라 **읽지 않는다** — 읽을 수 있는 것만 읽고 나머지는 `현재값 확인 못 함`.
+- **Expo:** bare는 위와 같다. CNG는 `현재값 확인 못 함 (CNG — 네이티브 설정 생성 산물)` — 읽을 대상(AGP 버전·gradle 플래그)이 전부 생성물이나 SDK 안에 있고, SDK 기본값 표에도 이 열이 없다. 출처 없는 값을 지어내지 않는다.
 
 ### `ios/min-xcode`
 
@@ -71,6 +98,7 @@ URL을 추가·수정할 때는 **2차를 고르기 전에 이미 다른 항목�
 - **교차:** `ios/min-deployment-target` (1차 공유 — 같은 페이지의 다른 절)
 - **실측:** 2026-09-24 · 1차 도달, 요구 확인: *"SDK minimum requirements — Since April 28, 2026 Apps uploaded to App Store Connect must be built with Xcode 26 or later using an SDK for iOS 26, iPadOS 26, tvOS 26, visionOS 26, or watchOS 26."* 2차 도달, `iOS app` 행 `Xcode 26 or later`. 예고 URL 도달, 예고 요구 확인: *"Starting April 2027, apps and games uploaded to App Store Connect need to meet the following minimum requirements. iOS and iPadOS apps must be built with the iOS & iPadOS 27 SDK or later"* — **1차에는 아직 없다**(`2027` 언급 0). 예고 URL 필드가 생긴 계기다.
 - **현재값:** repo 안에서 읽을 수 있는 건 CI 설정(`.github/workflows/*.yml`의 `xcode-version`)뿐이다. 없으면 `현재값 확인 못 함 (경로 부재)` — **로컬 Xcode 버전을 셸로 확인하지 않는다.**
+- **`eas.json`:** 있으면 «`eas.json` iOS 이미지 → Xcode» 표대로 읽어 CI 값과 병기한다. Expo 여부와 무관하다.
 - **통합 이력 (2026-08-29) — 2026-09-24 분리로 해제:** `ios/min-deployment-target`을 이 항목으로 흡수했었다(사유: Apple이 최소 배포 타깃을 정책 본문으로 게시하지 않았다 — 감사 원장 A-29·A-30, git 태그 `audit-2026-08`의 `docs/audit-ledger.md`). 배포 타깃 하한은 `support/xcode/` 표의 `Deployment Targets` 열에서 파생했다. 2026-09-09에 Apple이 그 요구를 정책 문장으로 게시해 흡수 사유가 사라졌으므로 되돌렸다 — 아래 `ios/min-deployment-target`의 «재도입 이력».
 
 ### `ios/min-deployment-target`
@@ -83,6 +111,7 @@ URL을 추가·수정할 때는 **2차를 고르기 전에 이미 다른 항목�
 - **교차:** `ios/min-xcode` (1차 공유 — 같은 페이지의 다른 절)
 - **실측:** 2026-09-24 · 1차 도달, 요구 확인: *"iOS and iPadOS minimum system requirements — Since September 9, 2026 iOS and iPadOS apps uploaded to App Store Connect must target iOS 13 or later."*
 - **현재값:** `ios/Podfile`의 `platform :ios, 'X.Y'` + `ios/*.xcodeproj/project.pbxproj`의 `IPHONEOS_DEPLOYMENT_TARGET` + `ios/*.xcconfig`. 셋이 갈리면 전부 병기하고 가장 낮은 값 기준으로 판정.
+- **Expo:** bare는 `ios/Podfile.properties.json`의 `ios.deploymentTarget` → `ios/Podfile`의 `platform :ios, <식> || '<X.Y>'` 폴백 리터럴을 먼저 보고, 없으면 위 셋. CNG는 app config `ios.deploymentTarget` → `expo-build-properties`의 `ios.deploymentTarget` → SDK 기본값.
 - **재도입 이력 (2026-09-24):** 2026-08-29에 `ios/min-xcode`로 흡수했던 슬러그를 되살렸다(사용자 결정).
   - **흡수 사유가 사라졌다.** A-29의 전제(*Apple이 최소 배포 타깃을 정책 본문으로 게시하지 않는다*)가 2026-09-09 게시로 사실이 아니게 됐다.
   - **통합 상태는 두 결함을 만들었다.** 정책(iOS 13)과 Xcode 표 파생(iOS 15)이 같은 항목에 서로 다른 하한을 냈다. 그리고 핸드오프 `current` 한 칸에 Xcode·배포 타깃 두 축이 섞여, `currency`가 어느 축이 미충족인지 가를 수 없었다.
@@ -97,6 +126,7 @@ URL을 추가·수정할 때는 **2차를 고르기 전에 이미 다른 항목�
 - **2차:** https://developer.apple.com/documentation/bundleresources/privacy-manifest-files — ② 같은 호스트·다른 성격(규범 문서)
 - **실측:** 2026-08-19 · 1차 도달(SDK 목록 80개 확인). **2차는 여전히 본문 회수 실패**(2026-08-18과 동일 — 제목만 오고 규범 본문이 안 온다) — 도달은 하나 WebFetch로 내용을 못 읽는다. 그래서 규범 문서를 1차가 아니라 2차에 뒀다: **읽을 수 있는 쪽이 1차여야 한다.** 2차 도달 실패가 잦으면 degrade 5로 간다
 - **현재값:** `Glob`으로 `ios/**/PrivacyInfo.xcprivacy` 탐색. **존재 여부가 곧 현재값이다** — 있으면 충족, 없으면 미충족. 탐색 자체가 불가능한 경우에만 `확인 못 함`.
+- **Expo CNG:** app config `ios.privacyManifests`가 있으면 충족. 없으면 `현재값 확인 못 함 (CNG — prebuild·pod install이 생성할 수 있어 repo만으로 판정 불가)` — **미충족으로 단정하지 않는다.** CocoaPods의 privacy manifest 집계가 pod install 때 파일을 만들 수 있다. bare는 위 규칙 그대로다.
 
 ### `play/billing`
 
@@ -106,6 +136,7 @@ URL을 추가·수정할 때는 **2차를 고르기 전에 이미 다른 항목�
 - **2차:** https://developer.android.com/google/play/billing/release-notes — ② 같은 호스트·다른 성격(릴리즈 노트). **같은 섹션(`/google/play/billing/`)이라 섹션 개편에는 함께 죽는다** — 다른 호스트 후보(Play Console 도움말 `answer/13584340`)가 404라 대체가 없었다
 - **실측:** 2026-08-19 · 1차·2차 모두 도달. 양쪽 다 `2026-08-31까지 Billing Library v8 이상, 연장 2026-11-01` 명시 — 두 페이지가 같은 값을 말하는 것까지 재확인. 1차의 버전별 지원 타임라인 표(v7 → 2026-08-31 / v8 → 2027-08-31)는 **각 버전의 폐기 기한**이라 2차 배너와 모순이 아니다
 - **현재값:** `package.json`의 결제 관련 패키지 버전 + `android/app/build.gradle`의 `com.android.billingclient` 의존. 결제 미사용이면 `현재값 확인 못 함`이 아니라 **`이미 충족`이 아니다** — 해당 없음을 판정할 근거가 없으므로 `현재값 확인 못 함 (경로 부재)`로 둔다.
+- **Expo CNG:** `package.json`만 읽는다 — `android/app/build.gradle`은 생성물이다.
 
 ### `play/data-safety`
 

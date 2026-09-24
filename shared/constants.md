@@ -36,7 +36,7 @@
 | `worktree_path_template` | `/tmp/rn-rehearsal-<target>-<base_sha7>` | rehearsal (worktree 생성 경로) |
 | `step_timeout_install_seconds` | `1800` | rehearsal (T1 의존성 설치) |
 | `step_timeout_check_seconds` | `900` | rehearsal (T1 타입체크·테스트) |
-| `step_timeout_build_seconds` | `2700` | rehearsal (T2 네이티브 빌드 · `pod install`) |
+| `step_timeout_build_seconds` | `2700` | rehearsal (T2 네이티브 빌드 · `pod install` · Expo CNG의 `expo prebuild`) |
 | `step_timeout_boot_seconds` | `600` | rehearsal (T2 부팅 + 로그 스캔) |
 
 ## 왜 여기 있나
