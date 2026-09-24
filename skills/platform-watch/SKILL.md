@@ -115,7 +115,8 @@ disallowed-tools: Bash Edit
 - **SDK 기본값은 매 실행 공식 문서 표에서 조회한다.** 본문·참조 파일에 적힌 SDK 값은 없다 — 적어 두면 다음 SDK가 나오는 날 낡는다. 표의 프로젝트 SDK 행을 원문 그대로 인용하고 링크를 단다. **그 행이 없으면 다른 SDK 행으로 대신하지 마라.**
 - **`app.config.js`·`.ts`를 실행·평가하지 마라.** `npx expo config`는 셸이 필요하고 프로젝트 코드를 실행한다. 텍스트로 읽어 리터럴만 쓰고, 식으로 된 값은 `확인 못 함 (app.config 동적 값)`이다(`references/expo.md` §3).
 - **유형이 모호하면 추측하지 마라.** `.gitignore` 판정이 모호하면 그 플랫폼의 현재값은 `확인 못 함 (Expo 유형 판별 불가)`다 — bare로 가정하면 생성물을 오독하고, CNG로 가정하면 커밋된 설정을 무시한다.
-- **Expo 경로에도 셸은 없다.** 새로 읽는 건 텍스트 파일(app config · `eas.json` · `.gitignore` · 속성 파일)과 문서 표 2개(WebFetch)뿐이다.
+- **Expo 경로에도 셸은 없다.** 새로 읽는 건 텍스트 파일(app config · `eas.json` · `.gitignore` · 속성 파일)과 문서 표(WebFetch)뿐이다. SDK 기본값 표는 매번, EAS 인프라 표는 `eas.json`이 있을 때만 읽는다.
+- **`ios/min-xcode`는 SDK 최소 Xcode를 하한으로 쓴다.** SDK 기본값 표의 `Xcode version` 열이 그 SDK를 빌드할 수 있는 최소 Xcode다. 구체값(CI·`eas.json`)이 없을 때 이 하한이 요구 이상이면 충족이다(`references/watch-targets.md` «`ios/min-xcode` — Expo 프로젝트의 Xcode»).
 
 ### 등급 = f(D-day, 충족 여부) — 순수 함수
 
@@ -163,8 +164,8 @@ disallowed-tools: Bash Edit
 | 8 | `references/constants.md` 도달 실패 (상대경로·`Glob` 폴백 둘 다) | 상수에 기대는 판정만 `확인 못 함`, 전수 리포트는 정상 산출 | 헤더 + 제자리 |
 | 9 | `.rn-upgrade-kit/` 쓰기 실패 (권한·read-only FS·디스크 참) | 실패한 산출물을 이름으로 지목하고 나머지 쓰기는 계속 | 리포트 말미 |
 | 10 | Expo 유형 확인 못 함 (`.gitignore` 판정 모호) | 그 플랫폼의 현재값 `확인 못 함 (Expo 유형 판별 불가)` | 블록 2 (⚠) |
-| 11 | SDK 기본값이 필요한데 표 도달 실패 · 표에 SDK 행 없음 · SDK 확인 못 함 | `현재값 확인 못 함 (SDK 기본값 — <사유>)` | 블록 2 (⚠) |
-| 12 | `references/expo.md` 도달 실패 · Expo 프로젝트 | 네이티브 파일·app config에 기대는 현재값 전부 `확인 못 함 (Expo 규칙 도달 실패)` + 헤더 표기 | 헤더 + 블록 2 |
+| 11 | Expo 문서 표(SDK 기본값 · EAS 인프라)가 필요한데 도달 실패 · 표에 SDK 행 없음 · SDK 확인 못 함 | `현재값 확인 못 함 (SDK 기본값 — <사유>)` / `현재값 확인 못 함 (EAS 이미지 — <사유>)` | 블록 2 (⚠) |
+| 12 | `references/expo.md` 도달 실패 · Expo 프로젝트 | 네이티브 파일·app config에 기대는 현재값 전부 `확인 못 함 (Expo 규칙 도달 실패)` + 헤더에 `Expo 규칙 도달 실패 — Expo 현재값 미판정` | 헤더 + 블록 2 |
 
 **8은 추정 기본값을 쓰지 마라.** 임계일·보존 상한·후보 상한·승격 하한을 "흔한 값"으로 때우면, 드리프트를 막으려고 둔 파일이 없을 때 **드리프트를 대신 만들어낸다.** 헤더에 `상수 도달 실패 — 임계값 미적용`을 적고 🔴/🟠 분기는 ⚠로 내린다 — 마감일과 현재값 자체는 조회로 나왔으므로 그대로 싣는다. `handoff_path`를 못 읽으면 핸드오프 쓰기만 9와 같이 처리한다 — 경로를 지어내 엉뚱한 자리에 쓰면 `currency`는 갱신을 영영 못 본다.
 

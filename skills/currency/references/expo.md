@@ -14,7 +14,9 @@
 | **Expo bare** | `expo`가 있고, 그 플랫폼의 네이티브 디렉토리(`android/` · `ios/`)가 **커밋돼 있다** |
 | **Expo CNG** | `expo`가 있고, 그 플랫폼의 네이티브 디렉토리가 **없거나 커밋돼 있지 않다** — 빌드 때 `expo prebuild`가 app config에서 생성한다 |
 
-- **정본 `package.json`은 `currency` §1의 정의를 따른다** — `react-native`를 `dependencies`에 가진 것, 여럿이면 가장 얕은 경로. 네이티브 디렉토리와 app config는 그 파일이 있는 디렉토리(앱 루트)에서 찾는다. 단일 앱 레포에서는 레포 루트다.
+- **정본 `package.json`** = `react-native`를 `dependencies`에 가진 `package.json`, 여럿이면 가장 얕은 경로. 네이티브 디렉토리와 app config는 그 파일이 있는 디렉토리(앱 루트)에서 찾는다. 단일 앱 레포에서는 레포 루트다.
+  - **후보는 `**/package.json` Glob으로 찾지 않는다.** `node_modules` 안의 수천 개에 밀려 결과가 잘리고, 루트 파일도 하위 워크스페이스도 결과에서 빠질 수 있다(실측 2026-09-24 — 100개에서 절단, 루트 미포함). 후보는 **작업 디렉토리의 `package.json`**과, 그 파일의 `workspaces` 또는 `pnpm-workspace.yaml`의 `packages`가 선언한 패턴에 맞는 디렉토리의 `package.json`이다. 워크스페이스 패턴을 풀 때 쓰는 Glob은 `<패턴>/package.json`으로 좁힌다.
+- **레포 루트** = 앱 루트부터 위로 올라가며 `.git`이 있는 첫 디렉토리다. 셸 없이 찾으려면 `<디렉토리>/.git/HEAD`를 Read해 본다.
 - **플랫폼마다 따로 판정한다.** `android/`만 커밋하고 `ios/`는 생성하는 프로젝트도 있다. 헤더에는 두 플랫폼을 모두 적는다.
 - CNG를 "커밋 여부"로 가르는 이유: EAS Build도 같은 기준을 쓴다 — 업로드된 소스에 네이티브 디렉토리가 없으면 prebuild를 돌린다. **로컬에 디렉토리가 있어도 커밋돼 있지 않으면 CNG다.** 그 디렉토리는 `npx expo run`·`prebuild`가 남긴 생성물이다.
 
@@ -22,7 +24,9 @@
 
 **git을 쓰는 스킬(`rehearsal`)**: 검증 기준 커밋(`base_sha`)의 트리를 본다 — `git ls-tree --name-only <base_sha> -- <앱 루트>/android`가 비어 있지 않으면 android bare, 비었으면 CNG. ios도 같다. worktree는 그 커밋에서 만들어지므로 그 트리가 판정 기준이다.
 
-**셸을 쓰지 않는 스킬(`platform-watch` · `currency`)**: `Glob`으로 디렉토리 존재를 보고, 앱 루트와 레포 루트의 `.gitignore`를 Read한다.
+**셸을 쓰지 않는 스킬(`platform-watch` · `currency`)**: 디렉토리 존재를 보고, 앱 루트와 레포 루트의 `.gitignore`를 Read한다.
+
+- **존재는 `Glob` `<앱 루트>/android/*`로 본다** — 한 단계만. `Glob`은 파일만 잡으므로 결과가 하나라도 있으면 있음, 없으면 없음이다(빈 디렉토리는 없음으로 친다). `**`로 훑지 마라 — CNG 생성물의 파일 목록을 통째로 열거하게 된다. 목록을 받는 건 읽는 게 아니지만, 필요 이상으로 생성물에 손대는 절차다.
 
 | 디렉토리 | `.gitignore` | 판정 |
 | --- | --- | --- |
@@ -32,6 +36,7 @@
 | 있음 | 글롭·부정(`!`) 패턴이 걸려 판정이 모호하다 | **유형 확인 못 함** |
 
 - `.gitignore` 판별은 근사다 — 전역 excludes·`.git/info/exclude`는 보지 못한다. 그래서 **모호하면 추측하지 않고 `유형 확인 못 함`**으로 둔다.
+- **알려진 한계 — 커밋 여부는 셸 없이 모른다.** 디렉토리가 있고 무시하는 줄이 없으면 bare로 판정하지만, 그 디렉토리가 실제로 커밋됐는지는 확인하지 못한다. prebuild 직후 아직 커밋도 무시도 안 한 생성물이면 bare로 오판한다. 이 상태의 트리를 `rehearsal`은 `git ls-tree`로 CNG로 보지만, 그 전에 `android/**`의 untracked 파일이 업그레이드 표면 dirty라 **실행을 거부한다** — 두 판정이 조용히 갈린 채 진행되지는 않는다.
 
 ### CNG 플랫폼의 로컬 네이티브 디렉토리는 읽지 않는다
 
@@ -47,13 +52,15 @@ prebuild 생성물은 **생성한 시점의 app config**를 반영한다. app co
 프로젝트: RN (Expo 아님)
 프로젝트: Expo SDK 57 — android CNG · ios CNG
 프로젝트: Expo SDK 57 — android bare · ios 유형 확인 못 함
+프로젝트: Expo (SDK 확인 못 함) — android CNG · ios CNG
 ```
 
 > 위 `57`은 값이 아니라 예시다 — SDK는 §2로 식별한다.
 
 ## 2. SDK 식별
 
-- **SDK = `expo` 버전의 major.** lockfile을 읽는 스킬(`currency` · `rehearsal`)은 설치 버전에서, lockfile을 읽지 않는 스킬(`platform-watch`)은 선언 범위의 하단에서 major를 뽑는다(`~57.0.25` → 57). SDK 식별에는 major만 필요하므로 선언 범위로 충분하다.
+- **SDK = `expo` 버전의 major.** lockfile을 읽는 스킬(`currency` · `rehearsal`)은 설치 버전에서, lockfile을 읽지 않는 스킬(`platform-watch`)은 선언 범위의 하단에서 major를 뽑는다(예시: `~57.0.25` → 57). SDK 식별에는 major만 필요하므로 선언 범위로 충분하다 — lockfile을 못 읽으면 `currency`·`rehearsal`도 선언 범위로 간다.
+- **lockfile은 이름으로 직접 Read한다** — 앱 루트에서, 없으면 레포 루트에서 4종(`pnpm-lock.yaml` · `package-lock.json` · `yarn.lock` · `bun.lock`/`bun.lockb`)을 차례로. Glob으로 훑지 않는다(위 `package.json`과 같은 절단). **Read가 권한 규칙으로 거부되면 `없음`이 아니라 `읽기 거부`다** — 도구의 오류 문구가 "파일 없음"과 "거부"를 가른다. 실측(2026-09-24): 사용자 설정의 deny 규칙이 `package-lock.json`을 막아, 파일이 있는데 Glob 결과에도 안 나왔다. 둘을 같은 표기로 접으면 사용자는 lockfile을 만들러 가는데 고칠 것은 권한 설정이다.
 - 선언 범위가 major를 가르지 못하면(`*` · `latest` · `>=` · `workspace:` · `catalog:`) **`SDK 확인 못 함`**이다. SDK에 기대는 값(§3의 SDK 기본값 · §5 정합)만 `확인 못 함`이 되고 나머지 판정은 그대로 한다.
 - §4 API에 넘기는 SDK 문자열은 `<major>.0.0`이다.
 
@@ -100,8 +107,9 @@ bare Expo는 네이티브 파일이 정본이지만, **리터럴이 `build.gradl
 | SDK 기본 네이티브 값 (compileSdk · targetSdk · iOS · Xcode) | https://docs.expo.dev/versions/latest/ «Support for Android and iOS versions» 표 | WebFetch | platform-watch · currency (번역 근거) |
 | EAS 빌드 이미지 → Xcode | https://docs.expo.dev/build-reference/infrastructure/ | WebFetch | platform-watch |
 
-- **판정 재료는 원문 채널이 정본이다.** SDK 범위 문자열(`~57.0.4`) 하나가 요약되며 바뀌면 정합 판정이 조용히 틀린다 — 그래서 E1·E2는 `node -e`다(`currency` §2와 같은 이유). 셸이 없는 `platform-watch`는 문서 표만 쓰고, 표의 행을 **원문 그대로 인용**해 근거로 단다.
-- **문서 표의 내용 검증**: 표 머리(`Expo SDK version` · `targetSdkVersion` · `iOS version` · `Xcode version`)와 프로젝트 SDK의 행이 있어야 한다. 머리가 없으면 도달 실패, 행이 없으면 `SDK 기본값 확인 못 함 (표에 SDK <n> 없음)`이다 — 표는 최근 SDK만 싣는다. **다른 SDK 행으로 대신하지 않는다.**
+- **판정 재료는 원문 채널이 정본이다.** SDK 범위 문자열(예시: `~57.0.4`) 하나가 요약되며 바뀌면 정합 판정이 조용히 틀린다 — 그래서 E1·E2는 `node -e`다(`currency` §2와 같은 이유). 셸이 없는 `platform-watch`는 문서 표만 쓰고, 표의 행을 **원문 그대로 인용**해 근거로 단다.
+- **문서 표의 내용 검증**: 표 머리(`Expo SDK version` · `targetSdkVersion` · `iOS version` · `Xcode version`)와 프로젝트 SDK의 행이 있어야 한다. 머리가 없으면 도달 실패, 행이 없으면 `현재값 확인 못 함 (SDK 기본값 — 표에 SDK <n> 없음)`이다 — 표는 최근 SDK만 싣는다. **다른 SDK 행으로 대신하지 않는다.**
+- **EAS 인프라 표는 `eas.json`이 있는 Expo 프로젝트에서만 읽는다.** `eas.json`이 없으면 EAS로 빌드하지 않는 것이라 조회하지 않는다.
 
 | 출처 | 실측 |
 | --- | --- |
@@ -122,6 +130,7 @@ node -e "const S=55;Promise.all([fetch('https://api.expo.dev/v2/versions/latest'
 출력: 현재 SDK 이상인 SDK마다 한 줄 — `<SDK> | <RN> | <React> | expo <그 SDK의 최고 stable 또는 -> | <마이그레이션 노트 URL 또는 ->`.
 
 - **`expo -`인 SDK는 아직 나오지 않았다.** API는 프리뷰 SDK도 싣는다. **"다음 SDK"는 현재보다 큰 SDK 중 `expo` 열이 `-`가 아닌 가장 작은 것이다.**
+- **`S`는 "이 SDK 이상만 출력"이다.** 현재 SDK보다 이전 SDK의 마이그레이션 노트가 필요하면(`currency` 번역 ①의 근거 — 요구를 처음 만족시킨 SDK가 현재보다 이전일 때) 더 낮은 `S`로 한 번 더 돌린다. 코드는 그대로이고 `S`만 바꾼다.
 - RN·React 열은 **그 SDK가 지금 고정하는 버전**이다. SDK 안의 패치가 나오면 바뀐다 — 매번 조회하는 이유다.
 
 **E2 — SDK 호환 범위.** `S` = 조회할 SDK major.
@@ -132,7 +141,7 @@ node -e "const S=57;fetch('https://api.expo.dev/v2/sdks/'+S+'.0.0/native-modules
 
 출력: 줄마다 `<패키지> | <versionRange>`. 목록이 없으면 `EMPTY <S>`, HTTP 실패면 `HTTP <코드> <S>` — 둘 다 E2′로 간다.
 
-**E2′ — 폴백.** `V` = 그 SDK의 `expo` 정확 버전(현재 SDK면 설치 버전, 목표 SDK면 E1의 `expo` 열).
+**E2′ — 폴백.** `V` = 그 SDK의 `expo` 정확 버전. 현재 SDK면 설치 버전이다. 목표 SDK면 `currency`는 E1의 `expo` 열을, `rehearsal`은 인자의 `expo` 버전을 쓴다.
 
 ```sh
 node -e "const V='57.0.25';fetch('https://cdn.jsdelivr.net/npm/expo@'+V+'/bundledNativeModules.json').then(r=>r.ok?r.json().then(d=>Object.keys(d).forEach(k=>console.log(k+' | '+d[k]))):console.log('HTTP',r.status,V))"
@@ -150,7 +159,7 @@ node -e "const V='57.0.25';fetch('https://cdn.jsdelivr.net/npm/expo@'+V+'/bundle
 `npx expo install --check`가 보는 것과 같은 것을 **스킬이 직접** 본다 — 그 커맨드는 설치가 끝난 뒤에야 돌고, `--fix`는 버전을 스스로 골라 고친다(타깃 추측이다).
 
 - **목표 SDK**: 세트(`rehearsal` 인자 · `currency` 블록)에 `expo@<ver>`가 있으면 그 major, 없으면 현재 SDK.
-- **정합 대상**: 정본 `package.json`의 `dependencies`·`devDependencies`에 **직접 선언된** 패키지 중 목표 SDK 목록(E2)에 있는 것. 전이 의존은 세지 않는다 — `lockstep-sets.md`의 «설치된 것» 정의와 같다. `expo` 자신은 목록에 없다 — 목표 SDK를 정하는 쪽이다.
+- **정합 대상**: 정본 `package.json`의 `dependencies`·`devDependencies`에 **직접 선언된** 패키지 중 목표 SDK 목록(E2)에 있는 것. 전이 의존은 세지 않는다 — `lockstep-sets.md` «확정 세트» 절의 "직접 선언된 것만" 정의와 같다. `expo` 자신은 목록에 없다 — 목표 SDK를 정하는 쪽이다.
 - **정합 판정**: 버전이 목표 SDK의 `versionRange`를 만족하는가.
 
 | 범위 형태 | 만족 조건 |
@@ -163,10 +172,11 @@ node -e "const V='57.0.25';fetch('https://cdn.jsdelivr.net/npm/expo@'+V+'/bundle
 ### 규칙 둘
 
 1. **세트에 든 정합 대상은 목표 SDK 범위를 만족해야 한다.**
-2. **목표 SDK가 현재 SDK와 다르면, 세트에 없는 정합 대상은 현재 버전이 이미 목표 범위를 만족해야 한다.** 아니면 그 패키지가 세트에서 **누락**된 것이다 — SDK를 올리면서 그 패키지를 안 올리면 새 SDK가 고정하는 네이티브 모듈과 어긋난다.
+2. **목표 SDK가 현재 SDK와 다르면, 세트에 없는 정합 대상은 현재 버전이 이미 목표 범위를 만족해야 한다.** 현재 버전은 lockfile의 설치 버전이고, 없으면 `package.json` 선언 범위의 하단이다(보수적 방향 — §2와 같다). 아니면 그 패키지가 세트에서 **누락**된 것이다 — SDK를 올리면서 그 패키지를 안 올리면 새 SDK가 고정하는 네이티브 모듈과 어긋난다.
 
 - **목표 SDK가 현재 SDK와 같을 때 세트 밖의 기존 어긋남은 누락이 아니다.** 관측만 한다: `SDK 정합 어긋남 (기존): <pkg> <현재> — SDK <n> 범위 <range>`. 이번 업그레이드가 만든 어긋남이 아니므로, 거부하면 무관한 사정으로 리허설이 막힌다.
 - **lockstep 세트와는 별개 규칙이다 — 둘 다 통과해야 한다.** RN 코어 세트의 `@react-native/*`는 SDK 목록에 없을 수 있지만, 직접 선언돼 있으면 lockstep 규칙대로 RN과 같은 번호로 동반한다(`lockstep-sets.md`).
+- **세트를 만들 때 lockstep이 우선이다.** 목표 범위를 이미 만족해서 올릴 필요가 없는 패키지라도, 같은 lockstep 세트의 다른 구성원이 세트에 들어가면 **현재 버전 그대로 세트에 싣는다.** 예: RN이 오르는데 React는 새 SDK에서도 같은 버전인 경우. 빼면 lockstep 검사가 `짝 누락`으로 거부한다.
 
 ### 조회 실패
 
@@ -186,5 +196,5 @@ Expo 여부는 `package.json`만 봐도 알 수 있지만, **판정 규칙은 �
 
 - **Expo가 아닌 프로젝트는 영향이 없다.** 이 파일의 규칙은 Expo 프로젝트에만 걸린다.
 - `platform-watch`: Expo 프로젝트면 네이티브 파일·app config에 기대는 현재값을 `확인 못 함 (Expo 규칙 도달 실패)`로 둔다. 마감·요구는 그대로 조회한다.
-- `currency`: SDK 범위를 상한에 쓰지 않고(`⚠ SDK 범위 미확인`) SDK 업그레이드 블록을 싣지 않는다. 헤더에 `Expo 규칙 도달 실패 — SDK 판정 미적용`.
+- `currency`: SDK 범위를 상한에 쓰지 않고(`⚠ SDK 범위 미확인`) SDK 업그레이드 블록을 싣지 않는다. 헤더에 `Expo 규칙 도달 실패 — SDK 판정 미적용`. **New Arch·Hermes는 `확인 못 함`이다** — RN 규칙대로 로컬 `gradle.properties`를 읽으면 CNG의 낡은 생성물을 읽게 된다.
 - `rehearsal`: Expo 프로젝트면 **실행 거부** — `실행 거부 — Expo 규칙 도달 실패: references/expo.md`. CNG 판별과 prebuild 여부가 실행 파라미터라서다. 모르고 돌리면 네이티브 디렉토리 없이 T2를 시작하고, 그 실패가 업그레이드 회귀처럼 보인다(`constants.md` 도달 실패가 거부인 이유와 같다).

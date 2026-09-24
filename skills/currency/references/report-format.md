@@ -113,24 +113,30 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 
 새 SDK는 **권장 버전이 아니다**(게이트 2). 🟡 항목으로 알리고, 그 항목 바로 아래에 리허설할 블록을 붙인다. 구성 규칙은 `SKILL.md` §4 «Expo SDK 업그레이드»가 정본이다.
 
-```
+````
 ## 🟡 Recommended
 - [expo SDK] 현재 SDK 56 (expo 56.0.22) → 다음 SDK 57 (RN 0.86.3 · React 19.2.3) | major 점프 — 권장 대상 아님(게이트 2)
-  마이그레이션 노트: https://expo.dev/changelog/sdk-57 · 더 새 SDK: 없음
-  ​```
+  마이그레이션 노트: https://expo.dev/changelog/sdk-57 · 더 새 SDK: 없음 (SDK 58 프리뷰)
+  대표: expo 56.0.22→57.0.25 · react-native 0.85.3→0.86.3 · react-native-reanimated 4.3.1→4.5.1 · react-native-worklets 0.8.3→0.10.1 · react-native-gesture-handler 2.31.1→2.32.0 · expo-router 56.2.21→57.0.23 · …
+  ```
   # SDK 업그레이드 리허설용 — 권장 아님(게이트 2). 버전은 SDK 57 범위의 최고 stable이고 soak·churn·known issue는 적용하지 않았다
   # 산정 시각: 2026-09-24
   /rn-upgrade-kit:rehearsal expo@57.0.25 react-native@0.86.3 react@19.2.3 \
                             react-native-reanimated@4.5.1 react-native-worklets@0.10.1 \
-                            expo-router@57.0.23
-  ​```
-```
+                            react-native-gesture-handler@2.32.0 expo-router@57.0.23 …
+  ```
+````
 
-> 위 SDK·버전·URL은 전부 값이 아니라 예시다 — 실제 값은 `references/expo.md` §4의 E1·E2와 registry 조회에서 온다.
+> 위 SDK·버전·URL은 전부 값이 아니라 예시다 — 실제 값은 `references/expo.md` §4의 E1·E2와 registry 조회에서 온다. **구성원도 일부만 보였다(`…`)** — 실측(2026-09-24): SDK 56 기본 템플릿에서 규칙대로 만든 블록은 19개였다(`expo` + 범위를 벗어난 정합 대상 17개 + lockstep 동반 `react`). 예시의 구성원만 베끼면 `rehearsal` 인자 검증 4가 `SDK 정합 누락`으로 거부한다. `…`는 예시 표기일 뿐 실제 블록에는 쓰지 않는다.
 
 - **첫 줄 주석은 필수다.** 권장이 아니라는 것과 게이트 3~5를 적용하지 않았다는 것을 적는다 — 없으면 이 블록이 권장처럼 읽힌다. `rehearsal`은 `# 산정 시각:` 외의 `#` 줄을 무시하므로 인자를 깨뜨리지 않는다.
+- **블록 안 주석은 전부 커맨드 앞의 독립된 줄이다.** 인자 줄 끝에 붙이지 마라 — `rehearsal`은 `#`로 **시작하는** 줄만 무시한다. 줄 끝 주석은 인자로 읽혀 `실행 거부 — 정확 버전 아님`이 된다.
+- **줄 끝 `\`는 줄잇기다.** 인자가 많으면 줄을 나눠도 된다 — `rehearsal`은 줄 끝 `\`를 인자로 읽지 않는다(그쪽 §0 «인자 검증»).
+- **`대표:` 줄에 블록 구성원을 전부 적는다.** SDK 목록 패키지의 major 점프를 개별 🟡로 내지 않으므로(`SKILL.md` §4) 이 줄이 그 대상들이 리포트에 남는 자리다. `devDependencies`의 정합 대상도 여기 든다. `권장 요약`에서는 major 점프 1건으로 세고 대표 개수를 괄호로 병기한다.
+- 블록에 실리는 `react@19.2.3`처럼 버전이 그대로인 패키지는 lockstep 동반이다(`SKILL.md` §4) — 빼면 `rehearsal` 인자 검증 3이 거부한다. (예시의 버전은 값이 아니다.)
 - **`# 산정 시각:`을 박는다**(규칙 b와 같다).
 - **범위를 판정할 수 없는 패키지**는 블록에 넣지 않고 블록 안에 `# 정합 확인 못 함: <pkg> <range> — 손으로 확인` 주석으로 남긴다.
-- **SDK 범위 밖 lockstep 짝이 딸려 오면** `# lockstep 동반: <pkg> — SDK 범위 밖` 주석을 단다.
+- **SDK 목록 밖 lockstep 짝이 딸려 오면** `# lockstep 동반: <pkg> — SDK 범위 밖` 주석을 단다.
+- **`더 새 SDK:`에는 출시된 SDK만 적는다.** 프리뷰(E1의 `expo -`)는 `(SDK <m> 프리뷰)`로 따로 적는다.
 - **블록을 못 만들면 자리를 비우지 않는다** — 🟡 항목 아래에 사유 한 줄을 적는다(`SDK 업그레이드 블록 없음 — 다음 SDK 호환 범위 조회 실패`). 블록 없이 항목만 있으면 사용자는 빠뜨린 걸로 읽는다.
 - 다음 SDK가 없으면 🟡 SDK 항목 자체를 내지 않고 `✅ 점검함` 블록에 `expo SDK`를 넣는다.

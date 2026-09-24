@@ -55,7 +55,7 @@ disallowed-tools: WebSearch Edit
 
 ### 어느 `package.json`이 정본인가
 
-`package.json`이 하나라는 전제를 두지 마라 — workspaces·monorepo에서는 여럿이다. **`Glob`으로 전부 찾고 `react-native`를 `dependencies`에 가진 것만 남긴다.** RN 앱이 아닌 워크스페이스(공용 유틸·서버 패키지)를 섞으면 대상 목록에 RN과 무관한 패키지가 들어오고, 그 gap이 RN 상한에 잠겨 있다고 보고된다.
+`package.json`이 하나라는 전제를 두지 마라 — workspaces·monorepo에서는 여럿이다. **후보를 전부 모으고 `react-native`를 `dependencies`에 가진 것만 남긴다.** 후보는 작업 디렉토리의 `package.json`과, 그 파일의 `workspaces`(또는 `pnpm-workspace.yaml`의 `packages`)가 선언한 패턴의 `package.json`이다. **`**/package.json`을 Glob하지 마라** — `node_modules` 수천 개에 밀려 결과가 잘리고 루트 파일도 하위 워크스페이스도 빠질 수 있다(실측 2026-09-24 — 100개에서 절단, 루트 미포함). 워크스페이스 패턴을 풀 때는 `<패턴>/package.json`으로 좁혀 Glob한다. RN 앱이 아닌 워크스페이스(공용 유틸·서버 패키지)를 섞으면 대상 목록에 RN과 무관한 패키지가 들어오고, 그 gap이 RN 상한에 잠겨 있다고 보고된다.
 
 | 남은 개수 | 동작 |
 | --- | --- |
@@ -72,7 +72,7 @@ disallowed-tools: WebSearch Edit
 | 재료 | 획득 경로 |
 | --- | --- |
 | 대상 목록 · 선언 범위 | `package.json` **Read** |
-| 설치된 정확 버전 | lockfile **Read** (`Glob`으로 4종 중 존재하는 것 탐지) |
+| 설치된 정확 버전 | lockfile **Read** — 4종을 **이름으로 직접** 정본 `package.json`의 디렉토리에서, 없으면 레포 루트에서 찾는다. Glob으로 훑지 않는다(의존 패키지에 동봉된 lockfile을 잡아 "2종 존재"로 오판한다) |
 | `latest` · dist-tags · 프리릴리즈 여부 | **`node -e` 1줄 출력의 dist-tags 행** — 실패 시 폴백: `registry.npmjs.org/-/package/<pkg>/dist-tags` **WebFetch** |
 | peer 범위 전체(요구 RN 범위 포함) · `deprecated` | **같은 `node -e` 출력의 열** — `peerDependencies` 원문 JSON. 실패 시 폴백: `registry.npmjs.org/<pkg>/<ver>` **WebFetch** |
 | 버전 목록 · 배포일 (soak·churn 재료) | **`node -e` 1줄** — 아래. **폴백 없음** |
@@ -109,7 +109,8 @@ node -e "const P='react-native-worklets',C='0.5.1';const n=s=>s.split('.').map(N
 - **degrade — 전면 실패:** `node -e`가 **전 대상에서** 실패하면(셸 인용 깨짐·`node` 부재·네트워크 차단) 대상마다 붙는 `⚠ 숙성 미확인` 외에 **헤더에 고정 문구를 싣는다**: `soak·churn 게이트 전면 미확인 (node -e 실행 실패) — 게이트 2개가 판정에서 빠졌다`.
 - **부분과 전면을 같은 표기로 뭉개지 마라.** 대상마다 붙는 ⚠는 개별 대상의 사정처럼 읽힌다 — 게이트 6개 중 2개가 통째로 죽은 리포트가 정상 리포트와 **겉보기에 같아지는** 자리가 여기다. 헤더 문구가 그 차이를 드러내는 유일한 수단이다.
 - **dist-tags에 `latest`가 없으면** 최신을 `확인 못 함`으로 두고 **대상은 남긴다.** 버전 목록의 마지막 항목을 최신으로 대신 쓰지 마라 — 퍼블리셔가 태깅하지 않은 것과 배포 순서는 다른 사실이다.
-- **degrade — lockfile:** 4종(`pnpm-lock.yaml`·`package-lock.json`·`yarn.lock`·`bun.lock`/`bun.lockb`)이 하나도 없거나 **둘 이상이라 판별 불가**면 설치 버전을 `package.json`의 **선언 범위**로 대체한다. 헤더에 `설치 버전 미확정 (lockfile 없음 / 미지원: <파일명> / 2종 존재)`을 적고, 대상마다 권장 줄에 `⚠ 설치 버전 미확정`을 병기한다. **대상을 리포트에서 빼지 않는다.**
+- **degrade — lockfile:** 4종(`pnpm-lock.yaml`·`package-lock.json`·`yarn.lock`·`bun.lock`/`bun.lockb`)이 하나도 없거나 **둘 이상이라 판별 불가**면 설치 버전을 `package.json`의 **선언 범위**로 대체한다. 헤더에 `설치 버전 미확정 (lockfile 없음 / 미지원: <파일명> / 2종 존재 / 읽기 거부: <파일명>)`을 적고, 대상마다 권장 줄에 `⚠ 설치 버전 미확정`을 병기한다. **대상을 리포트에서 빼지 않는다.**
+  - **Read가 권한 규칙으로 거부되면 `lockfile 없음`이 아니라 `읽기 거부`다.** 도구 오류 문구가 "파일 없음"과 "거부"를 가른다. 실측(2026-09-24): 사용자 설정의 deny 규칙이 `package-lock.json`을 막아, 파일이 있는데 Glob 결과에도 안 나왔다. 뭉치면 사용자는 lockfile을 만들러 가는데 고칠 것은 권한 설정이다.
 - 선언 범위(`^5.0.2`)는 정확한 설치 버전이 아니다. **gap은 범위 하단 기준으로 보수적으로 잡는다** — 상단으로 잡으면 이미 최신인 것처럼 보여 놓친다. §날짜/버전 판정의 낙관 편향 금지와 같은 방향이다.
 
 ### 조회 순서
@@ -137,7 +138,10 @@ node -e "const P='react-native-worklets',C='0.5.1';const n=s=>s.split('.').map(N
 
 ### Expo 프로젝트 — SDK가 상한이다
 
-- **현재 SDK 호환 범위(E2)에 든 패키지는 `상한 = min(peer ceiling, SDK 범위 상단)`이다.** `react-native`·`react`도 든다 — SDK가 고정한다. 범위 상단은 `references/expo.md` §5의 범위 해석대로다. 잠근 쪽이 SDK면 `expo SDK <n> (<pkg> <range>)`로 지목한다.
+- **현재 SDK 호환 범위(E2)에 든 패키지는 범위의 양 끝이 SDK에 묶인다.** `하한 = max(현재, 정책 하한, SDK 범위 하단)` · `상한 = min(peer ceiling, SDK 범위 상단)`. `react-native`·`react`도 든다 — SDK가 고정한다. 범위 양 끝은 `references/expo.md` §5의 범위 해석대로다. 잠근 쪽이 SDK면 `expo SDK <n> (<pkg> <range>)`로 지목한다.
+  - **하한에 SDK 범위 하단을 넣는 이유**: 현재 버전이 이미 SDK 범위 아래인 프로젝트(기존 어긋남)에서 상한만 두면, 범위 아래 버전이 권장으로 나온다. 그 권장을 다음 단계 블록에 실으면 `rehearsal` 인자 검증 4가 `SDK 범위 밖`으로 거부한다.
+  - **현재 버전이 SDK 범위 위면 `도달 불가`가 아니다.** 하한이 상한보다 커지지만 마감 때문이 아니라 SDK와 이미 어긋난 상태다. 🔴 `도달 불가`로 내지 말고 ⚠ 블록에 `SDK 정합 어긋남 — 현재 <v>가 SDK <n> 범위 <range> 위`로 두고 권장을 산정하지 않는다.
+  - 모든 후보가 게이트에 걸려 `유지(현재)`가 됐는데 현재가 SDK 범위 밖이면, 권장 줄에 `⚠ SDK 정합 어긋남 (기존)`을 병기한다. `유지`는 다음 단계 블록에 실리지 않으므로 블록을 깨뜨리지 않는다.
 - **범위를 해석할 수 없는 패키지**(그 절 표의 «그 밖»)는 peer ceiling만으로 산정하고 `⚠ SDK 범위 해석 불가 — <range>`를 병기한다.
 - **정책 하한이 현재 SDK major 밖이면** `권장: 유지(현재)`가 아니다 — `산정 불가 — 도달 불가 (SDK 업그레이드 필요)` 🔴다. 잠근 것으로 `게이트 2 (SDK major 고정)`을 지목하고 🟡 SDK 항목의 블록(§4)을 가리킨다. 하한 SDK가 다음 SDK보다 멀면 `정책 하한 SDK <m> — 블록은 한 단계(SDK <n+1>)`를 병기한다.
 - **SDK를 추정하지 마라.** `expo` major를 못 정하면(`references/expo.md` §2) `react-native` 버전으로 SDK를 거꾸로 짚지 않는다 — 그러려면 SDK↔RN 대응표를 스킬이 가져야 하고, 그 표는 다음 SDK가 나오는 날 낡는다.
@@ -221,13 +225,18 @@ node -e "const P='react-native-worklets',C='0.5.1';const n=s=>s.split('.').map(N
 
 **새 SDK(`expo`의 major 점프)는 권장 버전이 아니다 — 게이트 2 그대로다.** 대신 🟡 항목으로 알리고, 그 아래에 SDK 업그레이드를 리허설할 **별도 블록**을 붙인다. 포맷은 `references/report-format.md` «SDK 업그레이드 블록».
 
-- **다음 SDK** = E1 출력에서 현재 SDK보다 큰 SDK 중 `expo` 열이 `-`가 아닌 가장 작은 것. `expo -`는 아직 나오지 않은 프리뷰 SDK다. 그보다 새 SDK가 더 있으면 항목에 `더 새 SDK: <목록>`을 적는다.
+- **다음 SDK** = E1 출력에서 현재 SDK보다 큰 SDK 중 `expo` 열이 `-`가 아닌 가장 작은 것. `expo -`는 아직 나오지 않은 프리뷰 SDK다. 그보다 새 **출시** SDK가 더 있으면 항목에 `더 새 SDK: <목록>`을 적는다 — 프리뷰는 거기 넣지 않고 `(SDK <m> 프리뷰)`로 따로 적는다.
 - **블록은 바로 다음 SDK 하나만 겨냥한다.** 두 단계를 한 번에 건너뛰면 리허설이 실패했을 때 어느 SDK의 변경인지 못 가린다.
 - **블록 구성** — 다음 SDK의 호환 범위(E2 `S=<n+1>`, 폴백 E2′ `V`=E1의 `expo` 열)를 조회해서:
   - `expo@<E1의 다음 SDK expo 열>`
-  - 정합 대상(`references/expo.md` §5) 중 **현재 버전이 다음 SDK 범위를 만족하지 않는 것 전부**. 버전은 그 범위를 만족하는 최고 stable이다 — 정확 버전 범위면 그 버전, 아니면 §2 registry 원라이너를 `C` = 범위 하단으로 돌려 고른다.
-  - 위에 딸린 lockstep 확정 세트의 나머지 구성원(`references/lockstep-sets.md`). SDK 범위에 있으면 그 범위의 최고 stable을 쓴다. `@react-native/*`는 블록의 `react-native`와 같은 번호다. SDK 범위 밖이면 이 리포트의 권장값(없으면 현재값)을 쓰고 `# lockstep 동반: <pkg> — SDK 범위 밖` 주석을 단다.
-- **이미 다음 SDK 범위를 만족하는 패키지는 싣지 않는다.** 올릴 필요 없는 것까지 올리면 리허설이 SDK와 무관한 변경까지 검증한다.
+  - 정합 대상(`references/expo.md` §5) 중 **현재 버전이 다음 SDK 범위를 만족하지 않는 것 전부**. `devDependencies`의 정합 대상(`jest-expo` 등)도 든다 — 이 리포트의 대상(§1 `dependencies`)은 아니어도 SDK 정합에는 필요하다. 버전은 그 범위를 만족하는 최고 stable이다 — 정확 버전 범위면 그 버전, 아니면 §2 registry 원라이너를 `C` = 범위 하단으로 돌려 고른다. **원라이너 창은 major 라인 전체라 범위로 한 번 더 거른다**(`~2.32.0`이면 2.33.0은 뺀다). 1차 조회 창에 이미 그 후보가 있으면 재사용해도 된다.
+  - 위에 딸린 lockstep 확정 세트의 나머지 구성원(`references/lockstep-sets.md`). **다음 SDK 범위를 이미 만족하면 현재 버전 그대로 싣는다** — 올리지 않는다(만족하지 않으면 그 패키지는 이미 위 줄의 정합 대상으로 들어와 있다). `@react-native/*`는 블록의 `react-native`와 같은 번호다. SDK 목록 밖 구성원이면 이 리포트의 권장값(없으면 현재값)을 쓰고 `# lockstep 동반: <pkg> — SDK 범위 밖` 주석을 단다.
+- **이미 다음 SDK 범위를 만족하는 패키지는 싣지 않는다.** 올릴 필요 없는 것까지 올리면 리허설이 SDK와 무관한 변경까지 검증한다. **단 lockstep 동반 구성원은 예외다 — 세트 규칙이 우선한다.** 짝이 블록에 들어가면 범위를 이미 만족해도 현재 버전 그대로 싣는다. 빼면 `rehearsal` 인자 검증 3이 `lockstep 짝 누락`으로 거부한다. 예: RN이 오르는데 React는 새 SDK에서도 같은 버전인 경우.
+- **블록 안 주석은 커맨드 앞의 독립된 줄로만 쓴다.** 줄 끝에 붙이지 마라 — `rehearsal`은 `#`로 **시작하는** 줄만 무시하므로, 인자 뒤에 붙은 주석은 인자로 읽혀 `정확 버전 아님`으로 거부된다.
+- **SDK 목록에 든 패키지·`expo`의 major 점프는 개별 🟡로 내지 않는다** — 🟡 SDK 항목 하나가 대표한다. `expo-*`는 SDK와 major를 함께 올리고, SDK 목록의 다른 패키지도 SDK 범위를 넘을 수 없다. 개별로 내면 같은 SDK 업그레이드가 수십 줄로 흩어진다. SDK 목록 밖 패키지의 major 점프는 기존대로 개별 🟡다.
+  - **대표하는 것은 항목 안에 이름으로 적는다** — `대표: <pkg> <현재>→<블록 버전> · …` 한 줄(블록에 실린 것 전부). 대상은 목록에서 사라지지 않는다. `권장 요약`에서는 major 점프 1건(🟡 expo SDK)으로 세고 대표 개수를 괄호로 병기한다.
+  - **다음 SDK 범위에도 없는 major**(최신이 다음 SDK 범위보다도 위)와 **다음 SDK가 없을 때의 major**는 대표할 항목이 없다. 그 패키지의 `유지` 줄 사유에 `최신 <v>는 SDK 범위 밖 — SDK가 그 major를 받아들여야 풀린다`를 적는다. 개별 🟡로 내지 않는다 — 지금 SDK 안에서는 갈 수 없는 버전이다.
+- **SDK 상한에 막혀 `유지`가 된 대상의 등급**은 최신과의 gap이 아니라 **현재 버전의 사정**으로 정한다 — known issue면 🔴, deprecated면 🟠, 둘 다 아니면 ⚪. 지금 할 수 있는 일이 없고, 풀리는 조건은 SDK 업그레이드다.
 - **게이트는 1(stable only)만 적용한다. 3~5(soak·churn·known issue)는 적용하지 않고 블록 첫 줄 주석에 그 사실을 적는다.** 이 블록은 권장이 아니라 리허설 수단이다 — 새 SDK가 우리 프로젝트에서 도는지는 `rehearsal`이 본다. 주석이 없으면 권장처럼 읽힌다.
 - 이렇게 만든 블록은 `rehearsal` 인자 검증 3(lockstep)·4(SDK 정합)를 통과한다. **어느 하나라도 통과하지 못하게 만들었다면 구성 규칙을 어긴 것이다.**
 - **다음 SDK가 없으면** 🟡 SDK 항목을 내지 않고 `✅ 점검함` 블록에 `expo SDK`를 넣는다.
@@ -254,7 +263,7 @@ node -e "const P='react-native-worklets',C='0.5.1';const n=s=>s.split('.').map(N
 | --- | --- |
 | RN · React 버전 | `package.json` + lockfile |
 | `targetSdk` · iOS min | **핸드오프 `current` 필드** — `targetSdk`는 `android/target-sdk`, iOS min은 `ios/min-deployment-target` 항목. 직접 파싱하지 않는다 |
-| New Arch · Hermes | `newArchEnabled`·`hermesEnabled` — `Glob`으로 `gradle.properties` 전부 + CI 워크플로 override 탐색 |
+| New Arch · Hermes | `newArchEnabled`·`hermesEnabled` — `Glob`으로 `gradle.properties` 전부 + CI 워크플로 override 탐색. **Expo CNG 플랫폼은 app config** (아래 «Expo 프로젝트의 헤더») |
 
 - 핸드오프에서 값을 못 얻으면 비우지 말고 **사유를 병기하되 네 상태를 구분한다**: `targetSdk — (핸드오프 없음)` / `targetSdk — (핸드오프 미조회 항목)` / `targetSdk — (핸드오프 stale — <날짜>)` / `targetSdk — (핸드오프 경로 미상 — 상수 도달 실패)`. "읽기 실패"와 "안 읽음"과 "낡음"과 "경로를 몰라 못 열었음"은 사용자가 할 일이 다르다 — §3 «핸드오프 읽기»가 정본이다.
 - **2026-08-29 ~ 2026-09-24 사이에 생성된 핸드오프에는 `ios/min-deployment-target` 섹션이 없다** — 그 기간엔 그 항목이 `ios/min-xcode`에 흡수돼 있었다. 항목 부재 경로(`iOS min — (핸드오프 미조회 항목)`)로 가고, `ios/min-xcode`의 `current`에서 배포 타깃을 골라 읽지 마라 — 두 축이 섞인 값이다. `platform-watch`를 한 번 전수로 돌리면 풀린다.
@@ -268,7 +277,7 @@ node -e "const P='react-native-worklets',C='0.5.1';const n=s=>s.split('.').map(N
 ### Expo 프로젝트의 헤더
 
 - 스냅샷 줄이 `Expo SDK <n>`으로 시작하고, 그 아래 `프로젝트:` 줄(`references/expo.md` §1)이 붙는다. `프로젝트:` 줄은 Expo가 아니어도 항상 싣는다 — `프로젝트: RN (Expo 아님)`.
-- **New Arch·Hermes는 유형마다 읽는 곳이 다르다.** bare 플랫폼은 위 규칙 그대로 `gradle.properties`를 읽는다. CNG 플랫폼은 app config의 `newArchEnabled`·`jsEngine`(`references/expo.md` §3)을 읽는다 — **로컬에 남은 `android/gradle.properties`는 prebuild 생성물이라 읽지 마라.**
+- **New Arch·Hermes는 유형마다 읽는 곳이 다르다.** bare 플랫폼은 위 규칙 그대로 `gradle.properties`를 읽는다. CNG 플랫폼은 app config의 `newArchEnabled`·`jsEngine`(`references/expo.md` §3)을 읽는다 — **로컬에 남은 `android/gradle.properties`는 prebuild 생성물이라 읽지 마라.** 위 «읽는 경로는 하나가 아니다»의 `gradle.properties` 탐색은 CNG 플랫폼의 `android/` 하위를 빼고 적용한다. **CI 워크플로의 override 검사는 CNG에도 그대로 한다** — CI의 `-P` 플래그는 prebuild 뒤 빌드에 그대로 걸린다.
 - **CNG에서 app config에 키가 없으면** `미지정 (Expo SDK 기본값)`으로 적고 판정은 `확인 못 함`이다(degrade 5). SDK 기본값을 알려 줄 런타임 출처가 없다 — 기본값을 지어내지 않는다.
 - targetSdk·iOS min은 여전히 핸드오프 `current`에서만 온다. `platform-watch`가 붙인 `(Expo SDK <n> 기본값)` 같은 출처 꼬리를 그대로 옮긴다.
 
@@ -313,7 +322,7 @@ platform 추적은 platform-watch가 담당한다.
 | 16 | 선언 범위가 `workspace:*`·`catalog:` | `⚠ 선언 범위 해석 불가`. **대상을 빼지 않는다** | 제자리 |
 | 17 | dist-tags에 **`latest` 부재** | 최신을 `확인 못 함`. 버전 목록 끝을 최신으로 대신 쓰지 않는다 | 제자리 |
 | 18 | **리포트 쓰기 실패** (권한·read-only FS·디스크 참) | 파일을 만들지 못했다고 말하고 **리포트 본문을 대화에 그대로 출력**한다 | 대화 |
-| 19 | **`references/expo.md` 도달 실패** · Expo 프로젝트 | SDK 상한 미적용(대상별 `⚠ SDK 범위 미확인`) · 🟡 SDK 항목 없음 · `Expo 규칙 도달 실패 — SDK 판정 미적용` | 헤더 · 제자리 |
+| 19 | **`references/expo.md` 도달 실패** · Expo 프로젝트 | SDK 상한 미적용(대상별 `⚠ SDK 범위 미확인`) · 🟡 SDK 항목 없음 · `Expo 규칙 도달 실패 — SDK 판정 미적용`. **New Arch·Hermes는 `확인 못 함`**(5와 같은 경로) — 로컬 `gradle.properties`로 대신 읽지 않는다 | 헤더 · 제자리 |
 | 20 | **SDK 확인 못 함** (`expo` major를 못 정함) | 19와 같은 결과 + `SDK 확인 못 함 — <사유>`. RN 버전으로 SDK를 짚지 않는다 | 헤더 · 제자리 |
 | 21 | **E1(SDK 목록) 조회 실패** | 🟡 SDK 항목 대신 ⚠ `SDK 목록 조회 실패 — 다음 SDK 판정 불가`. 현재 SDK 상한(E2)은 영향 없음 | ⚠ 블록 |
 | 22 | **E2·E2′(SDK 호환 범위) 둘 다 실패** | 현재 SDK면 상한 미적용 + 대상별 `⚠ SDK 범위 미확인`. 다음 SDK면 🟡 항목은 두고 블록 자리에 사유 | 제자리 · 🟡 항목 |

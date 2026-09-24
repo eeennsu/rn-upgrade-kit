@@ -48,13 +48,21 @@ URL을 추가·수정할 때는 **2차를 고르기 전에 이미 다른 항목�
 - **CNG 플랫폼의 로컬 `android/`·`ios/`는 읽지 않는다.** prebuild 생성물이라 app config보다 낡았을 수 있다(`references/expo.md` §1).
 - **명시값 → SDK 기본값 순이다.** 명시값은 CNG면 app config(`references/expo.md` §3), bare면 Expo가 덮어쓴 값을 두는 속성 파일(같은 절 «bare 플랫폼»)이다. **Expo 템플릿의 `build.gradle`에 targetSdk 리터럴이 없는 건 정상이다** — 기본값은 SDK 안에 있다.
 - **SDK 기본값은 매 실행 조회한다 — 이 파일에 적지 않는다.** https://docs.expo.dev/versions/latest/ 의 «Support for Android and iOS versions» 표를 WebFetch로 읽고 프로젝트 SDK 행을 **원문 그대로 인용**한다. targetSdk는 `targetSdkVersion` 열, iOS 배포 타깃은 `iOS version` 열의 `X.Y+`에서 `X.Y`다 — 그 SDK의 최소 지원 iOS가 기본 배포 타깃이다(실측 2026-09-24: 템플릿 `Podfile`의 폴백 리터럴이 표와 같았다).
-  - **내용 검증**: 표 머리(`Expo SDK version` · `targetSdkVersion` · `iOS version`)가 없으면 도달 실패, 프로젝트 SDK 행이 없으면 `현재값 확인 못 함 (SDK 기본값 — 표에 SDK <n> 없음)`. **가까운 다른 SDK 행으로 대신하지 않는다** — 표는 최근 SDK만 싣는다.
+  - **내용 검증**: 표 머리(`Expo SDK version` · `targetSdkVersion` · `iOS version` · `Xcode version`)가 없으면 도달 실패, 프로젝트 SDK 행이 없으면 `현재값 확인 못 함 (SDK 기본값 — 표에 SDK <n> 없음)`. **가까운 다른 SDK 행으로 대신하지 않는다** — 표는 최근 SDK만 싣는다.
   - 표기: `현재: <값> (Expo SDK <n> 기본값)` + 그 표 링크를 근거로 단다.
 - **SDK를 못 정하면**(`references/expo.md` §2) SDK 기본값에 기대는 값만 `현재값 확인 못 함 (SDK 기본값 — SDK 확인 못 함)`이다.
 
-### `eas.json` iOS 이미지 → Xcode (`ios/min-xcode`)
+### `ios/min-xcode` — Expo 프로젝트의 Xcode
 
-EAS로 빌드하는 프로젝트(Expo 여부와 무관)는 `eas.json`의 `build.<프로필>.ios.image`가 Xcode를 정한다.
+**Expo 프로젝트에만 적용한다.** Expo가 아닌 프로젝트는 항목의 `현재값` 지시(CI 워크플로)만 따른다 — `eas.json`이 있어도 읽지 않는다. 아래 `auto` 해석이 프로젝트 SDK를 전제로 하기 때문이고, Expo가 아닌 프로젝트의 동작을 바꾸지 않기 위해서다.
+
+**SDK 최소 Xcode — 하한.** SDK 기본값 표의 `Xcode version` 열(`X.Y+`)은 그 SDK를 빌드할 수 있는 최소 Xcode다. 더 낮은 Xcode로는 빌드되지 않으므로 **현재 Xcode의 하한**이다. 표기: `≥ <X.Y> (Expo SDK <n> 최소 Xcode)` + 표 링크.
+
+- **구체값(CI `xcode-version` · `eas.json` 이미지)이 있으면 구체값으로 판정하고** 하한은 병기만 한다.
+- **구체값이 없을 때만 하한으로 판정한다.** 하한이 요구 Xcode 이상이면 충족이다. 하한이 요구보다 낮으면 `현재값 확인 못 함` — 하한은 실제 값이 아니다.
+- 근거: 이 열이 없으면 SDK가 이미 보장하는 발효 요구가 매 실행 ⚠로 남는다(실측 2026-09-24 · SDK 57 샘플: 발효 요구 Xcode ≥ 26, SDK 최소 26.4).
+
+**`eas.json` iOS 이미지 → Xcode.** EAS로 빌드하는 Expo 프로젝트는 `eas.json`의 `build.<프로필>.ios.image`가 Xcode를 정한다. **`eas.json`이 없으면 이 표를 쓰지 않는다** — EAS로 빌드하지 않는 것이고, EAS 인프라 문서도 조회하지 않는다.
 
 | 값 | 현재값 |
 | --- | --- |
@@ -98,7 +106,7 @@ EAS로 빌드하는 프로젝트(Expo 여부와 무관)는 `eas.json`의 `build.
 - **교차:** `ios/min-deployment-target` (1차 공유 — 같은 페이지의 다른 절)
 - **실측:** 2026-09-24 · 1차 도달, 요구 확인: *"SDK minimum requirements — Since April 28, 2026 Apps uploaded to App Store Connect must be built with Xcode 26 or later using an SDK for iOS 26, iPadOS 26, tvOS 26, visionOS 26, or watchOS 26."* 2차 도달, `iOS app` 행 `Xcode 26 or later`. 예고 URL 도달, 예고 요구 확인: *"Starting April 2027, apps and games uploaded to App Store Connect need to meet the following minimum requirements. iOS and iPadOS apps must be built with the iOS & iPadOS 27 SDK or later"* — **1차에는 아직 없다**(`2027` 언급 0). 예고 URL 필드가 생긴 계기다.
 - **현재값:** repo 안에서 읽을 수 있는 건 CI 설정(`.github/workflows/*.yml`의 `xcode-version`)뿐이다. 없으면 `현재값 확인 못 함 (경로 부재)` — **로컬 Xcode 버전을 셸로 확인하지 않는다.**
-- **`eas.json`:** 있으면 «`eas.json` iOS 이미지 → Xcode» 표대로 읽어 CI 값과 병기한다. Expo 여부와 무관하다.
+- **Expo:** «`ios/min-xcode` — Expo 프로젝트의 Xcode»대로 SDK 최소 Xcode(하한)와 `eas.json` 이미지를 더한다. Expo가 아니면 위 CI 규칙만 쓴다.
 - **통합 이력 (2026-08-29) — 2026-09-24 분리로 해제:** `ios/min-deployment-target`을 이 항목으로 흡수했었다(사유: Apple이 최소 배포 타깃을 정책 본문으로 게시하지 않았다 — 감사 원장 A-29·A-30, git 태그 `audit-2026-08`의 `docs/audit-ledger.md`). 배포 타깃 하한은 `support/xcode/` 표의 `Deployment Targets` 열에서 파생했다. 2026-09-09에 Apple이 그 요구를 정책 문장으로 게시해 흡수 사유가 사라졌으므로 되돌렸다 — 아래 `ios/min-deployment-target`의 «재도입 이력».
 
 ### `ios/min-deployment-target`
@@ -135,7 +143,7 @@ EAS로 빌드하는 프로젝트(Expo 여부와 무관)는 `eas.json`의 `build.
 - **1차:** https://developer.android.com/google/play/billing/deprecation-faq
 - **2차:** https://developer.android.com/google/play/billing/release-notes — ② 같은 호스트·다른 성격(릴리즈 노트). **같은 섹션(`/google/play/billing/`)이라 섹션 개편에는 함께 죽는다** — 다른 호스트 후보(Play Console 도움말 `answer/13584340`)가 404라 대체가 없었다
 - **실측:** 2026-08-19 · 1차·2차 모두 도달. 양쪽 다 `2026-08-31까지 Billing Library v8 이상, 연장 2026-11-01` 명시 — 두 페이지가 같은 값을 말하는 것까지 재확인. 1차의 버전별 지원 타임라인 표(v7 → 2026-08-31 / v8 → 2027-08-31)는 **각 버전의 폐기 기한**이라 2차 배너와 모순이 아니다
-- **현재값:** `package.json`의 결제 관련 패키지 버전 + `android/app/build.gradle`의 `com.android.billingclient` 의존. 결제 미사용이면 `현재값 확인 못 함`이 아니라 **`이미 충족`이 아니다** — 해당 없음을 판정할 근거가 없으므로 `현재값 확인 못 함 (경로 부재)`로 둔다.
+- **현재값:** `package.json`의 결제 관련 패키지 버전 + `android/app/build.gradle`의 `com.android.billingclient` 의존. 결제 의존이 안 보여도 **`이미 충족`으로 두지 않는다** — 결제를 안 쓰는 것인지 못 찾은 것인지 판정할 근거가 없으므로 `현재값 확인 못 함 (경로 부재)`로 둔다.
 - **Expo CNG:** `package.json`만 읽는다 — `android/app/build.gradle`은 생성물이다.
 
 ### `play/data-safety`

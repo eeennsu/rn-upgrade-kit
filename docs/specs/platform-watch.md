@@ -612,7 +612,9 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
 - [ ] `app.config.js`·`.ts`를 실행·평가하는 경로가 없다 — 식으로 된 값은 `확인 못 함 (app.config 동적 값)`이다
 - [ ] 유형 판별이 모호하면 bare·CNG로 추측하지 않고 `확인 못 함 (Expo 유형 판별 불가)`로 간다
 - [ ] 표에 프로젝트 SDK 행이 없으면 다른 SDK 행으로 대신하지 않고 `현재값 확인 못 함 (SDK 기본값 — 표에 SDK <n> 없음)`이다
-- [ ] `eas.json`의 iOS 이미지가 `xcode-<X.Y>` 이름이면 그 값, `auto`·생략·`sdk-<n>`이면 EAS 인프라 문서의 SDK 행, `latest`면 `확인 못 함`이다
+- [ ] Expo 프로젝트에서 `eas.json`의 iOS 이미지가 `xcode-<X.Y>` 이름이면 그 값, `auto`·생략·`sdk-<n>`이면 EAS 인프라 문서의 SDK 행, `latest`면 `확인 못 함`이다 — Expo가 아닌 프로젝트는 `eas.json`을 읽지 않는다
+- [ ] Expo 프로젝트의 `ios/min-xcode`에서 구체값(CI·`eas.json`)이 없으면 SDK 최소 Xcode(표의 `Xcode version` 열)를 하한으로 판정한다 — 하한 ≥ 요구면 충족, 아니면 `확인 못 함` (2026-09-24 · 샘플 실행)
+- [ ] 핸드오프 `current`에 근거 URL이 섞이지 않는다 — 값과 출처 꼬리까지만 (2026-09-24 · 독립 검토)
 - [ ] CNG의 `ios/privacyinfo-required`가 `ios.privacyManifests` 있음 → 충족, 없음 → `현재값 확인 못 함`이다 — 미충족으로 단정하지 않는다
 - [ ] 셸 호출 0이 유지된다 — Expo 경로에도 `node -e`·`npx expo`가 없다
 
@@ -947,7 +949,7 @@ managed(CNG)와 bare Expo를 둘 다 받는다(사용자 결정). **실행 검�
 | --- | --- | --- |
 | `android/target-sdk` | 기존 규칙. bare Expo는 `android/gradle.properties`의 `android.targetSdkVersion`을 먼저 보고, 리터럴이 어디에도 없으면 SDK 기본값 | app config `expo-build-properties`의 `android.targetSdkVersion` → SDK 기본값 |
 | `android/16kb-page-size` | 기존 규칙 | `현재값 확인 못 함 (CNG — 네이티브 설정 생성 산물)` |
-| `ios/min-xcode` | CI `xcode-version` + `eas.json` iOS 이미지 (아래) | 같음 |
+| `ios/min-xcode` | RN: CI `xcode-version`만(기존). Expo bare: CI + SDK 최소 Xcode(하한) + `eas.json` iOS 이미지 (아래) | Expo bare와 같음 |
 | `ios/min-deployment-target` | 기존 규칙. bare Expo는 `ios/Podfile.properties.json`의 `ios.deploymentTarget` → `Podfile` 폴백 리터럴을 먼저 본다 | app config `ios.deploymentTarget` → `expo-build-properties`의 `ios.deploymentTarget` → SDK 기본값 |
 | `ios/privacyinfo-required` | 파일 존재 (기존) | `ios.privacyManifests`가 있으면 충족. 없으면 `현재값 확인 못 함 (CNG — prebuild·pod install이 생성할 수 있어 repo만으로 판정 불가)` |
 | `play/billing` | 기존 규칙 | `package.json`만 — `android/app/build.gradle`은 생성물이라 읽지 않는다 |
@@ -960,9 +962,18 @@ managed(CNG)와 bare Expo를 둘 다 받는다(사용자 결정). **실행 검�
 - **CNG의 16KB를 `확인 못 함`으로 두는 이유**: 기존 읽기 대상인 AGP 버전·gradle 플래그가 CNG에서는 전부 생성물이나 SDK 안에 있다. SDK 기본값 표에는 16KB 열이 없다 — 출처가 없는 값을 지어내지 않는다.
 - **CNG PrivacyInfo를 미충족으로 단정하지 않는 이유**: CocoaPods의 privacy manifest 집계가 pod install 때 앱 타깃에 파일을 만들 수 있다. 키가 없다고 파일이 없다고 말할 근거가 없다. 이 항목의 판정 기준 자체가 흔들린다는 건 별도로 열려 있다(감사 2026-09-24 설계 결정 대기 — enum 재검토).
 
+### `ios/min-xcode` — SDK 최소 Xcode (2026-09-24 · 샘플 실행 반영)
+
+SDK 기본값 표의 `Xcode version` 열(`X.Y+`)은 그 SDK를 빌드할 수 있는 최소 Xcode다. 더 낮은 Xcode로는 빌드되지 않으므로 **현재 Xcode의 하한**이다. 표기는 `≥ <X.Y> (Expo SDK <n> 최소 Xcode)`다.
+
+- **구체값(CI · `eas.json`)이 있으면 구체값으로 판정하고 하한은 병기만 한다.** 구체값이 없을 때만 하한으로 판정한다. 하한이 요구 이상이면 충족이고, 낮으면 `현재값 확인 못 함`이다 — 하한은 실제 값이 아니다.
+- **근거**: 샘플 실행(SDK 57 기본 템플릿 · CI·`eas.json` 없음)에서 발효 요구(Xcode ≥ 26)가 `⚠ 현재값 확인 못 함 (경로 부재)`로 남았다. 그런데 같은 표의 SDK 57 행이 `26.4+`였다 — SDK가 이미 보장하는 요구가 매 실행 경고로 남는 자리였다. 예고 요구(다음 SDK)는 하한으로 판정할 수 없으니 그대로 `확인 못 함`이다.
+
 ### `eas.json` iOS 이미지 → Xcode
 
-EAS로 빌드하는 프로젝트는 CI 워크플로가 아니라 `eas.json`이 Xcode를 정한다.
+**Expo 프로젝트에만 적용한다** (2026-09-24 · 독립 검토 반영). 처음에는 "Expo 여부와 무관"하게 걸었다. 그러면 Expo가 아닌 프로젝트의 동작이 바뀌고(AC *"Expo가 아닌 프로젝트의 현재값 읽기·판정이 바뀌지 않는다"* 위반), `auto`가 가리킬 "프로젝트 SDK"가 없다. **`eas.json`이 없으면 이 표도 EAS 인프라 문서도 쓰지 않는다.**
+
+EAS로 빌드하는 Expo 프로젝트는 CI 워크플로가 아니라 `eas.json`이 Xcode를 정한다.
 
 | `build.<프로필>.ios.image` | 현재값 |
 | --- | --- |
@@ -989,7 +1000,7 @@ EAS로 빌드하는 프로젝트는 CI 워크플로가 아니라 `eas.json`이 X
 
 ## 이미 충족
 ✅ ios/min-deployment-target — iOS 배포 타깃 ≥ 13
-   현재: 16.4 (Expo SDK 57 기본값 — https://docs.expo.dev/versions/latest/)
+   현재: 16.4 (Expo SDK 57 기본값) · 근거: https://docs.expo.dev/versions/latest/
 ```
 
 > 위 날짜·버전·요구값은 전부 예시다.
@@ -999,8 +1010,8 @@ EAS로 빌드하는 프로젝트는 CI 워크플로가 아니라 `eas.json`이 X
 | # | 조건 | 결과 | 위치 |
 | - | --- | --- | --- |
 | 10 | Expo 유형 확인 못 함 (`.gitignore` 판정 모호) | 그 플랫폼의 현재값 `확인 못 함 (Expo 유형 판별 불가)` | 블록 2 (⚠) |
-| 11 | SDK 기본값이 필요한데 표 도달 실패 · 표에 SDK 행 없음 · SDK 확인 못 함 | `현재값 확인 못 함 (SDK 기본값 — <사유>)` | 블록 2 (⚠) |
-| 12 | `references/expo.md` 도달 실패 (Expo 프로젝트) | 네이티브 파일·app config에 기대는 현재값 전부 `확인 못 함 (Expo 규칙 도달 실패)` + 헤더 표기 | 헤더 + 블록 2 |
+| 11 | Expo 문서 표(SDK 기본값 · EAS 인프라)가 필요한데 도달 실패 · 표에 SDK 행 없음 · SDK 확인 못 함 | `현재값 확인 못 함 (SDK 기본값 — <사유>)` / `현재값 확인 못 함 (EAS 이미지 — <사유>)` | 블록 2 (⚠) |
+| 12 | `references/expo.md` 도달 실패 (Expo 프로젝트) | 네이티브 파일·app config에 기대는 현재값 전부 `확인 못 함 (Expo 규칙 도달 실패)` + 헤더 `Expo 규칙 도달 실패 — Expo 현재값 미판정` | 헤더 + 블록 2 |
 
 - 셋 다 **현재값 축**이다. 마감·요구는 그대로 조회한다 — 항목은 목록에서 사라지지 않는다.
 - **11에서 다른 SDK 행으로 대신하지 않는다.** 표는 최근 SDK만 싣는다. 가장 가까운 행을 쓰면 SDK가 오래된 프로젝트일수록 틀린 기본값을 사실로 적는다.

@@ -607,9 +607,11 @@ artifacts: 보존 3개, 자동 정리 1개
 - [ ] 목표 SDK가 현재 SDK와 같을 때 인자 밖 기존 어긋남은 거부되지 않고 헤더 `SDK 정합 어긋남 (기존):`으로만 남는다
 - [ ] E2·E2′가 둘 다 실패하면 거부하지 않고 `인자 검증 4 미실행 (Expo SDK 범위 조회 실패)`가 헤더에 실린다
 - [ ] `# 산정 시각:` 외의 `#` 줄(`currency` SDK 블록의 안내 주석 등)이 인자로 해석되지 않는다
+- [ ] 줄 끝 `\`와 커맨드 이름이 인자 토큰에서 빠진다 — `\` 때문에 `정확 버전 아님`이 나오는 경로가 없다 (2026-09-24 · 샘플 실행)
+- [ ] lockfile에서 `expo`를 못 읽으면 선언 범위 하단의 major로 현재 SDK를 정하고, 규칙 2의 현재 버전도 같은 순서로 읽는다 (2026-09-24 · 샘플 실행)
 - [ ] CNG 플랫폼의 T2가 `<pm> expo prebuild --platform <p> --no-install`로 시작하고, prebuild 실패가 그 플랫폼의 `T2 실패`다 — 다른 플랫폼을 막지 않는다
 - [ ] prebuild가 `step_timeout_build_seconds` 상한 안에서 돈다
-- [ ] T2 절차가 규범이 되기 전까지 Expo 프로젝트의 T2 통과에 개발 런처 관측 가능성이 판정 해석으로 병기된다
+- [ ] T2 절차가 규범이 되기 전까지, `expo-dev-client`가 직접 선언된 Expo 프로젝트(bare·CNG 무관)의 T2 통과에 개발 런처 관측 가능성이 판정 해석의 고정 문구로 병기된다
 - [ ] Expo 프로젝트의 업그레이드 표면에 app config(`app.json`·`app.config.*`)가 포함된다
 - [ ] CNG 플랫폼의 `android/`·`ios/`와 `.expo/`가 `커밋 외 파일`에서 제외된다
 - [ ] 세트에 `expo`가 있으면 `<target>`이 `expo-<ver>`다
@@ -689,7 +691,7 @@ artifacts: 보존 3개, 자동 정리 1개
 | TargetArgumentSet | core domain | entries(pkg@ver), lockstep_complete, prerelease_free, exists_in_registry, computed_at | 인터뷰 후 추가(`currency` 라운드 6). 티어 시작 **전** 1회 검증; **검사가 난 경우** 실패는 판정이 아니라 실행 거부, **검사 자체가 못 돈 경우**(조회·목록 도달 실패)는 그 검사만 `미실행` |
 | Emulator | external system | platform, device_id, boot_signal, log_stream | T2에서 사용 |
 | AdoptionOutcome | core domain | offered(bool), blocked_by_gate, adopted(bool), branch_name, base_sha, merge_command, unverified_notes | RehearsalRun당 0..1; Worktree 폐기 **전에** 커밋 생성; Report에 실림 |
-| ProjectKind | supporting | expo(bool), sdk_major, per_platform(bare/CNG) | 2026-09-24 추가(Expo 대응). 티어 시작 전 1회 `git ls-files`로 판정; CNG 플랫폼의 T2에 prebuild 단계를 붙인다 |
+| ProjectKind | supporting | expo(bool), sdk_major, per_platform(bare/CNG) | 2026-09-24 추가(Expo 대응). 티어 시작 전 1회 `base_sha` 트리(`git ls-tree`)로 판정; CNG 플랫폼의 T2에 prebuild 단계를 붙인다 |
 | SdkAlignmentCheck | supporting | target_sdk, ranges(E2/E2′), out_of_range, missing, preexisting_drift | 2026-09-24 추가. TargetArgumentSet의 검사 4; 조회 실패 시 미실행 |
 
 ## Ontology Convergence
@@ -835,6 +837,10 @@ managed(CNG)와 bare Expo를 둘 다 받는다(사용자 결정). **실행 검�
 
 **`#` 줄**: `# 산정 시각:` 외의 `#`로 시작하는 줄은 무시한다. `currency`의 SDK 블록은 첫 줄에 "권장 아님" 안내 주석을 싣는다 — 그 줄을 인자로 읽으면 안 된다.
 
+**줄 끝 `\`** (2026-09-24 · 샘플 실행 반영): 줄잇기이지 인자가 아니다. 인자는 공백으로 가른 토큰이고, 줄 끝 `\`와 커맨드 이름은 토큰에서 뺀다. `currency` 블록은 원안부터 `\`로 줄을 나눴는데(§형제 스펙 반영의 커맨드 블록 예시), 이 스킬 쪽에 그 계약이 없었다. SDK 업그레이드 블록은 실측에서 인자가 19개라 줄 나눔이 사실상 필수다 — 계약이 없으면 검사 2가 `\`를 `정확 버전 아님`으로 거부한다.
+
+**SDK 폴백** (2026-09-24 · 샘플 실행 반영): lockfile에서 `expo` 설치 버전을 못 읽으면 `package.json` 선언 범위 하단의 major가 현재 SDK다(`shared/expo.md` §2). 규칙 2의 "인자 밖 패키지의 현재 버전"도 같은 순서로 읽는다. 원안은 lockfile만 적어서, lockfile이 없는 프로젝트에서 규칙 2를 판정할 근거가 비어 있었다.
+
 ### T2 — CNG 플랫폼은 prebuild로 시작한다
 
 | PM | 커맨드 |
@@ -848,10 +854,10 @@ managed(CNG)와 bare Expo를 둘 다 받는다(사용자 결정). **실행 검�
 - **실패는 그 플랫폼의 `T2 실패`다.** 새 SDK와 맞지 않는 config plugin은 실제 업그레이드 회귀다. 발췌를 싣는다.
 - `--no-install`: npm 설치는 T1이 했고, CocoaPods 설치는 뒤의 `pod install` 단계가 한다. `--clean`은 쓰지 않는다 — worktree에는 네이티브 디렉토리가 애초에 없다.
 - 상한은 `step_timeout_build_seconds`다(`pod install`·네이티브 빌드와 각각).
-- 셸 도구에는 TTY가 없다. prebuild가 대화형 입력을 요구하면 실패로 끝나고, 그 실패도 발췌로 싣는다 — 사유를 지어내지 않는다.
+- 셸 도구에는 TTY가 없다. **비대화형 prebuild는 묻지 않고 기본값을 채워 app config에 써 넣는다** — 실측(2026-09-24 · SDK 57 기본 템플릿 · Windows): `app.json`에 `android.package`(`com.anonymous.<slug>`)를 추가했고 `package.json`의 `android`·`ios` 스크립트를 `expo run:*`로 바꿨다. 아래 «prebuild 변경» 기록과 §채택의 되돌림이 이 실측으로 필요성이 확인됐다. 그래도 prebuild가 실패하면 그 실패를 발췌로 싣는다 — 사유를 지어내지 않는다.
 - bare 플랫폼은 prebuild를 하지 않는다. 커밋된 네이티브 디렉토리가 정본이다.
 - **prebuild가 바꾼 추적 파일을 기록한다.** T1이 끝난 직후와 각 prebuild 뒤의 `git -C <worktree> status --porcelain`을 비교한다. 새로 바뀐 추적 파일이 있으면 헤더 `prebuild 변경: <파일 목록>`에 싣는다(없으면 줄 생략). prebuild는 `package.json` 스크립트 같은 추적 파일을 고칠 수 있다 — 채택 범위를 정하려면 무엇이 prebuild 산물인지 알아야 한다(아래).
-- **T2 절차를 정할 때 같이 정할 것**: `expo-dev-client`가 든 앱의 debug 빌드는 앱 대신 개발 런처를 띄울 수 있다. 판정선(첫 프레임 + 생존 + 로그 클린)이 런처 화면을 관측해 **거짓 통과**를 낼 수 있다. 빌드 변형(debug/release)과 JS 번들 공급은 T2 절차 규범화(감사 HIGH)에서 이 경우까지 포함해 정한다. **그 전까지 Expo 프로젝트의 T2 통과에는 판정 해석에 이 한계를 병기한다** — 관측이 런처를 본 것일 수 있다는 사실을 숨기면 통과 문구가 관측 안 한 것을 주장하게 된다(§T2 판정선 2026-08-29 정정과 같은 이유).
+- **T2 절차를 정할 때 같이 정할 것 — CNG만이 아니라 Expo 전체** (2026-09-24 · 독립 검토 반영: 이 규칙이 prebuild 절에만 있으면 bare Expo가 빠진다): 정본 `package.json`에 `expo-dev-client`가 직접 선언된 앱의 debug 빌드는 앱 대신 개발 런처를 띄울 수 있다. 판정선(첫 프레임 + 생존 + 로그 클린)이 런처 화면을 관측해 **거짓 통과**를 낼 수 있다. 빌드 변형(debug/release)과 JS 번들 공급은 T2 절차 규범화(감사 HIGH)에서 이 경우까지 포함해 정한다. **그 전까지 그 조건의 T2 통과에는 판정 해석에 고정 문구 `T2 통과 해석 한계: expo-dev-client가 있어 debug 빌드는 개발 런처를 띄울 수 있다 — 관측한 화면이 앱이 아니라 런처일 수 있다.`를 병기한다. 구현에서는 §T2 판정선 쪽 절(«Expo — 개발 런처 한계»)에 둔다** — 관측이 런처를 본 것일 수 있다는 사실을 숨기면 통과 문구가 관측 안 한 것을 주장하게 된다(§T2 판정선 2026-08-29 정정과 같은 이유).
 
 ### 업그레이드 표면 · 커밋 외 파일
 
