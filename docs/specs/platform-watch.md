@@ -190,6 +190,8 @@ iOS/Android 플랫폼 정책 요구사항 중 **마감일이 있는 것**을 공
 
 항목을 빼지 않는다. **마감은 그대로 표시하되 충족 여부만 `현재값 확인 못 함`**으로 둔다.
 
+> **추가 (2026-09-24 · Expo 대응):** 위 규칙은 `android/`·`ios/`가 커밋된 프로젝트를 가정했다. Expo 프로젝트에서는 값이 네이티브 파일 밖에 있다. CNG는 app config에, 기본값은 SDK 안에 있다. managed(CNG) 프로젝트는 매번 **경로 부재**로 떨어졌고, bare Expo도 `build.gradle`에 targetSdk 리터럴이 없어 같은 자리로 갔다. 유형별 출처는 §Expo 대응에 있다. **Expo가 아닌 프로젝트의 읽기 규칙은 바뀌지 않는다.**
+
 ---
 
 ## 소스 도달 모델 (라운드 5)
@@ -473,6 +475,8 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
 > **구현 정정 (2026-08-18 · 구현 감사 반영):** 구현의 degrade 표는 **9경로**다 — 위 7개에 **8. `shared/constants.md` 도달 실패**(상수에 기대는 판정만 `확인 못 함`, 전수 리포트는 정상 산출, 헤더에 `상수 도달 실패 — 임계값 미적용`)와 **9. `.rn-upgrade-kit/` 쓰기 실패**(실패한 산출물을 이름으로 지목하고 나머지 쓰기는 계속)가 더해진다. 위 표의 번호는 그대로 보존된다.
 >
 > **8에서 추정 기본값을 쓰지 마라.** 임계일·보존 상한·후보 상한·승격 하한을 "흔한 값"으로 때우면, 드리프트를 막으려고 둔 파일이 없을 때 **드리프트를 대신 만들어낸다.** **9는 §산출물·경로의 쓰기 순서(핸드오프 → state → 리포트)에 기대는 degrade다** — 리포트를 쓸 시점엔 앞의 결과가 이미 확정돼 있다. 리포트 자체를 못 쓰면 남길 자리가 없으므로 **대화에 직접 보고한다**; 조용히 끝내면 사용자는 리포트가 있다고 믿는다.
+>
+> **추가 (2026-09-24 · Expo 대응):** **12경로**가 됐다. 10 `Expo 유형 확인 못 함`, 11 `SDK 기본값 조회 실패`, 12 `references/expo.md` 도달 실패다. 셋 다 현재값 축의 degrade라 블록 2(⚠)로 가고, 마감·요구 조회는 그대로 한다. 상세는 §Expo 대응 «degrade 3경로».
 
 ---
 
@@ -483,6 +487,7 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
 ```
 # 플랫폼 마감 감사 — 2026-09-10
 호스트: Windows 11 · 직전 실행: 2026-09-03 · 스코프: 전체
+프로젝트: RN (Expo 아님)
 
 ## 미충족
 🔴 D+10 · android/target-sdk · targetSdk ≥ 36
@@ -557,6 +562,9 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
 - **셸 호출** — `date`·`cat`·`ls` 포함. Read/Write 도구만.
 - **호스트 제한** — 전 호스트 지원. `rehearsal`과 달리 실행 거부 없음.
 - **게이트 동작** — 아무것도 막지 않는다.
+- **app config 평가 (`npx expo config`) · prebuild 실행** — 셸이 필요하고 프로젝트 코드를 실행한다. 동적 설정은 `확인 못 함`으로 둔다 (2026-09-24 · Expo 대응).
+- **CNG 플랫폼의 로컬 `android/`·`ios/`를 현재값으로 읽기** — prebuild 생성물이라 app config보다 낡았을 수 있다 (2026-09-24 · Expo 대응).
+- **SDK 기본값을 스킬에 적어 두기** — 매 실행 공식 문서 표에서 조회한다 (2026-09-24 · Expo 대응).
 
 ---
 
@@ -592,6 +600,21 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
 - [ ] 발효 요구와 예고 요구가 공존하면 발효 미충족이 우선하고, 발효를 맞췄으면 예고가 마감이 된다 — 다른 쪽이 병기된다 (2026-09-24)
 - [ ] 저정밀 날짜 항목이 ⚠가 아니라 블록 1에서 초일 기준 🔴/🟠를 받고, 핸드오프 `urgency`가 `판정 불가`가 아니다 (2026-09-24)
 - [ ] `ios/min-deployment-target`의 요구값이 정책 문장에서 오고 Xcode 표에서 파생되지 않는다 (2026-09-24)
+
+**Expo 대응 (2026-09-24 추가)**
+
+- [ ] 리포트 헤더에 `프로젝트:` 줄이 항상 있고, Expo면 SDK와 플랫폼별 유형(bare · CNG · 유형 확인 못 함)이 실린다
+- [ ] Expo가 아닌 프로젝트의 현재값 읽기·판정이 바뀌지 않는다 — 달라지는 건 헤더 한 줄뿐이다
+- [ ] CNG 플랫폼의 로컬 `android/`·`ios/`를 현재값 출처로 읽는 코드 경로가 없다
+- [ ] CNG 현재값이 app config 명시값 → SDK 기본값 순으로 오고, SDK 기본값에는 `docs.expo.dev/versions` 표 근거 링크와 `(Expo SDK <n> 기본값)` 꼬리가 붙는다
+- [ ] bare Expo에서 `android/gradle.properties`의 `android.targetSdkVersion`·`ios/Podfile.properties.json`의 `ios.deploymentTarget`을 먼저 읽고, 리터럴이 없으면 SDK 기본값으로 간다
+- [ ] SDK 기본값·SDK↔RN 대응이 스킬 본문·참조 파일에 적혀 있지 않다 — 매 실행 조회된다
+- [ ] `app.config.js`·`.ts`를 실행·평가하는 경로가 없다 — 식으로 된 값은 `확인 못 함 (app.config 동적 값)`이다
+- [ ] 유형 판별이 모호하면 bare·CNG로 추측하지 않고 `확인 못 함 (Expo 유형 판별 불가)`로 간다
+- [ ] 표에 프로젝트 SDK 행이 없으면 다른 SDK 행으로 대신하지 않고 `현재값 확인 못 함 (SDK 기본값 — 표에 SDK <n> 없음)`이다
+- [ ] `eas.json`의 iOS 이미지가 `xcode-<X.Y>` 이름이면 그 값, `auto`·생략·`sdk-<n>`이면 EAS 인프라 문서의 SDK 행, `latest`면 `확인 못 함`이다
+- [ ] CNG의 `ios/privacyinfo-required`가 `ios.privacyManifests` 있음 → 충족, 없음 → `현재값 확인 못 함`이다 — 미충족으로 단정하지 않는다
+- [ ] 셸 호출 0이 유지된다 — Expo 경로에도 `node -e`·`npx expo`가 없다
 
 **현재값**
 
@@ -727,6 +750,7 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
   - **정정 (2026-08-18 · 구현 감사 반영): 목록에서 빠진 것만으로는 `Bash`가 막히지 않는다.** `allowed-tools`는 승인 스킵이지 제한이 아니다 — 공식 문서가 *"It does not restrict which tools are available: every tool remains callable"*라고 못박는다(https://code.claude.com/docs/en/skills). 그래서 구현은 **`disallowed-tools: Bash Edit`**을 신설했다. **이게 "전 호스트 지원"을 처음으로 구조적 사실로 만든다** — 그 전까지 셸 미사용은 본문 문장 하나에만 기대고 있었다.
   - **`Glob` 추가 (인터뷰 후 — 2026-08-09).** `ios/privacyinfo-required`는 `PrivacyInfo.xcprivacy`의 **존재 여부**가 현재값이고, flavor별 `build.gradle`은 경로가 프로젝트마다 다르다. `Read`만으로는 파일 탐색이 불가능해 §현재값 읽기의 *"경로 전부 부재 → `현재값 확인 못 함`"* 판정이 **부재와 못 찾음을 구분하지 못한다.** `Glob`은 셸이 아니므로 §날짜 신뢰 모델의 *셸 의존 0* 불변식을 깨지 않는다 — `date`·`cat`·`ls` 금지는 그대로다.
 - 대상 프로젝트 전제: New Architecture (`newArchEnabled=true`, Hermes, Nitro Modules, Reanimated 4), **Expo 미사용**.
+  - **정정 (2026-09-24 · Expo 대응):** Expo 미사용은 더 이상 전제가 아니다. 프로젝트 유형을 **감지한다** — RN · Expo bare · Expo CNG를 플랫폼마다 가른다. 규칙 정본은 `shared/expo.md`(사본 `references/expo.md`)이고, 이 스킬에 걸리는 것은 §Expo 대응에 있다.
 - 조회 대상이 7개 남짓이라 `Agent` 병렬 분담이 가능하다. seed §2의 서브에이전트 프롬프트 잠금(read-only 못박기 · 조회 범위 잠금 · 반환 형식 · 판정 금지)을 그대로 적용한다 — 특히 **판정 금지**: 등급·충족 여부·날짜 정밀도 판정은 메인 몫이다.
 
 ---
@@ -802,6 +826,7 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
 | ScopeArgument | supporting | platform(narrowing), target(narrowing), combine(AND) | WatchRun에 부착; 제외분은 ReportBlock 4 |
 | HostSupportMatrix | external system | os, supported(전 호스트), shell_dependency(0) | rehearsal과 같은 이름, 다른 값 |
 | ReportRetention | supporting | limit_n, pruned_count | Report 디렉터리에 부착 |
+| ProjectKind | supporting | expo(bool), sdk_major, per_platform(bare/CNG/확인 못 함) | 2026-09-24 추가(Expo 대응). WatchRun당 1개; CurrentValue의 출처를 정한다. 판별 규칙 정본은 `shared/expo.md` |
 
 ## Ontology Convergence
 
@@ -903,3 +928,84 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
 - **지난 마감 · 연장 · 발효와 예고 · 저정밀 등급** — §날짜 신뢰 모델 정정. 앞에 있는 마감만 가정하던 날짜 모델에 실제 페이지가 싣는 형태의 규칙을 붙였다. 저정밀을 두고 문서끼리 어긋나던 것(블록 1 🟠 vs degrade 3 ⚠ vs `urgency: 판정 불가`)도 초일 기준 등급으로 맞췄다.
 - **리포트 예시** — §리포트 정정. D-day 오산 · `[무변화]` · PrivacyInfo 부재 오분류.
 - **예고 URL 필드** — §소스 도달 모델 «예고 URL» (사용자 결정). Apple의 다음 SDK 요구(`Starting April 2027 — iOS & iPadOS 27 SDK`)가 제출 안내 페이지에만 있고 1차(`upcoming-requirements`)에는 없었다. 1차가 성공하면 다른 페이지를 읽지 않는 소스 모델로는 그 예고를 못 봤다. `ios/min-xcode`에 첫 적용했다.
+
+## Expo 대응 — 2026-09-24
+
+managed(CNG)와 bare Expo를 둘 다 받는다(사용자 결정). **실행 검증 전** — 실제 Expo 프로젝트에서 돌려 본 적이 없다.
+
+유형 판별 · SDK 식별 · app config 읽기 · 조회 출처는 세 스킬 공용이라 `shared/expo.md`(사본 `references/expo.md`)에 있다. 여기는 이 스킬에만 걸리는 것이다.
+
+### 왜 필요했나
+
+- **managed 프로젝트는 현재값이 전부 `경로 부재`였다.** `android/`·`ios/`가 repo에 없다. 값은 app config에, 기본값은 SDK 안에 있다.
+- **bare Expo도 절반은 같은 상태였다.** Expo 템플릿의 루트 `build.gradle`에는 targetSdk 리터럴이 없다 — `expo-root-project` 플러그인이 SDK 기본값을 넣는다(실측 2026-09-24 · SDK 57 템플릿). `Podfile`도 `platform :ios, podfile_properties['ios.deploymentTarget'] || '<X.Y>'` 꼴이라 기존 리터럴 규칙에 안 걸린다.
+- **로컬에 생성물이 남아 있으면 더 나빴다.** `npx expo run`이 남긴 `android/`를 읽으면 app config를 고치기 전 값을 현재값으로 보고한다 — 틀린 값을 사실로 적는 경로다.
+
+### 현재값 출처 — 유형별
+
+| 항목 | RN · Expo bare | Expo CNG |
+| --- | --- | --- |
+| `android/target-sdk` | 기존 규칙. bare Expo는 `android/gradle.properties`의 `android.targetSdkVersion`을 먼저 보고, 리터럴이 어디에도 없으면 SDK 기본값 | app config `expo-build-properties`의 `android.targetSdkVersion` → SDK 기본값 |
+| `android/16kb-page-size` | 기존 규칙 | `현재값 확인 못 함 (CNG — 네이티브 설정 생성 산물)` |
+| `ios/min-xcode` | CI `xcode-version` + `eas.json` iOS 이미지 (아래) | 같음 |
+| `ios/min-deployment-target` | 기존 규칙. bare Expo는 `ios/Podfile.properties.json`의 `ios.deploymentTarget` → `Podfile` 폴백 리터럴을 먼저 본다 | app config `ios.deploymentTarget` → `expo-build-properties`의 `ios.deploymentTarget` → SDK 기본값 |
+| `ios/privacyinfo-required` | 파일 존재 (기존) | `ios.privacyManifests`가 있으면 충족. 없으면 `현재값 확인 못 함 (CNG — prebuild·pod install이 생성할 수 있어 repo만으로 판정 불가)` |
+| `play/billing` | 기존 규칙 | `package.json`만 — `android/app/build.gradle`은 생성물이라 읽지 않는다 |
+| `play/data-safety` | 불변 | 불변 |
+
+- **정본 읽기 지시는 `references/watch-targets.md`에 유형별로 둔다** — 항목 정의와 같은 자리여야 URL을 고칠 때 읽기 지시도 같이 보인다.
+- **SDK 기본값은 매 실행 조회한다.** 출처는 `docs.expo.dev/versions/latest/`의 «Support for Android and iOS versions» 표다. 프로젝트 SDK 행을 원문 그대로 인용하고 링크를 단다. 표기는 `현재: 36 (Expo SDK 57 기본값)`이고, 핸드오프 `current`에도 같은 꼬리가 붙는다. `currency`는 `current`를 헤더에 옮기기만 하므로(계약 5항) 꼬리까지 그대로 간다.
+  > 위 `36`·`57`은 값이 아니라 예시다.
+- **iOS 열의 `X.Y+`는 그 SDK의 최소 지원 iOS이고, 배포 타깃 기본값이 그 값이다.** 실측(2026-09-24): SDK 57 템플릿 `Podfile`의 폴백 리터럴이 표의 iOS 열과 같았다.
+- **CNG의 16KB를 `확인 못 함`으로 두는 이유**: 기존 읽기 대상인 AGP 버전·gradle 플래그가 CNG에서는 전부 생성물이나 SDK 안에 있다. SDK 기본값 표에는 16KB 열이 없다 — 출처가 없는 값을 지어내지 않는다.
+- **CNG PrivacyInfo를 미충족으로 단정하지 않는 이유**: CocoaPods의 privacy manifest 집계가 pod install 때 앱 타깃에 파일을 만들 수 있다. 키가 없다고 파일이 없다고 말할 근거가 없다. 이 항목의 판정 기준 자체가 흔들린다는 건 별도로 열려 있다(감사 2026-09-24 설계 결정 대기 — enum 재검토).
+
+### `eas.json` iOS 이미지 → Xcode
+
+EAS로 빌드하는 프로젝트는 CI 워크플로가 아니라 `eas.json`이 Xcode를 정한다.
+
+| `build.<프로필>.ios.image` | 현재값 |
+| --- | --- |
+| 이름에 `xcode-<X.Y>`가 있다 | 그 값 |
+| `auto` · 키 없음 (기본 `auto`) · `sdk-<n>` | EAS 인프라 문서(`docs.expo.dev/build-reference/infrastructure/`)에서 SDK 행의 Xcode를 인용한다 — `auto`는 프로젝트 SDK 행. `(auto — SDK <n> 이미지 기준)`을 병기한다. 문서가 *"project configuration, Expo SDK version, and React Native version"*으로 고른다고 적으므로 SDK 행은 근사다 |
+| `latest` | `현재값 확인 못 함 (EAS latest 별칭 — 가리키는 이미지가 바뀐다)` |
+
+- **프로필이 여럿이면 전부 병기하고 가장 낮은 값으로 판정한다.** 어느 프로필이 스토어 제출용인지는 판정하지 않는다 — product flavor를 다루는 규칙(§현재값 읽기 «충돌 판정» 3)과 같다.
+- CI 워크플로의 `xcode-version`과 `eas.json`이 둘 다 있으면 둘 다 병기한다.
+
+### 헤더
+
+`프로젝트:` 줄을 항상 싣는다(`shared/expo.md` §1). Expo가 아니면 `프로젝트: RN (Expo 아님)` 한 줄뿐이다 — **Expo가 아닌 프로젝트에서 달라지는 건 이 줄뿐이다.**
+
+```
+# 플랫폼 마감 감사 — 2026-09-24
+호스트: macOS 15 · 직전 실행: 2026-09-17 · 스코프: 전체
+프로젝트: Expo SDK 57 — android CNG · ios CNG
+
+## 미충족
+🔴 D+24 · android/target-sdk · targetSdk ≥ 36
+   현재: 35 (app.json expo-build-properties)
+   ...
+
+## 이미 충족
+✅ ios/min-deployment-target — iOS 배포 타깃 ≥ 13
+   현재: 16.4 (Expo SDK 57 기본값 — https://docs.expo.dev/versions/latest/)
+```
+
+> 위 날짜·버전·요구값은 전부 예시다.
+
+### degrade 3경로 (10~12)
+
+| # | 조건 | 결과 | 위치 |
+| - | --- | --- | --- |
+| 10 | Expo 유형 확인 못 함 (`.gitignore` 판정 모호) | 그 플랫폼의 현재값 `확인 못 함 (Expo 유형 판별 불가)` | 블록 2 (⚠) |
+| 11 | SDK 기본값이 필요한데 표 도달 실패 · 표에 SDK 행 없음 · SDK 확인 못 함 | `현재값 확인 못 함 (SDK 기본값 — <사유>)` | 블록 2 (⚠) |
+| 12 | `references/expo.md` 도달 실패 (Expo 프로젝트) | 네이티브 파일·app config에 기대는 현재값 전부 `확인 못 함 (Expo 규칙 도달 실패)` + 헤더 표기 | 헤더 + 블록 2 |
+
+- 셋 다 **현재값 축**이다. 마감·요구는 그대로 조회한다 — 항목은 목록에서 사라지지 않는다.
+- **11에서 다른 SDK 행으로 대신하지 않는다.** 표는 최근 SDK만 싣는다. 가장 가까운 행을 쓰면 SDK가 오래된 프로젝트일수록 틀린 기본값을 사실로 적는다.
+- **12에서 RN 규칙으로 대신 읽지 않는다.** CNG의 로컬 생성물을 현재값으로 읽게 된다.
+
+### 셸 의존 0은 그대로다
+
+Expo 경로에서 새로 읽는 것은 전부 텍스트 Read(app config · `eas.json` · `.gitignore` · 속성 파일)와 WebFetch(문서 표 2개)다. `npx expo config`로 app config를 평가하지 않는다 — 셸이 필요하고 프로젝트 코드를 실행한다. SDK↔RN 대응 같은 원문 채널 조회(`node -e`)는 이 스킬에 필요 없다. 이 스킬은 SDK major와 기본값 표만 본다.

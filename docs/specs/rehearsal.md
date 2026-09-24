@@ -80,6 +80,8 @@ allowed-tools: Read Write Glob Bash WebFetch
 | **T2/ios**          | `pod install` → `xcodebuild` → 시뮬레이터 부팅 → 로그 스캔              | ios (macOS 호스트만)   |
 | **T3/\<platform\>** | 스크린샷 수집 — **증거물 전용, 판정 근거 아님**                         | 부팅 성공한 플랫폼마다 |
 
+> **추가 (2026-09-24 · Expo 대응):** Expo CNG 플랫폼의 T2는 **`expo prebuild`로 시작한다** — worktree에는 커밋된 트리만 오므로 그 플랫폼의 네이티브 디렉토리가 없다. prebuild 실패는 그 플랫폼의 `T2 실패`다(새 SDK와 맞지 않는 config plugin은 실제 업그레이드 회귀다). 상세는 §Expo 대응.
+
 ### fail-fast 적용 범위
 
 - **수직(티어 간)에만 적용한다.** T1 실패 → 모든 T2·T3 미실행. T2/android 실패 → T3/android 미실행.
@@ -158,13 +160,14 @@ allowed-tools: Read Write Glob Bash WebFetch
 
 목표 버전 세트는 **인자로만** 들어온다. 어떤 티어도 시작하기 전에 검증한다.
 
-### 검사 3종
+### 검사 3종 (+ Expo 프로젝트 1종 — 2026-09-24)
 
 | # | 검사 | 검사 수단 | 실패 시 출력 |
 | - | ---- | -------- | ------------ |
 | 1 | 각 인자가 registry에 **존재하는 버전**인가 | `Bash`의 `node -e`로 상태 코드를 직접 읽는다 | `실행 거부 — 존재하지 않는 버전: <pkg>@<ver>` |
 | 2 | **정확한 stable 버전인가** — 숫자 세 자리 `x.y.z`만. `-` 꼬리는 전부 프리릴리즈(`-rc`·`-beta`·`-alpha`·`-next`·`-canary`·`-nightly` …), dist-tag·범위는 정확 버전이 아님 | 인자 문자열만 본다 — 조회 없음. **검사 1보다 먼저 돈다** | `실행 거부 — 프리릴리즈: <pkg>@<ver>` / `실행 거부 — 정확 버전 아님: <pkg>@<ver>` |
 | 3 | **lockstep 짝이 전부 왔나** | 세트 목록은 `shared/lockstep-sets.md`를 Read해서 쓴다 — 본문에 나열하지 않는다 | `실행 거부 — lockstep 짝 누락: <빠진 패키지>` |
+| 4 | **Expo SDK 정합** (Expo 프로젝트만 · 2026-09-24 추가) | `shared/expo.md` §5 규칙 둘 — 목표 SDK 범위는 `node -e` E2로 조회 | `실행 거부 — SDK 범위 밖: <pkg>@<ver> (SDK <n>: <range>)` / `실행 거부 — SDK 정합 누락: <pkg> (현재 <ver> · SDK <n>: <range>)` |
 
 > **정정 (2026-09-24 · 감사):** 검사 2는 `-rc`·`-beta`·`-next`·`-canary` 부분문자열만 봤다. 그런데 registry는 dist-tag 경로에도 200을 돌려준다 — 실측(2026-09-24): `registry.npmjs.org/react-native/next` → `0.88.0-rc.2`, `/nightly` → 나이틀리 빌드. 그래서 `react-native@next`가 검사 1(존재)도 검사 2(꼬리 문자열)도 통과했다. 프리릴리즈가 리허설되고, `next`라는 이름이 `<target>`과 브랜치명에 박히는 경로였다.
 >
@@ -498,6 +501,9 @@ artifacts: 보존 3개, 자동 정리 1개
 - **worktree 보존·재사용** — 실패해도 폐기.
 - **성능 회귀·번들 사이즈·실기기 검증**
 - **"안전하다"는 결론** — 스킬은 관측만 낸다.
+- **`npx expo install --fix`로 버전 맞추기** — 버전을 스스로 고른다. 타깃 추측이다. 인자 세트만 적용하고, 정합은 인자 검증 4가 본다 (2026-09-24 · Expo 대응).
+- **EAS Build 호출** — CI 디스패치와 같은 이유로 스킬 밖이다 (2026-09-24 · Expo 대응).
+- **prebuild가 만든 네이티브 디렉토리·추적 파일 변경의 채택 커밋 포함** — CNG에서는 빌드마다 다시 생기는 산물이다 (2026-09-24 · Expo 대응).
 
 ---
 
@@ -592,6 +598,24 @@ artifacts: 보존 3개, 자동 정리 1개
 - [ ] 패치 개수의 분모가 「PM 등록분」으로 정의돼 있고, 미등록 패치 파일이 `미등록 패치:`로 헤더에 실린다 (F-6)
 - [ ] 전체 실행 상한의 **부재가 명시 선언**돼 있다 — 단계 상한이 정본이고 전체 상한 축을 따로 두지 않는다 (F-10)
 
+**Expo 대응 (2026-09-24 추가)**
+
+- [ ] Expo가 아닌 프로젝트의 검사·티어·채택이 바뀌지 않는다 — 달라지는 건 헤더 `프로젝트:` 줄뿐이다
+- [ ] Expo 유형이 `base_sha` 트리(`git ls-tree`)로 플랫폼마다 판정되고 헤더 `프로젝트:` 줄에 실린다
+- [ ] 인자 검증 4가 목표 SDK 범위를 `node -e` E2(폴백 E2′)로 조회하고, WebFetch로 대신하는 경로가 없다
+- [ ] 인자로 온 정합 대상이 목표 SDK 범위 밖이면 `실행 거부 — SDK 범위 밖`, 목표 SDK가 바뀌는데 범위 밖인 직접 선언 패키지가 인자에 없으면 `실행 거부 — SDK 정합 누락`이다
+- [ ] 목표 SDK가 현재 SDK와 같을 때 인자 밖 기존 어긋남은 거부되지 않고 헤더 `SDK 정합 어긋남 (기존):`으로만 남는다
+- [ ] E2·E2′가 둘 다 실패하면 거부하지 않고 `인자 검증 4 미실행 (Expo SDK 범위 조회 실패)`가 헤더에 실린다
+- [ ] `# 산정 시각:` 외의 `#` 줄(`currency` SDK 블록의 안내 주석 등)이 인자로 해석되지 않는다
+- [ ] CNG 플랫폼의 T2가 `<pm> expo prebuild --platform <p> --no-install`로 시작하고, prebuild 실패가 그 플랫폼의 `T2 실패`다 — 다른 플랫폼을 막지 않는다
+- [ ] prebuild가 `step_timeout_build_seconds` 상한 안에서 돈다
+- [ ] T2 절차가 규범이 되기 전까지 Expo 프로젝트의 T2 통과에 개발 런처 관측 가능성이 판정 해석으로 병기된다
+- [ ] Expo 프로젝트의 업그레이드 표면에 app config(`app.json`·`app.config.*`)가 포함된다
+- [ ] CNG 플랫폼의 `android/`·`ios/`와 `.expo/`가 `커밋 외 파일`에서 제외된다
+- [ ] 세트에 `expo`가 있으면 `<target>`이 `expo-<ver>`다
+- [ ] 채택 커밋에 prebuild가 만든 네이티브 디렉토리와 추적 파일 변경이 들어가지 않는다 — T1 종료 시점의 `package.json`·lockfile로 되돌린 뒤 커밋한다
+- [ ] `references/expo.md` 도달 실패 시 Expo 프로젝트면 실행 거부되고 리포트 파일이 생성되지 않는다 — Expo가 아닌 프로젝트는 영향이 없다
+
 **감사 반영 (2026-09-24 추가)**
 
 - [ ] `실패 (타임아웃 <상수명>)`은 종료 코드 `142`(SIGALRM)로만 판정된다 — 그 밖의 비0 종료는 그냥 `실패`다
@@ -624,6 +648,7 @@ artifacts: 보존 3개, 자동 정리 1개
 - **경로 표기 (2026-09-24):** 이 스펙의 `shared/constants.md`·`shared/lockstep-sets.md`는 **정본 위치**다. 스킬은 사본 `references/constants.md`·`references/lockstep-sets.md`를 읽는다. AC의 *"`shared/…`에서 온다"*는 *"정본과 같은 내용의 사본에서 온다"*로 읽는다 — 사본이 정본과 같은지는 `node scripts/sync.mjs --check`(CI)가 보증한다(`plugin-shell.md` §1 정정).
 - `currency`가 산정하는 **권장 버전(safe target)**이 이 스킬의 자연스러운 입력이다. 전달은 파일이 아니라 `currency` 리포트의 **복사 가능한 단일 커맨드 블록**이고 사용자가 전송체다(`.rn-upgrade-kit/handoff/` 아래 currency 소유 파일은 없다). **목표 버전은 인자로만 받는다 — `currency` 리포트를 파싱하지 않는다** (§인자 검증). ~~미지정 시 리포트에서 읽는 경로를 열어둘 수 있다(설계 재량)~~는 `currency` 라운드 6에서 기각됐다.
 - 대상 프로젝트 전제: New Architecture (`newArchEnabled=true`, Hermes, Nitro Modules, Reanimated 4), **Expo 미사용**.
+  - **정정 (2026-09-24 · Expo 대응):** Expo 미사용은 더 이상 전제가 아니다. 프로젝트 유형을 **감지한다** — 규칙 정본은 `shared/expo.md`(사본 `references/expo.md`)이고, 이 스킬에 걸리는 것은 §Expo 대응에 있다.
 - `currency` §3의 lockstep 게이트(Reanimated ↔ `react-native-worklets`, `react-native` ↔ `react`)는 리허설 대상 버전 세트를 구성할 때 동일하게 적용된다. (2026-09-24 정정: 세트 정본은 `shared/lockstep-sets.md`다. RN 코어는 `@react-native/*`까지 포함하고, «설치된 것»은 정본 `package.json`의 `dependencies`·`devDependencies`에 직접 선언된 것만이다 — 전이 의존으로 세면 PM 호이스팅에 따라 `currency`와 다른 세트를 요구한다.)
 
 ## 구현자에게 남기는 미확정 (설계 재량 — 인터뷰에서 다루지 않음)
@@ -664,6 +689,8 @@ artifacts: 보존 3개, 자동 정리 1개
 | TargetArgumentSet | core domain | entries(pkg@ver), lockstep_complete, prerelease_free, exists_in_registry, computed_at | 인터뷰 후 추가(`currency` 라운드 6). 티어 시작 **전** 1회 검증; **검사가 난 경우** 실패는 판정이 아니라 실행 거부, **검사 자체가 못 돈 경우**(조회·목록 도달 실패)는 그 검사만 `미실행` |
 | Emulator | external system | platform, device_id, boot_signal, log_stream | T2에서 사용 |
 | AdoptionOutcome | core domain | offered(bool), blocked_by_gate, adopted(bool), branch_name, base_sha, merge_command, unverified_notes | RehearsalRun당 0..1; Worktree 폐기 **전에** 커밋 생성; Report에 실림 |
+| ProjectKind | supporting | expo(bool), sdk_major, per_platform(bare/CNG) | 2026-09-24 추가(Expo 대응). 티어 시작 전 1회 `git ls-files`로 판정; CNG 플랫폼의 T2에 prebuild 단계를 붙인다 |
+| SdkAlignmentCheck | supporting | target_sdk, ranges(E2/E2′), out_of_range, missing, preexisting_drift | 2026-09-24 추가. TargetArgumentSet의 검사 4; 조회 실패 시 미실행 |
 
 ## Ontology Convergence
 
@@ -778,3 +805,88 @@ artifacts: 보존 3개, 자동 정리 1개
 
 </details>
 ```
+
+## Expo 대응 — 2026-09-24
+
+managed(CNG)와 bare Expo를 둘 다 받는다(사용자 결정). **실행 검증 전** — 실제 Expo 프로젝트에서 돌려 본 적이 없다. T2 빌드·설치·실행 절차 자체가 아직 규범이 아니라는 감사 HIGH(2026-09-24 미반영)도 그대로다. 여기서는 그 절차 **앞**에 붙는 것만 정한다.
+
+유형 판별 · SDK 식별 · 조회 원라이너 · SDK 정합 판정은 세 스킬 공용이라 `shared/expo.md`(사본 `references/expo.md`)에 있다. 여기는 이 스킬에만 걸리는 것이다.
+
+### 왜 필요했나
+
+- **managed 프로젝트는 T2가 원리상 실패했다.** worktree는 커밋된 트리만 가져오는데 CNG 프로젝트는 `android/`·`ios/`를 커밋하지 않는다. 네이티브 디렉토리 없이 Gradle·`pod install`을 부르면 그 실패가 업그레이드 회귀처럼 보인다.
+- **SDK 정합을 아무도 보지 않았다.** `expo`만 올리고 SDK가 고정하는 네이티브 모듈을 안 올린 세트가 T1을 통과하고 T2에서 깨졌다 — 인자 검증 3(lockstep)이 막는 사고와 같은 모양이다.
+
+### 유형 판별 — 티어 시작 전 1회
+
+`base_sha`의 트리로 판정한다(`shared/expo.md` §1 — `git ls-tree`). SDK는 lockfile의 `expo` 설치 버전 major다. 헤더에 `프로젝트:` 줄을 **항상** 싣는다 — Expo가 아니면 `프로젝트: RN (Expo 아님)` 한 줄이고, **Expo가 아닌 프로젝트에서 달라지는 건 이 줄뿐이다.**
+
+### 인자 검증 4 — Expo SDK 정합
+
+인자 검증 1~3 다음, 티어 시작 전에 돈다. 순서는 2 → 1 → 3 → 4다.
+
+- **목표 SDK**: 인자에 `expo@<ver>`가 있으면 그 major, 없으면 현재 SDK.
+- **범위 조회**: E2(`S` = 목표 SDK) → 실패하면 E2′(`V` = 인자의 `expo` 버전, 없으면 설치 버전). 원문 채널이다 — 범위 문자열 하나가 요약되며 바뀌면 거부 판정이 틀린다(검사 1을 `node -e`로 옮긴 이유와 같다).
+- **판정**: `shared/expo.md` §5 규칙 둘. 1을 어기면 `실행 거부 — SDK 범위 밖: <pkg>@<ver> (SDK <n>: <range>)`, 2를 어기면 `실행 거부 — SDK 정합 누락: <pkg> (현재 <ver> · SDK <n>: <range>)`.
+- **기존 어긋남은 거부하지 않는다.** 목표 SDK가 현재 SDK와 같을 때 인자 밖 패키지가 이미 범위 밖이면 헤더 `SDK 정합 어긋남 (기존): <pkg> <현재> — SDK <n> 범위 <range>`로만 남긴다. 이번 업그레이드가 만든 어긋남이 아니다.
+- **범위 판정 불가** 패키지는 헤더 `인자 검증 4 일부 미판정: <pkg> <range>`로 남기고 그 패키지만 판정하지 않는다.
+- **조회 실패는 거부가 아니다** — `인자 검증 4 미실행 (Expo SDK 범위 조회 실패)`. SDK를 정할 수 없으면(lockfile 부재 · 인자에 `expo` 없음) `인자 검증 4 미실행 (SDK 확인 못 함)`. 확인 못 한 것을 위반으로 취급하지 않는다(인자 검증 1·3과 같은 원칙).
+- **`npx expo install --check`를 T1에서 돌리지 않는 이유**: 설치가 끝난 뒤에야 판정이 난다. 수십 분 설치 뒤에 누락을 발견하면, 짝 누락을 티어 전에 막는 인자 검증 3의 설계와 정면으로 어긋난다. `--fix`는 버전을 스스로 고른다 — 타깃 추측이다.
+
+**`#` 줄**: `# 산정 시각:` 외의 `#`로 시작하는 줄은 무시한다. `currency`의 SDK 블록은 첫 줄에 "권장 아님" 안내 주석을 싣는다 — 그 줄을 인자로 읽으면 안 된다.
+
+### T2 — CNG 플랫폼은 prebuild로 시작한다
+
+| PM | 커맨드 |
+| --- | --- |
+| npm | `npx expo prebuild --platform <android\|ios> --no-install` |
+| pnpm | `pnpm expo prebuild --platform <android\|ios> --no-install` |
+| yarn | `yarn expo prebuild --platform <android\|ios> --no-install` |
+| bun | `bun expo prebuild --platform <android\|ios> --no-install` |
+
+- **T2/<플랫폼>의 첫 단계다.** T1에 두지 않는다 — 플랫폼 하나의 prebuild 실패가 다른 플랫폼을 막으면 안 된다(수평 fail-fast 금지). `--platform`으로 제외한 플랫폼은 prebuild도 하지 않는다.
+- **실패는 그 플랫폼의 `T2 실패`다.** 새 SDK와 맞지 않는 config plugin은 실제 업그레이드 회귀다. 발췌를 싣는다.
+- `--no-install`: npm 설치는 T1이 했고, CocoaPods 설치는 뒤의 `pod install` 단계가 한다. `--clean`은 쓰지 않는다 — worktree에는 네이티브 디렉토리가 애초에 없다.
+- 상한은 `step_timeout_build_seconds`다(`pod install`·네이티브 빌드와 각각).
+- 셸 도구에는 TTY가 없다. prebuild가 대화형 입력을 요구하면 실패로 끝나고, 그 실패도 발췌로 싣는다 — 사유를 지어내지 않는다.
+- bare 플랫폼은 prebuild를 하지 않는다. 커밋된 네이티브 디렉토리가 정본이다.
+- **prebuild가 바꾼 추적 파일을 기록한다.** T1이 끝난 직후와 각 prebuild 뒤의 `git -C <worktree> status --porcelain`을 비교한다. 새로 바뀐 추적 파일이 있으면 헤더 `prebuild 변경: <파일 목록>`에 싣는다(없으면 줄 생략). prebuild는 `package.json` 스크립트 같은 추적 파일을 고칠 수 있다 — 채택 범위를 정하려면 무엇이 prebuild 산물인지 알아야 한다(아래).
+- **T2 절차를 정할 때 같이 정할 것**: `expo-dev-client`가 든 앱의 debug 빌드는 앱 대신 개발 런처를 띄울 수 있다. 판정선(첫 프레임 + 생존 + 로그 클린)이 런처 화면을 관측해 **거짓 통과**를 낼 수 있다. 빌드 변형(debug/release)과 JS 번들 공급은 T2 절차 규범화(감사 HIGH)에서 이 경우까지 포함해 정한다. **그 전까지 Expo 프로젝트의 T2 통과에는 판정 해석에 이 한계를 병기한다** — 관측이 런처를 본 것일 수 있다는 사실을 숨기면 통과 문구가 관측 안 한 것을 주장하게 된다(§T2 판정선 2026-08-29 정정과 같은 이유).
+
+### 업그레이드 표면 · 커밋 외 파일
+
+- **Expo 프로젝트의 업그레이드 표면에 app config가 더해진다** — 앱 루트의 `app.json`·`app.config.*`, 그리고 app config가 리터럴 경로(`./…`)로 가리키는 로컬 config plugin 파일. prebuild의 입력이라 커밋 안 된 변경은 worktree에 오지 않는다 — `android/**`를 표면에 둔 이유와 같다.
+- **`커밋 외 파일` 제외 목록에 CNG 플랫폼의 `android/`·`ios/`와 `.expo/`가 더해진다.** 앞의 둘은 prebuild가 다시 만들고, `.expo/`는 Expo CLI의 로컬 상태다. 목록에 남기면 매 실행 "worktree에 없는 커밋 외 파일"로 떠 신호가 소음이 된다.
+- `expo-env.d.ts` 같은 다른 gitignored 파일은 그대로 목록에 남는다 — 설치가 다시 만들지 않는다. 타입체크에 영향을 주더라도 베이스라인도 같은 조건이라 델타가 걸러 낸다.
+
+### `<target>`
+
+세트에 `expo`가 있으면 `expo-<ver>`(`expo-57.0.25`)다. 그다음이 `react-native`, 그다음이 사전순 첫 패키지다. Expo 프로젝트에서 업그레이드의 주어는 SDK다 — 사람이 리포트 목록에서 찾는 것도 SDK다.
+
+> 위 버전은 값이 아니라 예시다.
+
+### 채택
+
+- **CNG에서 채택 커밋은 T1의 결과만 담는다** — `package.json`·lockfile. prebuild가 만든 네이티브 디렉토리와 추적 파일 변경은 CNG에서 빌드마다 다시 생기는 산물이다. 커밋하면 사용자 프로젝트가 CNG가 아니게 되거나, 다음 prebuild가 덮어쓸 변경이 커밋에 섞인다.
+- 절차: CNG 플랫폼이 하나라도 있으면 T1이 끝날 때 `package.json`·lockfile을 worktree 밖 `artifacts/`에 백업한다. 채택 커밋 직전에 그 백업으로 두 파일을 되돌리고, `prebuild 변경:`의 다른 파일은 `git -C <worktree> checkout -- <파일>`로 되돌린다.
+- 생성된 `android/`·`ios/`는 gitignored라 스테이징되지 않는다. **`git add -f`로 강제 추가하지 않는다.**
+- 채택 커밋 메시지에 `프로젝트:` 줄을 싣는다 — 이 브랜치가 CNG 프로젝트의 검증이었다는 사실이 커밋에 남아야 한다(네이티브 디렉토리가 커밋에 없는 이유가 읽힌다).
+
+### 헤더 — 추가되는 줄
+
+| 줄 | 조건 |
+| --- | --- |
+| `프로젝트: <RN (Expo 아님) \| Expo SDK <n> — android <유형> · ios <유형>>` | **항상** |
+| `SDK 정합 어긋남 (기존): <pkg> <현재> — SDK <n> 범위 <range>` | 발견 시 |
+| `인자 검증 4 미실행 (<사유>)` · `인자 검증 4 일부 미판정: <pkg> <range>` | 해당 시 |
+| `prebuild 변경: <파일 목록>` | prebuild가 추적 파일을 바꿨을 때 |
+
+### degrade — 4경로 → 6경로
+
+| # | 조건 | 결과 | 위치 |
+| - | --- | --- | --- |
+| 5 | `references/expo.md` 도달 실패 · Expo 프로젝트 | **실행 거부** — `실행 거부 — Expo 규칙 도달 실패: references/expo.md` | 출력만 |
+| 6 | E2·E2′ 둘 다 실패 | 인자 검증 4를 `미실행`으로 두고 진행 | 헤더 |
+
+- **5가 거부인 이유는 degrade 1(상수 도달 실패)과 같다** — CNG 판별과 prebuild 여부가 실행 파라미터다. 모르고 돌리면 네이티브 디렉토리 없이 T2를 시작하고, 그 실패가 업그레이드 회귀처럼 보인다. Expo가 아닌 프로젝트는 이 파일에 기대지 않으므로 영향이 없다.
+- 6은 degrade 2·3과 같은 모양이다 — 검사의 재료를 못 얻은 것이지 실행 파라미터를 못 얻은 게 아니다.

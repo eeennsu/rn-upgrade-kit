@@ -87,6 +87,7 @@ seed §2는 🔴·🟠의 주 공급원을 Track C로 지목했다. Track C 이�
 - **Track A는 절반만 registry다.** `react-native`·`react`의 버전 숫자는 registry에 그대로 있다 — 이걸 웹 검색으로 다시 찾지 않는다. registry 밖인 건 **서사**뿐이다(그 버전에서 무엇이 강제됐나). Hermes·New Arch는 패키지가 아니라 RN 내장·플래그이므로 숫자조차 registry에 없다.
 - `@react-native/*`(codegen 등)는 devDependencies라 대상 밖이지만 RN 버전에 lockstep이라 독립 신호가 없다.
   - **정정 (2026-09-24 · 감사):** 대상 밖이어도 **lockstep 동반 대상**이다. 2026-08-31 실행 검증이 RN 코어 세트에 `@react-native/*`를 넣었는데(`shared/lockstep-sets.md` · 실행 검증 F-4), 이 줄은 "대상 밖"에서 멈춰 있었다. 그대로면 다음 단계 블록에서 이들이 빠지고, `rehearsal` 인자 검증 3이 `lockstep 짝 누락`으로 거부한다 — 당시 수정 기록의 *"currency 파급 0"*은 틀렸다. 조회는 여전히 하지 않는다(RN과 같은 번호로 함께 배포돼 독립 신호가 없다). 대신 정본 `package.json`에 직접 선언된 `@react-native/*` 전부를 **RN 권장과 같은 번호로** 블록에 싣는다(§rehearsal 간선 규칙 a). «설치된 것»의 정의(직접 선언만 · 전이 의존 제외)는 `shared/lockstep-sets.md`에 있다.
+- **Expo 프로젝트 (2026-09-24 · Expo 대응):** Track A에 `expo`가 더해진다 — `expo`의 major가 곧 SDK이고, SDK가 `react-native`·`react` 버전을 고정한다. `expo-*` 패키지는 Track B의 일반 대상이다. SDK가 정하는 호환 범위는 상한이 된다(§범위 산정). 상세는 §Expo 대응.
 - **SM(Software Mansion) 라이브러리**(Reanimated·Gesture Handler·SVG·worklets)의 정본 API·사실은 `react-native-best-practices`(SM) skill을 1차로 쓰고, 불일치·불명확 시 SM 공식 문서를 webfetch로 검증한다. skill이 없으면 SM 문서 webfetch 폴백.
 - **성능 진단성 정보**(FlashList·Hermes mmap·R8·16KB 정렬 등)는 `react-native-perf-guide`(Callstack) skill 관점을 참고한다.
 
@@ -153,6 +154,7 @@ node -e "const P='<pkg>',C='<현재>';const n=s=>s.split('.').map(Number);const 
 
 - `allowed-tools`: **`Read Write Glob Bash WebFetch Agent Skill`** — **`WebSearch` 불포함**. (2026-08-09 정정: `Bash`가 `node -e` 1종 용도로 들어오고 `Glob`이 lockfile·`gradle.properties` 탐색용으로 추가됐다.)
   - **`Bash`는 위 `node -e` 형태의 registry 조회에만 쓴다.** 다른 용도의 셸 호출은 이 스펙 전체에서 금지다 — 도구 목록이 아니라 본문 규칙으로 잠근다. `allowed-tools`로는 이 구분을 표현할 수 없으므로 `SKILL.md` 본문에 금지 목록(`pnpm`·`jq`·`date`·`cat`·`ls`·파이프·리다이렉트)을 명시한다.
+    - **추가 (2026-09-24 · Expo 대응):** 허용되는 `node -e`가 넷으로 늘었다. 위 registry 원라이너에 Expo 조회 셋(E1 SDK 목록 · E2 SDK 호환 범위 · E2′ 폴백)이 더해진다. 셋의 정본은 `shared/expo.md` §4이고, 양쪽 셸 실측도 거기 있다. 용도는 여전히 **원문 채널 조회 하나**다. `npx expo install`·`expo-doctor`는 이 목록에 없다.
   - **`Glob` 추가 근거:** lockfile 4종 중 어느 것이 있는지, `gradle.properties`가 어디 있는지 탐색해야 한다. `Read`만으로는 부재와 경로 못 찾음을 구분할 수 없다.
   - `WebSearch` 제외 근거는 확정사항 6이다. "최신이 몇이냐"를 검색으로 찾지 않는다는 규칙을 도구 목록으로 강제한다 — `platform-watch`가 셸을 빼서 이식성을 구조화한 것과 같은 수법. (이 항목은 확정사항 6에서 파생됐고 인터뷰 라운드에서 별도 확인되지 않았다.)
     - **정정 (2026-08-18 · 구현 감사 반영): `allowed-tools`는 강제 수단이 아니다.** 공식 문서가 *"It does not restrict which tools are available: every tool remains callable"*라고 못박는다(https://code.claude.com/docs/en/skills «Pre-approve tools for a skill»). 목록에서 뺀 것만으로는 아무것도 막지 못하므로 위 문장의 "도구 목록으로 강제한다"는 **명목뿐이었다.** 실제 강제 수단은 `disallowed-tools`이고, 구현은 `disallowed-tools: WebSearch Edit`을 신설해 그 자리를 메웠다. 구분자 형태(공백·콤마·YAML 리스트)는 **전부 유효**하므로 감사가 제기한 구분자 파싱 우려는 기각이다.
@@ -194,6 +196,10 @@ node -e "const P='<pkg>',C='<현재>';const n=s=>s.split('.').map(Number);const 
 - 등급은 🔴다. 마감이 있고 경로가 없다.
 - seed의 *"상한이 RN에 잠긴 대상이 여럿이면 그 사실 자체가 리포트의 핵심 통찰(RN 업그레이드가 마스터 키)"*의 강화판이다 — 이 경우 마스터 키가 잠겨 있다.
 
+> **추가 (2026-09-24 · Expo 대응):** Expo 프로젝트는 상한이 하나 더 생긴다. 현재 SDK가 싣는 호환 범위(`shared/expo.md` §4 E2)에 있는 패키지는 `상한 = min(peer ceiling, SDK 범위 상단)`이다. `react-native`·`react`도 여기 든다 — SDK가 고정한다. 잠근 쪽이 SDK면 `expo SDK <n> (<pkg> <range>)`로 지목한다. Expo 프로젝트의 마스터 키는 RN이 아니라 SDK다.
+>
+> **정책 하한이 현재 SDK major를 넘는 경우**(하한이 다음 SDK의 `expo`에 있다)는 게이트 2 때문에 범위 안에 후보가 없다. 이때는 `권장: 유지(현재)`가 아니라 **`산정 불가 — 도달 불가 (SDK 업그레이드 필요)`** 🔴이고, 🟡 SDK 항목의 리허설 블록을 가리킨다(§Expo 대응). bare RN에서 하한이 한 major 위일 때의 처리는 여전히 열려 있다(감사 2026-09-24 MED).
+
 ---
 
 ## 핸드오프 — 독자 계약 (라운드 2·3)
@@ -233,6 +239,7 @@ node -e "const P='<pkg>',C='<현재>';const n=s=>s.split('.').map(Number);const 
 - 결과 ②는 정보 부재가 아니라 **행동 지시**다. "이건 버전 문제가 아니라 설정 한 줄"이라는 결론은 사용자에게 유용하다. ③과 같은 자리에 두면 그 정보를 잃는다.
 - 결과 ①의 대상은 **RN에 한정되지 않는다.** 정책 요구가 라이브러리 하한을 만들 수도 있다(예: Play 결제 라이브러리 요구 → 결제 패키지 하한). 어휘를 늘리지 않고 대상만 일반화한다. (인터뷰에서 명시 확인되지 않은 파생 항목.)
 - 확정사항 8대로 핸드오프 스키마에 `rn_floor` 계열 필드는 **없다.** 필드가 있으면 채우려는 압력이 생긴다.
+- **Expo 프로젝트 (2026-09-24 · Expo 대응):** ①의 대상은 RN이 아니라 `expo`(SDK)다. RN은 SDK가 고정하므로 RN 하한을 따로 만들지 않는다. 근거는 SDK 기본값 표(`shared/expo.md` §4)나 E1이 주는 SDK 마이그레이션 노트다. ②의 설정 경로는 CNG면 app config의 `expo-build-properties`, bare면 `gradle.properties`·`Podfile.properties.json`이다. SDK 기본값 표로 판단하는 건 매핑표 보유가 아니다 — 매 실행 조회해서 근거 링크를 단다.
 
 ### 계약 4항 (`platform-watch` 스펙 §핸드오프 계약과 대응)
 
@@ -284,6 +291,7 @@ node -e "const P='<pkg>',C='<현재>';const n=s=>s.split('.').map(Number);const 
 | 5 | **known issue 0** | 노트에 revert·hotfix 예고·"do not upgrade", 이슈 트래커에 **우리가 쓰는 기능**의 크래시 → 고쳐진 버전이 나올 때까지 보류. 우리가 안 쓰는 기능의 이슈는 게이트가 아니다 |
 | 6 | **lockstep 동반** | 짝이 있는 패키지는 세트로만 권장한다. **세트 목록은 여기 나열하지 않고 `shared/lockstep-sets.md`를 Read해서 얻는다.** **짝 하나가 걸리면 세트 전체가 걸린 것** |
 
+- **게이트 2와 Expo SDK (2026-09-24 · 사용자 결정):** `expo`의 major 점프가 곧 SDK 업그레이드다. **게이트 2를 그대로 적용한다 — 새 SDK는 권장 버전이 아니다.** 대신 🟡 항목으로 알리고, 그 항목 아래에 SDK 업그레이드를 리허설할 **별도 블록**을 붙인다. 상세는 §Expo 대응 «SDK 업그레이드 — 🟡 + 리허설 블록».
 - **게이트 6의 세트 정본은 `shared/lockstep-sets.md`다 (2026-08-18 · 구현 감사 반영).** 본문 나열은 §점검 대상의 *"새 라이브러리가 들어와도 이 파일을 고칠 일이 없어야 한다"*와 충돌했고, `rehearsal` 인자 검증 3이 같은 목록을 봐야 하는데 목록이 두 곳이면 한쪽만 늘어난다 — 그러면 `currency`가 권장한 세트를 `rehearsal`이 `짝 누락`으로 거부한다. 확정 목록 밖의 짝은 그 파일의 감지 규칙으로 **잠정 후보 제안**만 하고 판정에 쓰지 않는다(휴리스틱 오탐으로 권장을 막으면 사용자에게 우회 수단이 없다). 그 파일에 도달 못 하면 게이트 6만 `확인 못 함`이고 권장 자체는 막지 않는다.
 - **soak 면제 — 보안 픽스·크래시 픽스.** 안 올리는 쪽이 더 위험한 경우다. 면제했으면 면제라고 쓴다.
 - **권장 = 현재**일 수 있다. "gap은 있지만 지금은 올리지 마라"는 유효한 결론이다 — 대상을 빼지 말고 `권장: 유지(현재)`로 남긴다.
@@ -360,6 +368,8 @@ node -e "const P='<pkg>',C='<현재>';const n=s=>s.split('.').map(Number);const 
 
 **확정사항 7("이 프로젝트는 New Architecture 기반")은 스펙 전제이고 `gradle.properties`는 관측이다. 전제로 관측을 덮지 않는다.** 둘이 갈리면 병기하고 `확인 못 함`으로 둔다.
 
+> **추가 (2026-09-24 · Expo 대응):** Expo 프로젝트는 헤더에 `SDK <n>`과 `프로젝트:` 줄(`shared/expo.md` §1)이 붙는다. New Arch·Hermes는 유형마다 읽는 곳이 다르다. bare 플랫폼은 위 규칙 그대로 `gradle.properties`를 읽는다. CNG 플랫폼은 app config의 `newArchEnabled`·`jsEngine`(`shared/expo.md` §3)을 읽고, **로컬에 남은 `android/gradle.properties`는 생성물이라 읽지 않는다.** 키가 없으면 `미지정 (Expo SDK 기본값)`으로 적고 판정은 `확인 못 함`이다(degrade 5). SDK 기본값에 대한 런타임 출처가 없고, 기본값을 지어내지 않는다.
+
 ---
 
 ## rehearsal 간선 — 파일 없음 · 커맨드 출력 (라운드 6)
@@ -394,6 +404,8 @@ node -e "const P='<pkg>',C='<현재>';const n=s=>s.split('.').map(Number);const 
 | d | **단일 블록 하나** | 여러 줄로 흩어지면 복붙 오타가 실제로 난다. `rehearsal`의 "POSIX 단일 복붙 재현 블록"과 형태를 맞춘다 |
 
 `rehearsal` 쪽 대응(인자 검증 · 생성 시각 경고)은 §형제 스펙에 반영해야 할 변경에 있다.
+
+> **추가 (2026-09-24 · Expo 대응):** 규칙 f — **SDK 업그레이드 블록은 다음 단계 블록과 별개다.** 다음 단계 블록은 권장 세트 전용이라 규칙 d(단일 블록)가 그대로 걸린다. SDK 블록은 🟡 SDK 항목 바로 아래에 붙고, 첫 줄 주석으로 권장이 아님을 밝힌다. 두 블록 모두 `rehearsal` 인자 검증 4(Expo SDK 정합)를 통과하도록 만든다 — 다음 단계 블록은 SDK 범위 상한이 보장하고, SDK 블록은 구성 규칙(§Expo 대응)이 보장한다.
 
 ---
 
@@ -518,6 +530,8 @@ platform 추적은 platform-watch가 담당한다.
 > **구현 정정 (2026-08-12):** 구현의 degrade 표는 **10경로**다 — 위 8개에 `node -e` 실패(soak·churn만 `확인 못 함`)와 lockfile 부재·미지원·2종이 더해진다. 위 표의 번호는 그대로 보존된다.
 >
 > **재정정 (2026-08-18 · 구현 감사 반영):** 구현의 degrade 표는 이제 **18경로**다. 10에 더해진 8개는 `node -e` **전 대상** 실패(11) · `shared/constants.md` 도달 실패(12) · `shared/lockstep-sets.md` 도달 실패(13) · 핸드오프 **항목** 부재(14) · `react-native`를 가진 `package.json` 2개 이상(15) · 선언 범위가 `workspace:*`·`catalog:`(16) · dist-tags에 `latest` 부재(17) · 리포트 쓰기 실패(18)다. **11이 9와 별도 행인 이유**는 게이트 2개가 통째로 죽은 리포트가 정상 리포트와 겉보기에 같아지는 자리가 거기라서다 — 대상마다 붙는 ⚠는 개별 대상의 사정처럼 읽히므로 헤더 문구가 차이를 드러내는 유일한 수단이다. 위 표의 번호는 그대로 보존된다.
+>
+> **추가 (2026-09-24 · Expo 대응):** **23경로**가 됐다. 19 `references/expo.md` 도달 실패, 20 SDK 확인 못 함, 21 E1(SDK 목록) 조회 실패, 22 E2·E2′(SDK 호환 범위) 조회 실패, 23 Expo 유형 확인 못 함이다. 상세는 §Expo 대응 «degrade 5경로». 위 표의 번호는 그대로 보존된다.
 
 ---
 
@@ -609,6 +623,10 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 - **웹 검색** — `WebSearch`를 `allowed-tools`에 두지 않고 **`disallowed-tools`로 뺀다.** "최신이 몇이냐"를 검색으로 찾지 않는다 — `allowed-tools`에서 빠진 것만으로는 호출이 막히지 않으므로 뺄 도구는 `disallowed-tools`에 적어야 실제로 빠진다 (2026-08-18 · 구현 감사 반영).
 - **리포트 파일 수정** — `Edit`도 `disallowed-tools`에 있다. 쓰기는 `Write` 1회뿐이고 기존 산출물을 부분 수정하는 경로를 남기지 않는다 — 남기면 "다시 실행해 새로 쓴다"는 날짜 규칙이 우회된다.
 - **Expo 관련 제안** — 이 프로젝트는 Expo 미사용. `expo-*` 대안을 제시하지 않는다.
+  - **정정 (2026-09-24 · Expo 대응):** **Expo가 아닌 프로젝트에** `expo-*` 대안을 제시하지 않는다. 이 금지는 남는다 — 쓰지 않는 프레임워크로 갈아타라는 제안은 이 스킬의 질문("지금 뭘로 올려야 하나") 밖이다. **Expo 프로젝트에서는 `expo-*`가 일반 대상이다.**
+- **`npx expo install --fix` · `expo-doctor` 실행** — 버전을 스스로 골라 고치거나 셸 1종 잠금 밖이다. SDK 정합은 `shared/expo.md` §5로 직접 판정한다 (2026-09-24 · Expo 대응).
+- **새 SDK를 권장 버전으로 내기** — 🟡 + 리허설 블록까지다 (2026-09-24 · 사용자 결정).
+- **SDK↔RN 대응·SDK 기본값을 스킬에 적어 두기** — 매 실행 조회한다 (2026-09-24 · Expo 대응).
 - **넓히기 방향 스코프 인자 · `--track` 복수 지정**
 - **`--since`·`--format`·`--json` 등 추가 인자**
 - **직전 리포트를 판정 근거로 재활용** — 표기 전용.
@@ -757,6 +775,23 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 - [ ] 직전 리포트가 없어도 리포트가 정상 산출되고 델타 줄만 생략된다
 - [ ] 상태 파일(`state.json` 등)이 생성되지 않는다
 
+**Expo 대응 (2026-09-24 추가)**
+
+- [ ] Expo가 아닌 프로젝트의 대상·게이트·블록이 바뀌지 않는다 — 달라지는 건 헤더 `프로젝트:` 줄뿐이다
+- [ ] Expo 프로젝트에서 `expo`가 Track A에 들어가고 헤더에 `SDK <n>`이 실린다
+- [ ] SDK↔RN 대응·SDK 호환 범위·SDK 기본값이 스킬 본문·참조 파일에 적혀 있지 않다 — E1·E2(폴백 E2′)로 매 실행 조회된다
+- [ ] E1·E2·E2′가 `node -e`로만 돌고 WebFetch로 대신하는 경로가 없다 — 범위 문자열은 판정 재료다
+- [ ] 현재 SDK 호환 범위에 있는 패키지의 상한이 `min(peer ceiling, SDK 범위 상단)`이고, SDK가 잠그면 `expo SDK <n> (<pkg> <range>)`로 지목된다
+- [ ] 새 SDK가 권장 버전으로 나오지 않는다 — 🟡 항목으로 나오고 그 아래에 SDK 업그레이드 블록이 붙는다
+- [ ] "다음 SDK"가 E1에서 `expo` stable이 있는 SDK 중 현재보다 큰 가장 작은 것이다 — 프리뷰 SDK(`expo -`)가 뽑히지 않는다
+- [ ] SDK 블록 첫 줄에 권장이 아니라는 주석과 게이트 3~5 미적용이 적힌다
+- [ ] SDK 블록이 `expo` + 다음 SDK 범위를 만족하지 않는 정합 대상 전부 + lockstep 확정 세트 동반을 담는다 — `rehearsal` 인자 검증 3·4를 통과한다
+- [ ] 정책 하한이 현재 SDK major를 넘으면 `유지(현재)`가 아니라 `산정 불가 — 도달 불가 (SDK 업그레이드 필요)` 🔴다
+- [ ] 번역 ①의 Expo 대상이 RN이 아니라 `expo`다 — RN 하한을 따로 만들지 않는다
+- [ ] CNG 플랫폼의 New Arch·Hermes를 로컬 `gradle.properties`에서 읽지 않는다 — app config에 없으면 `미지정 (Expo SDK 기본값)` + `확인 못 함`이다
+- [ ] Expo가 아닌 프로젝트에서 `expo-*` 대안이 제시되지 않는다
+- [ ] `npx expo install`·`expo-doctor`를 실행하는 경로가 없다
+
 **서브에이전트**
 
 - [ ] 서브에이전트 프롬프트에 read-only 못박기·조회 범위 잠금·반환 형식·판정 금지가 전부 포함된다
@@ -794,6 +829,7 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 - `allowed-tools`: **`Read Write Glob Bash WebFetch Agent Skill`** — `WebSearch` 불포함. `Bash`는 §수집의 `node -e` 1종 용도로 본문에서 잠근다.
 - **`references/sources.md` 신설** — SM(`react-native-best-practices`)·Callstack(`react-native-perf-guide`) skill이 없을 때의 폴백 문서 URL과, 릴리즈 노트 태그 URL 조립 규칙(모노레포·태그 접두사 변형)의 정본. **`WebSearch`가 없으므로 폴백은 "검색해서 찾는다"가 될 수 없다 — URL을 미리 알고 있어야 한다.**
 - 대상 프로젝트 전제: New Architecture (`newArchEnabled=true`, Hermes, Nitro Modules, Reanimated 4), **Expo 미사용**.
+  - **정정 (2026-09-24 · Expo 대응):** Expo 미사용은 더 이상 전제가 아니다. 프로젝트 유형을 **감지한다** — 규칙 정본은 `shared/expo.md`(사본 `references/expo.md`)이고, 이 스킬에 걸리는 것은 §Expo 대응에 있다.
 - 외부 skill 우선순위: SM 라이브러리는 `react-native-best-practices`(SM) 1차, 성능 진단성 정보는 `react-native-perf-guide`(Callstack) 참고.
 
 ### 참조 파일 포팅 시 필요한 수정
@@ -909,6 +945,9 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 | ReportRetention | supporting | limit_n(12·공유 상수), pruned_count, functional_floor(2) | 청소가 아니라 기능 |
 | HostSupportMatrix | external system | os, supported(전 호스트), unix_util_dependency(0), shell_syntax(0), node_eval(1종), websearch(0) | 선언이 아니라 구조적 사실. 2026-08-09 실측 정정 — `shell_dependency(0)` → `node -e` 1종 |
 | RegistryProbe | supporting | kind(dist-tags/version-doc/node-eval), truncation_safe(bool) | 인터뷰 후 추가. full packument WebFetch는 **절단되므로 경로에서 제외** |
+| ProjectKind | supporting | expo(bool), sdk_major, per_platform(bare/CNG/확인 못 함) | 2026-09-24 추가(Expo 대응). Run당 1개; 판별 규칙 정본은 `shared/expo.md` |
+| SdkRange | supporting | sdk, package, version_range, source(E2/E2′) | 2026-09-24 추가. PeerCeiling과 함께 상한을 이룬다 — `min(peer, SDK)` |
+| SdkUpgradeBlock | core domain | next_sdk, expo_version, members, gates_applied(1만), not_recommended(true) | 2026-09-24 추가(사용자 결정). 🟡 SDK 항목에 부착; RehearsalInvocation과 **별개 블록** |
 
 ## Ontology Convergence
 
@@ -1007,3 +1046,97 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 - **`node -e` 창·peer 확장** — §수집 «정제 (2026-09-24)». 뒤처진 프로젝트의 호환 후보가 창 밖으로 밀리던 것과, RN 밖 peer가 상한 계산에서 빠지던 것.
 - **1차 조회는 메인 전담** — §조회 순서 병렬화 정정. 서브에이전트 셸 금지(2026-08-29 · 구현에만 반영됐다)와 1차 조회 위임이 서로를 무력화하던 것.
 - **핸드오프 읽기의 경계** — 계약 5항 정정(`iOS min` ← `ios/min-deployment-target`) · 계약 6항 «정제 (2026-09-24)»(재실행 권장 조건 · 기본 마감 · `이미 충족` 제외). `platform-watch`의 enum 분리 복원과 날짜 모델 정정에 맞춘 독자 쪽 변경이다.
+
+## Expo 대응 — 2026-09-24
+
+managed(CNG)와 bare Expo를 둘 다 받는다(사용자 결정). **실행 검증 전** — 실제 Expo 프로젝트에서 돌려 본 적이 없다.
+
+유형 판별 · SDK 식별 · app config 읽기 · 조회 원라이너 · SDK 정합 판정은 세 스킬 공용이라 `shared/expo.md`(사본 `references/expo.md`)에 있다. 여기는 이 스킬에만 걸리는 것이다.
+
+### 왜 필요했나
+
+- **SDK가 RN·React와 네이티브 라이브러리 버전을 고정하는데 이 스킬은 그걸 몰랐다.** Expo 프로젝트에서 RN을 SDK 밖 버전으로 권장하거나, Reanimated를 SDK가 고정한 것보다 높게 권장할 수 있었다. 그런 세트는 `npx expo install --check`에 걸리고, 새 SDK가 싣는 네이티브 모듈과 어긋난다.
+- **`expo-*` 대안 제시 금지가 Expo 프로젝트까지 덮고 있었다.** Expo 프로젝트에서 `expo-*`는 대안이 아니라 그 프로젝트의 의존성이다.
+
+### 대상 · 조회 순서
+
+- **Track A = `expo` · `react-native` · `react`.** `--track core`가 `expo`를 포함한다. `expo-*`는 Track B의 일반 대상이다.
+- **SDK를 먼저 확정한다.** bare RN은 *"RN 권장을 먼저 확정하고 나머지를 그 위에서 계산한다"*인데, Expo는 RN이 SDK에 고정되므로 순서가 한 칸 앞으로 간다. 먼저 현재 SDK major를 정한다(`shared/expo.md` §2). 다음으로 E1(SDK 목록)과 E2(현재 SDK 호환 범위)를 돌리고, 그 위에서 대상별 registry 조회와 게이트를 돈다.
+- **E1·E2는 메인이 직접 돈다** — 1차 registry 조회와 같은 원문 채널이고, 서브에이전트는 셸 금지다(§조회 순서 병렬화).
+
+### 상한 — SDK 범위
+
+- 현재 SDK 호환 범위(E2)에 든 패키지는 `상한 = min(peer ceiling, SDK 범위 상단)`이다. 범위 상단은 `shared/expo.md` §5의 범위 해석대로다(`~x.y.z` → `x.y` 라인의 끝, 정확 버전 → 그 버전).
+- **`react-native`·`react`의 상한은 SDK 범위다.** 대개 정확 버전이라 권장은 "현재 SDK가 지금 고정하는 버전" 이하에서만 선다. SDK 안의 패치 조정은 권장이 될 수 있고, SDK를 넘는 RN은 아래 SDK 업그레이드로 간다.
+- 잠근 쪽이 SDK면 `expo SDK <n> (<pkg> <range>)`로 지목한다 — 사용자가 손댈 지점이 패키지가 아니라 SDK라는 뜻이다.
+- **범위 판정 불가**(`shared/expo.md` §5 표의 «그 밖») 패키지는 SDK 상한 없이 peer ceiling만으로 산정하고 `⚠ SDK 범위 해석 불가 — <range>`를 병기한다.
+
+### SDK 업그레이드 — 🟡 + 리허설 블록 (사용자 결정)
+
+**새 SDK는 권장 버전이 아니다 — 게이트 2 그대로다.** 대신 알리고, 리허설할 수단을 같이 준다.
+
+**다음 SDK**: E1에서 현재 SDK보다 큰 SDK 중 `expo` 열이 `-`가 아닌 가장 작은 것. 없으면 🟡 SDK 항목을 내지 않는다(`✅ 점검함` 블록에 `expo SDK`가 들어간다). 그보다 새 SDK가 더 있으면 항목에 `더 새 SDK: <목록>`을 적는다.
+
+- **블록은 바로 다음 SDK 하나만 겨냥한다.** 리허설이 실패했을 때 어느 SDK의 변경인지 가를 수 있어야 한다. 두 단계를 한 번에 건너뛰면 실패 원인이 두 SDK의 변경에 섞인다.
+
+**🟡 항목**: `[expo SDK] 현재 SDK <n> (expo <현재>) → 다음 SDK <n+1> (RN <x> · React <y>) | major 점프 — 권장 대상 아님(게이트 2)` + 마이그레이션 노트 링크(E1) + 블록.
+
+**블록 구성** — 다음 SDK의 호환 범위(E2 `S=<n+1>`)를 조회해서:
+
+| 들어가는 것 | 버전 |
+| --- | --- |
+| `expo` | E1의 다음 SDK `expo` 열(그 SDK의 최고 stable) |
+| 정합 대상(`shared/expo.md` §5) 중 **현재 버전이 다음 SDK 범위를 만족하지 않는 것 전부** | 그 범위를 만족하는 최고 stable. 정확 버전 범위면 그 버전, 아니면 registry 원라이너를 `C` = 범위 하단으로 돌려 고른다 |
+| 위에 딸린 lockstep 확정 세트의 나머지 구성원 (`lockstep-sets.md` · 규칙 a) | SDK 범위에 있으면 그 범위의 최고 stable. `@react-native/*`는 블록의 `react-native`와 같은 번호. SDK 범위 밖이면 이 리포트의 권장값(없으면 현재값)과 `# lockstep 동반: <pkg> — SDK 범위 밖` 주석 |
+
+- **게이트는 1(stable only)만 적용한다.** 3~5(soak · churn · known issue)는 적용하지 않고 **블록 첫 줄 주석으로 그 사실을 밝힌다** — 이 블록은 권장이 아니라 리허설 수단이고, 새 SDK가 우리 프로젝트에서 돌아가는지는 `rehearsal`이 본다. 권장처럼 보이면 안 되므로 주석이 필수다.
+- **다음 SDK 범위를 이미 만족하는 패키지는 싣지 않는다.** 올릴 필요가 없는 것을 올리면 리허설이 SDK와 무관한 변경까지 검증하게 된다. `rehearsal` 인자 검증 4의 규칙 2가 이 조합을 받는다.
+- **범위 판정 불가 패키지**는 블록에 넣지 않고 블록 안 주석 `# 정합 확인 못 함: <pkg> <range> — 손으로 확인`으로 남긴다.
+- 블록에도 `# 산정 시각: YYYY-MM-DD`를 박는다(규칙 b) — `rehearsal`이 낡음을 경고할 수 있어야 한다.
+- **블록을 내지 않는 경우**: 다음 SDK 없음 · E1 실패 · 다음 SDK의 E2·E2′ 실패. 뒤의 둘은 🟡 항목은 두되 블록 자리에 사유를 적는다 — 블록 없이 항목만 있으면 사용자는 블록을 빠뜨린 걸로 읽는다.
+
+### 정책 하한과 SDK
+
+- 번역 ①의 대상은 `expo`다(§번역 추가). 요구를 만족하는 SDK를 SDK 기본값 표나 마이그레이션 노트로 찾고 근거 링크를 단다.
+- **하한이 현재 SDK major 안이면** 평소처럼 범위 하한이 된다.
+- **하한이 현재 SDK major 밖이면** `산정 불가 — 도달 불가 (SDK 업그레이드 필요)` 🔴다. 잠근 것으로 `게이트 2 (SDK major 고정)`을 지목하고 🟡 SDK 항목의 블록을 가리킨다. 하한 SDK가 다음 SDK보다 더 멀면 `정책 하한 SDK <m> — 블록은 한 단계(SDK <n+1>)`를 병기한다.
+- **번역 ②가 가능하면 ②가 먼저다.** 설정 한 줄로 요구를 맞출 수 있는데 SDK 업그레이드를 하한으로 세우면 과한 처방이다. 예: 요구 targetSdk가 현재 SDK의 compileSdk 이하라서 `expo-build-properties`로 올릴 수 있는 경우. 근거는 SDK 기본값 표의 compileSdk 열이다.
+
+### 헤더
+
+```
+스냅샷: Expo SDK 56 · RN 0.85.3 · React 19.2.3 · New Arch 미지정 (Expo SDK 기본값) · targetSdk 36 (Expo SDK 56 기본값) · iOS min 16.4 (Expo SDK 56 기본값)
+프로젝트: Expo SDK 56 — android CNG · ios CNG
+```
+
+- targetSdk·iOS min은 여전히 핸드오프 `current`에서만 온다(계약 5항). `platform-watch`가 붙인 `(Expo SDK <n> 기본값)` 꼬리를 그대로 옮긴다.
+
+### 리포트 예시
+
+```
+## 🟡 Recommended
+- [expo SDK] 현재 SDK 56 (expo 56.0.22) → 다음 SDK 57 (RN 0.86.3 · React 19.2.3) | major 점프 — 권장 대상 아님(게이트 2)
+  마이그레이션 노트: https://expo.dev/changelog/sdk-57 · 더 새 SDK: 없음
+  ​```
+  # SDK 업그레이드 리허설용 — 권장 아님(게이트 2). 버전은 SDK 57 범위의 최고 stable이고 soak·churn·known issue는 적용하지 않았다
+  # 산정 시각: 2026-09-24
+  /rn-upgrade-kit:rehearsal expo@57.0.25 react-native@0.86.3 react@19.2.3 \
+                            react-native-reanimated@4.5.1 react-native-worklets@0.10.1 \
+                            expo-router@57.0.23
+  ​```
+```
+
+> 위 SDK·버전·URL은 전부 예시다 — 실제 값은 E1·E2와 registry 조회에서 온다.
+
+### degrade 5경로 (19~23)
+
+| # | 조건 | 결과 | 위치 |
+| - | --- | --- | --- |
+| 19 | `references/expo.md` 도달 실패 (Expo 프로젝트) | SDK 상한 미적용(대상별 `⚠ SDK 범위 미확인`) · 🟡 SDK 항목 없음 · `Expo 규칙 도달 실패 — SDK 판정 미적용` | 헤더 · 제자리 |
+| 20 | SDK 확인 못 함 (`expo` major를 못 정함) | 19와 같은 결과 + `SDK 확인 못 함 — <사유>` | 헤더 · 제자리 |
+| 21 | E1 실패 | 🟡 SDK 항목 대신 ⚠ `SDK 목록 조회 실패 — 다음 SDK 판정 불가`. 현재 SDK 상한(E2)은 영향 없음 | ⚠ 블록 |
+| 22 | E2·E2′ 둘 다 실패 | 현재 SDK면 상한 미적용 + 대상별 `⚠ SDK 범위 미확인`. 다음 SDK면 🟡 항목은 두고 블록 자리에 사유 | 제자리 · 🟡 항목 |
+| 23 | Expo 유형 확인 못 함 | New Arch·Hermes 읽기만 영향 — `확인 못 함`(degrade 5 경로). SDK 판정은 영향 없음 | 헤더 |
+
+- **어느 경로에서도 대상은 사라지지 않는다.** SDK 상한이 빠지면 peer ceiling만으로 산정하고 그 사실을 적는다.
+- **19·20에서 SDK를 추정하지 않는다.** `react-native` 버전으로 SDK를 거꾸로 짚으면 SDK↔RN 대응을 스킬이 가진 셈이 된다 — `shared/expo.md` §6이 금지한 매핑표다.

@@ -35,6 +35,7 @@ rn-upgrade-kit/
   shared/
     constants.md                  ← 3스킬 공용 상수 (중립 지대)
     lockstep-sets.md              ← 짝으로만 올려야 하는 패키지 집합 (신설 — 2026-08-18)
+    expo.md                       ← Expo 유형 판별 · SDK 조회 · SDK 정합 (신설 — 2026-09-24)
   README.md
 ```
 
@@ -51,6 +52,7 @@ rn-upgrade-kit/
 >     LICENSE                     ← 루트 LICENSE 사본 — 생성물
 >     references/constants.md     ← shared/ 사본 — 생성물 (세 스킬)
 >     references/lockstep-sets.md ← shared/ 사본 — 생성물 (currency · rehearsal)
+>     references/expo.md          ← shared/ 사본 — 생성물 (세 스킬 · 2026-09-24 추가)
 >   scripts/sync.mjs              ← 사본·루트 매니페스트 생성 + --check
 >   .github/workflows/sync-check.yml ← CI: node scripts/sync.mjs --check
 >   docs/specs/                   ← 설계 정본 (이 파일 포함)
@@ -77,6 +79,14 @@ rn-upgrade-kit/
 - **확정 세트**(게이트 6의 판정 근거)와 **잠정 후보**(감지 규칙 3신호 → 제안만)를 2단으로 가른다. 감지가 휴리스틱이라 오탐이 있고, 오탐으로 실행을 거부하면 사용자에게 우회 수단이 없기 때문이다.
 - 도달 실패 처리는 이 파일이 직접 정의한다 — `currency`는 게이트 6만 `확인 못 함`, `rehearsal`은 인자 검증 3만 미실행. **양쪽 다 조용히 통과시키지 않는다.**
 - **«설치된 것»의 정의도 이 파일이 가진다** (2026-09-24 · 감사). 세트 구성원 중 정본 `package.json`의 `dependencies`·`devDependencies`에 **직접 선언된 것만** 센다. 전이 의존을 세면 PM 호이스팅에 따라 세트가 달라져 두 스킬이 다른 세트를 요구한다. 계기: 2026-08-31에 RN 코어 세트가 `@react-native/*`(대개 devDependencies)로 늘었는데, `currency`는 devDependencies를 대상에서 빼고 있었다 — 목록은 한 곳에 있어도 **무엇을 세트 구성원으로 세는가**가 두 곳에 있으면 같은 어긋남이 난다.
+
+### `shared/expo.md` — 세 번째 공유물 (신설 · 2026-09-24 · Expo 대응)
+
+**Expo 프로젝트 규칙의 정본.** 세 스킬이 같은 판정을 봐야 한다. 한 스킬이 CNG로 읽고 다른 스킬이 bare로 읽으면 `platform-watch`가 넘긴 `current`와 `rehearsal`이 검증한 트리가 다른 프로젝트를 가리킨다. SDK 정합을 `currency`와 `rehearsal`이 각자 적으면 `currency`가 낸 SDK 블록을 `rehearsal`이 `정합 누락`으로 거부한다. `lockstep-sets.md`를 한 곳에 둔 것과 같은 이유다.
+
+- 담는 것: 프로젝트 유형(RN · Expo bare · Expo CNG, 플랫폼마다) 판별 규칙과 가진 도구별 판별 수단, SDK 식별, app config를 평가하지 않고 읽는 법, 조회 출처와 `node -e` 원라이너(양쪽 셸 실측 포함), SDK 정합 판정, 도달 실패 처리.
+- **담지 않는 것: 버전 값.** SDK↔RN 대응, SDK별 기본값, "SDK N 이상이면 X" 문턱은 이 파일에도 없다 — 매 실행 조회한다. 적으면 다음 SDK가 나오는 날 낡는다. `currency`의 «매핑표를 보유하지 않는다»를 세 스킬로 넓힌 것이다(사용자 원칙 — bare RN 경로도 같다).
+- 도달 실패는 스킬마다 다르게 처리하고, 그 차이를 이 파일이 직접 정의한다. advisory 둘은 Expo 판정만 `확인 못 함`으로 두고, `rehearsal`은 Expo 프로젝트면 실행을 거부한다. CNG 판별이 실행 파라미터라서다. **Expo가 아닌 프로젝트는 영향이 없다.**
 
 ### `shared/constants.md` — «이 파일에 도달하는 법» 절 (신설 · 2026-08-18)
 
@@ -108,7 +118,7 @@ rn-upgrade-kit/
 | `worktree_path_template` | `/tmp/rn-rehearsal-<target>-<base_sha7>` | rehearsal (worktree 생성 경로) | 신설 2026-08-18. 경로가 재현 블록·수동 정리 커맨드·충돌 판정 **세 곳에 동시에** 박힌다 — 참조 파일 예시에만 있으면 예시가 사실상의 정본이 되고, 예시를 고칠 때 나머지 둘이 안 따라온다. `<base_sha7>`은 같은 타깃을 **다른 base에서** 돌릴 때의 충돌을 없앤다 |
 | `step_timeout_install_seconds` | `1800` | rehearsal (T1 의존성 설치) | 신설 2026-08-18 |
 | `step_timeout_check_seconds` | `900` | rehearsal (T1 타입체크·테스트) | 신설 2026-08-18 |
-| `step_timeout_build_seconds` | `2700` | rehearsal (T2 네이티브 빌드 · `pod install`) | 신설 2026-08-18 |
+| `step_timeout_build_seconds` | `2700` | rehearsal (T2 네이티브 빌드 · `pod install` · Expo CNG의 `expo prebuild`) | 신설 2026-08-18. prebuild 추가 2026-09-24 — 새 상수를 두지 않는다, 같은 T2 준비 단계다 |
 | `step_timeout_boot_seconds` | `600` | rehearsal (T2 부팅 + 로그 스캔) | 신설 2026-08-18 |
 
 - **타임아웃이 티어가 아니라 단계 단위인 이유**는 멈추는 지점이 단계마다 다르기 때문이다. Gradle 빌드의 45분과 `pod install`이 네트워크에서 멈춘 45분은 같은 상한을 쓸 수 없다. **`boot_survival_seconds`(통과 조건)와 `step_timeout_boot_seconds`(상한)를 같게 만들면 "60초 생존"을 관측할 시간 자체가 없다** — 둘은 다른 축이다.
@@ -154,6 +164,8 @@ rn-upgrade-kit/
 > `rehearsal`: POSIX 전용 — **네이티브 빌드를 실제 실행하기 때문**이다. 검증 못 한 실행 경로를 사실로 쓰지 않는다.
 > `platform-watch`: 전 호스트 — 웹 조회와 텍스트 파일 읽기만 한다. 유닉스 유틸·셸 문법 의존 0.
 > `currency`: 전 호스트 — 조회·파일 읽기 + registry 조회용 `node -e` 한 줄. 대상이 RN 프로젝트이므로 node는 항상 존재한다.
+>
+> (2026-09-24 · Expo 대응: `currency`의 `node -e`는 registry·Expo API 원문 조회 용도로 넓어졌다. 용도는 여전히 "원문 채널 조회" 하나다. 고정 문구의 "registry 조회용"은 README에서 "registry·Expo API 조회용"으로 쓴다.)
 >
 > **Windows에서도 iOS 항목은 판정된다.** `Podfile`·`project.pbxproj`·`xcconfig`는 repo 안 텍스트라 Xcode 없이 읽힌다 — **판정 가능한 것과 빌드 가능한 것은 별개다.**
 
@@ -204,6 +216,17 @@ platform-watch  ──파일──▶  currency  ──커맨드 블록──▶
 /rn-upgrade-kit:currency [--track core|lib] [--target <pkg>] | platform
 /rn-upgrade-kit:rehearsal <pkg@ver>... [--platform android|ios]
 ```
+
+### 4.7 프로젝트 전제 — Expo 지원 범위 (2026-09-24 추가)
+
+README의 전제 절은 **"Expo 미사용"을 지우고** 지원 범위를 적는다.
+
+- RN · Expo bare · Expo managed(CNG) 셋을 플랫폼마다 감지한다.
+- SDK↔RN 대응과 SDK 기본값은 실행할 때 조회한다 — 스킬에 적혀 있지 않다.
+- `currency`는 새 SDK를 권장하지 않는다. 🟡로 알리고 SDK 업그레이드 리허설 블록을 준다.
+- `rehearsal`은 CNG 플랫폼에서 T2를 `expo prebuild`로 시작한다. EAS Build는 부르지 않는다.
+- `app.config.js`·`.ts`는 평가하지 않는다. 식으로 된 값은 `확인 못 함`이다.
+- Expo 경로는 **실행 검증 전**이다.
 
 ---
 
