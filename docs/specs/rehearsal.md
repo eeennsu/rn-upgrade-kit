@@ -58,6 +58,8 @@ allowed-tools: Read Write Glob Bash WebFetch
 
 > **구현 정정 (2026-08-18):** **검사 1의 registry 조회는 `WebFetch`가 아니라 `Bash`의 `node -e`다.** 위 `WebFetch` 줄은 실행 거부 판정을 요약 채널에 걸어둔 상태였다 — 근거는 §구현 감사 반영 «인자 검증 1을 `node -e`로». 검사 2는 인자 문자열만 보므로 조회가 필요 없다(위 줄이 검사 2를 조회로 묶은 것도 틀렸다). **`allowed-tools` 줄 자체는 이 정정으로 바꾸지 않는다** — 도구 목록 조정은 별도 판단이고, 스펙이 앞질러 정하면 구현과 또 어긋난다.
 
+> **정정 (2026-09-24 · Agent Skills 자족화):** 구현 frontmatter는 `user-invocable`을 빼고 `license: MIT`·`compatibility`를 더했으며, `argument-hint`를 따옴표로 감쌌다(`plugin-shell.md` §3 정정). 위 YAML 블록은 인터뷰 후 초안이라 고치지 않는다 — 현행 정본은 `skills/rehearsal/SKILL.md` frontmatter다.
+
 ### 인자 문법
 
 - **위치 인자 = 목표 버전 세트.** `<pkg>@<ver>` 형태를 1개 이상. `currency` 리포트의 커맨드 블록을 그대로 복붙한 형태가 정본이다.
@@ -606,7 +608,8 @@ artifacts: 보존 3개, 자동 정리 1개
 
 ## Technical Context
 
-- 자매 스킬 정본: `seed/rn-currency-SKILL.md` — frontmatter(`name`/`description`/`user-invocable`/`argument-hint`/`allowed-tools`), 번호 절 구조, 서두 불릿 원칙, `references/*.md` 지연 로드 패턴을 그대로 따른다.
+- 자매 스킬 정본: `seed/rn-currency-SKILL.md` — frontmatter(`name`/`description`/`user-invocable`/`argument-hint`/`allowed-tools`), 번호 절 구조, 서두 불릿 원칙, `references/*.md` 지연 로드 패턴을 그대로 따른다. (2026-09-24 정정: frontmatter 현행은 §스킬 표면의 정정 블록.)
+- **경로 표기 (2026-09-24):** 이 스펙의 `shared/constants.md`·`shared/lockstep-sets.md`는 **정본 위치**다. 스킬은 사본 `references/constants.md`·`references/lockstep-sets.md`를 읽는다. AC의 *"`shared/…`에서 온다"*는 *"정본과 같은 내용의 사본에서 온다"*로 읽는다 — 사본이 정본과 같은지는 `node scripts/sync.mjs --check`(CI)가 보증한다(`plugin-shell.md` §1 정정).
 - `currency`가 산정하는 **권장 버전(safe target)**이 이 스킬의 자연스러운 입력이다. 전달은 파일이 아니라 `currency` 리포트의 **복사 가능한 단일 커맨드 블록**이고 사용자가 전송체다(`.rn-upgrade-kit/handoff/` 아래 currency 소유 파일은 없다). **목표 버전은 인자로만 받는다 — `currency` 리포트를 파싱하지 않는다** (§인자 검증). ~~미지정 시 리포트에서 읽는 경로를 열어둘 수 있다(설계 재량)~~는 `currency` 라운드 6에서 기각됐다.
 - 대상 프로젝트 전제: New Architecture (`newArchEnabled=true`, Hermes, Nitro Modules, Reanimated 4), **Expo 미사용**.
 - `currency` §3의 lockstep 게이트(Reanimated ↔ `react-native-worklets`, `react-native` ↔ `react`)는 리허설 대상 버전 세트를 구성할 때 동일하게 적용된다.

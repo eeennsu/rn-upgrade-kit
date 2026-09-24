@@ -333,6 +333,7 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
   - **표기는 `currency`와 글자까지 같다.** 두 advisory 스킬이 같은 보존 상수를 참조하는데 문구가 갈리면 사용자가 두 리포트를 다른 정책으로 읽는다.
   - **`currency`와 같은 상수를 참조한다** (`currency` 라운드 9a). 두 advisory 스킬은 같은 매체(마크다운 수 KB)라 성격이 같다 — 각자 하드코딩하면 한쪽만 바뀌는 드리프트가 난다. `rehearsal`의 N=3은 매체가 다르므로(수십 MB) 성격에서 파생된 정당한 차이다.
   - 상수의 물리적 위치는 **플러그인 루트 `shared/constants.md`의 `report_retention_n`**으로 확정됐다 (인터뷰 후 — `docs/specs/plugin-shell.md` §2). 스킬별 `references/`는 소유자가 하나라 공유물을 담을 수 없다 — 핸드오프를 `handoff/` 중립 지대에 둔 논리와 동일하다. `handoff_path`·`grade_threshold_days`·`url_candidate_limit`도 같은 파일에서 온다.
+    - **정정 (2026-09-24):** 정본은 여전히 `shared/constants.md`다. 다만 스킬은 자기 폴더의 사본 `references/constants.md`를 읽는다 — 스킬 폴더 하나만 설치되는 경로(`npx skills`)에는 `shared/`가 없다(`plugin-shell.md` §1 «정정 (2026-09-24)»). *"공유물을 담을 수 없다"*는 정본의 위치에 대해서만 참이다.
 - **같은 날 두 번 실행하면 덮어쓴다** (`currency` 라운드 9c). 시각 suffix를 붙이지 않는다 — 붙이면 보존 상한 계산이 "12일"이 아니라 "12파일"로 흔들려 상한의 의미가 바뀐다. 스코프를 좁혀 돌렸어도 파일을 쪼개지 않는다(헤더의 스코프 줄이 그 사실을 담는다).
 
 ---
@@ -664,7 +665,8 @@ seed §4의 🔴🟠🟡⚪는 **강제성 × 임박도** 2축이었다. 확정 
 
 ## Technical Context
 
-- **자매 스킬 정본:** `seed/rn-currency-SKILL.md` — frontmatter(`name`/`description`/`user-invocable`/`argument-hint`/`allowed-tools`), 번호 절 구조, 서두 불릿 원칙, `references/*.md` 지연 로드 패턴을 그대로 따른다. seed §1 Track C와 §2의 "Track C는 registry에 아예 없다 — 웹 조회가 유일한 경로다"가 이 스킬의 직접 전신이다.
+- **자매 스킬 정본:** `seed/rn-currency-SKILL.md` — frontmatter(`name`/`description`/`user-invocable`/`argument-hint`/`allowed-tools`), 번호 절 구조, 서두 불릿 원칙, `references/*.md` 지연 로드 패턴을 그대로 따른다. seed §1 Track C와 §2의 "Track C는 registry에 아예 없다 — 웹 조회가 유일한 경로다"가 이 스킬의 직접 전신이다. (2026-09-24 정정: 구현 frontmatter는 `user-invocable`을 빼고 `license`·`compatibility`·`disallowed-tools`를 더했다 — `plugin-shell.md` §3 정정.)
+- **경로 표기 (2026-09-24):** 이 스펙의 `shared/constants.md`는 **정본 위치**다. 스킬은 사본 `references/constants.md`를 읽는다. AC의 *"`shared/…`에서 온다"*는 *"정본과 같은 내용의 사본에서 온다"*로 읽는다 — 사본이 정본과 같은지는 `node scripts/sync.mjs --check`(CI)가 보증한다(`plugin-shell.md` §1 정정).
 - **형제 스펙:** `docs/specs/rehearsal.md` — 판정 어휘 소수 고정 + 오염 플래그 분리, 사유 구분 표기("요청 안 함"과 "못 함"은 다른 사유), 지원 호스트 매트릭스 명시, `.gitignore` 미수정 원칙, 산출물 보존 상한을 이 스펙이 계승한다.
 - `allowed-tools`: **`Read Write Glob WebSearch WebFetch Agent`** — **`Bash` 불포함**(셸 의존 0).
   - **정정 (2026-08-18 · 구현 감사 반영): 목록에서 빠진 것만으로는 `Bash`가 막히지 않는다.** `allowed-tools`는 승인 스킵이지 제한이 아니다 — 공식 문서가 *"It does not restrict which tools are available: every tool remains callable"*라고 못박는다(https://code.claude.com/docs/en/skills). 그래서 구현은 **`disallowed-tools: Bash Edit`**을 신설했다. **이게 "전 호스트 지원"을 처음으로 구조적 사실로 만든다** — 그 전까지 셸 미사용은 본문 문장 하나에만 기대고 있었다.

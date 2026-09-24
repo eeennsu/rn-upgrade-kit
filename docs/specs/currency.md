@@ -442,6 +442,7 @@ platform 추적은 platform-watch가 담당한다.
 - `platform-watch`와 **같은 값·같은 정리 보고 한 줄**. 같은 매체(마크다운 수 KB)이므로 성격이 같다.
 - `rehearsal`의 N=3은 매체가 다르므로(수십 MB) **성격에서 파생된 정당한 차이**다.
 - **N은 조정 가능한 값으로 한 곳에** 둔다. 두 advisory 스킬이 같은 상수를 참조해 한쪽만 바뀌는 드리프트를 막는다. 물리적 위치는 **플러그인 루트 `shared/constants.md`의 `report_retention_n`**으로 확정됐다 (인터뷰 후 — `docs/specs/plugin-shell.md` §2). 스킬별 `references/`는 소유자가 하나라 공유물을 담을 수 없다. `soak_minor_days`·`soak_patch_days`·`handoff_path`·`handoff_schema_version`도 같은 파일에서 온다.
+  - **정정 (2026-09-24):** 정본은 여전히 `shared/constants.md`다. 다만 스킬은 자기 폴더의 사본 `references/constants.md`를 읽는다 — 스킬 폴더 하나만 설치되는 경로(`npx skills`)에는 `shared/`가 없다(`plugin-shell.md` §1 «정정 (2026-09-24)»). *"스킬별 `references/`는 공유물을 담을 수 없다"*는 정본의 위치에 대해서만 참이다.
 - **초과분을 지우지 않는다 — 보고만 한다 (2026-08-18 · 구현 감사 반영).** 이 스킬에는 **파일을 지울 수단이 없다**: `Write`는 덮어쓰기만 하고 `Bash`는 §수집의 `node -e` 1종으로 잠겨 있다. 그 제약은 실수가 아니라 전 호스트 지원의 구조적 근거라 도구를 늘려 풀지 않는다. **없는 수단의 실행 결과를 보고하면 그게 환각이고, 환각 금지는 이 스킬의 1번 제약이다.** 고정 표기는 `리포트 N개 유지 · 상한 초과 M개 — 수동 정리 필요`이고 그 아래 초과 파일 경로를 나열한다 — 조용히 방치하면 사용자는 파일이 쌓이는 걸 모른다.
 - **정리 커맨드는 적지 않고 경로만 낸다.** 호스트가 POSIX인지 PowerShell인지 확인할 수단이 없다 — 확인 못 한 커맨드를 적으면 사용자가 그대로 붙여넣어 엉뚱한 것을 지운다.
 - **`rehearsal`만 자동 정리를 유지한다.** 그쪽은 `Bash` 용도 제한이 없어 실제로 지울 수 있다. 세 스킬이 갈리는 근거는 정책이 아니라 **가진 도구**다.
@@ -753,7 +754,8 @@ zustand-persist · react-native-mmkv · @gorhom/bottom-sheet · react-native-scr
 
 ## Technical Context
 
-- **정본:** `seed/rn-currency-SKILL.md` — frontmatter(`name`/`description`/`user-invocable`/`argument-hint`/`allowed-tools`), 번호 절 구조, 서두 불릿 원칙, `references/*.md` 지연 로드 패턴을 그대로 따른다. §0~§5 구조는 유지하되 Track C 관련 문단과 Bash 블록이 제거된다.
+- **정본:** `seed/rn-currency-SKILL.md` — frontmatter(`name`/`description`/`user-invocable`/`argument-hint`/`allowed-tools`), 번호 절 구조, 서두 불릿 원칙, `references/*.md` 지연 로드 패턴을 그대로 따른다. §0~§5 구조는 유지하되 Track C 관련 문단과 Bash 블록이 제거된다. (2026-09-24 정정: 구현 frontmatter는 `user-invocable`을 빼고 `license`·`compatibility`·`disallowed-tools`를 더했다 — `plugin-shell.md` §3 정정.)
+- **경로 표기 (2026-09-24):** 이 스펙의 `shared/constants.md`·`shared/lockstep-sets.md`는 **정본 위치**다. 스킬은 사본 `references/constants.md`·`references/lockstep-sets.md`를 읽는다. AC의 *"`shared/…`에서 온다"*는 *"정본과 같은 내용의 사본에서 온다"*로 읽는다 — 사본이 정본과 같은지는 `node scripts/sync.mjs --check`(CI)가 보증한다(`plugin-shell.md` §1 정정).
 - **형제 스펙:** `docs/specs/platform-watch.md`(핸드오프 계약·경로 규약·degrade 원칙·⚠✅ 기호), `docs/specs/rehearsal.md`(어휘 소수 고정 + 직교 플래그, 사유 구분 표기, 보존 상한, 단일 복붙 블록 형태).
 - `allowed-tools`: **`Read Write Glob Bash WebFetch Agent Skill`** — `WebSearch` 불포함. `Bash`는 §수집의 `node -e` 1종 용도로 본문에서 잠근다.
 - **`references/sources.md` 신설** — SM(`react-native-best-practices`)·Callstack(`react-native-perf-guide`) skill이 없을 때의 폴백 문서 URL과, 릴리즈 노트 태그 URL 조립 규칙(모노레포·태그 접두사 변형)의 정본. **`WebSearch`가 없으므로 폴백은 "검색해서 찾는다"가 될 수 없다 — URL을 미리 알고 있어야 한다.**

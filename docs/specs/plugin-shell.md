@@ -38,13 +38,37 @@ rn-upgrade-kit/
   README.md
 ```
 
+> **정정 (2026-09-24 · Agent Skills 자족화):** 현재 트리는 위 레이아웃에 다음이 더해진다.
+>
+> ```
+> rn-upgrade-kit/
+>   .claude-plugin/
+>     plugin.json                 ← 정본 매니페스트
+>     marketplace.json            ← 마켓플레이스 (source "./")
+>   plugin.json                   ← Agent Plugins 1.0 매니페스트 — 생성물
+>   LICENSE                       ← MIT
+>   skills/<스킬>/
+>     LICENSE                     ← 루트 LICENSE 사본 — 생성물
+>     references/constants.md     ← shared/ 사본 — 생성물 (세 스킬)
+>     references/lockstep-sets.md ← shared/ 사본 — 생성물 (currency · rehearsal)
+>   scripts/sync.mjs              ← 사본·루트 매니페스트 생성 + --check
+>   .github/workflows/sync-check.yml ← CI: node scripts/sync.mjs --check
+>   docs/specs/                   ← 설계 정본 (이 파일 포함)
+> ```
+>
+> 생성물은 직접 고치지 않는다 — 정본(`shared/`·`LICENSE`·`.claude-plugin/plugin.json`)을 고치고 `node scripts/sync.mjs`를 돌린다.
+
 ### `shared/`가 필요한 이유
 
 스킬별 `references/`는 **소유자가 하나**다. 보존 상한 N·등급 임계일·핸드오프 경로는 **둘 이상의 스킬이 같은 값을 봐야 하는** 값이라 어느 스킬 폴더에 넣어도 남의 집이다 — 핸드오프 파일을 `handoff/` 중립 지대에 둔 논리와 동일하다(`platform-watch` 라운드 9).
 
-- 스킬 본문에서 상대 경로로 참조한다: `../../shared/constants.md`.
+- ~~스킬 본문에서 상대 경로로 참조한다: `../../shared/constants.md`.~~ → **스킬은 자기 폴더의 사본 `references/<파일>`을 읽는다** (아래 정정).
 - `skills/` 하위에 두지 않는다 — 그 아래 디렉터리는 스킬로 해석된다.
 - **하드코딩 금지 대상:** 아래 표의 모든 값. 스킬 본문에 숫자를 적지 않고 이 파일을 Read한다.
+
+> **정정 (2026-09-24 · Agent Skills 자족화):** 스킬이 플러그인으로만 설치되지 않게 됐다. Agent Skills 표준 폴더라 `npx skills`·스킬 단위 업로드로 **스킬 폴더 하나만** 설치되는 경로가 생겼고, 그 경로에는 `../../shared/`가 없다. 그래서 **정본은 `shared/`에 그대로 두고, 각 스킬 폴더의 `references/`에 사본을 둔다.** 사본은 `scripts/sync.mjs`가 만든다. `--check`는 CI(`.github/workflows/sync-check.yml`)에서 세 가지를 검사한다 — 사본이 정본과 어긋나는지, 스킬 본문이 폴더 밖(`../../`)을 가리키는지, frontmatter가 엄격한 YAML 파서에서 깨지는지.
+>
+> 위 *"스킬별 `references/`는 소유자가 하나라 공유물을 담을 수 없다"*는 **정본의 위치**에 대해서는 여전히 참이다. 사본은 공유물을 소유하는 게 아니라 배달하는 것이다. **사본을 직접 고치지 않는다** — 설치본에는 CI 검사가 없어서, 한 사본만 고치면 스킬끼리 다른 값을 보는 드리프트가 조용히 생긴다.
 
 ### `shared/lockstep-sets.md` — 두 번째 공유물 (신설 · 2026-08-18)
 
@@ -58,6 +82,8 @@ rn-upgrade-kit/
 **상대경로 해석 기준이 스킬 파일 위치라는 보장이 없다** — 호출 시점의 작업 디렉토리는 사용자 RN 프로젝트다. 그래서 상수 파일 자신이 도달 절차를 정의한다: ① 스킬 로드 시점에 주어지는 자기 `SKILL.md` 절대경로에서 플러그인 루트를 파생해 `<루트>/shared/constants.md`를 Read한다 — 상대경로 `../../shared/…` 표기는 이 파생의 축약이지 작업 디렉토리 기준이 아니다. ② 실패 시 `Glob` `**/rn-upgrade-kit/shared/constants.md` 폴백. ③ 둘 다 실패하면 **숫자를 지어내지 말고** 세 스킬 공통의 `상수 도달 실패` degrade로 간다.
 
 > **정정 (2026-08-29):** ②의 `Glob` 폴백은 **작업 디렉토리(사용자 RN 프로젝트) 기준으로 검색하므로, 플러그인이 그 트리 안에 있을 때(로컬 개발·`--plugin-dir`)만 잡는다.** 설치본(`~/.claude/plugins/**` 계열)은 프로젝트 트리 밖이라 이 폴백이 영영 못 찾는다 — 원안은 이 한계를 적지 않아 폴백을 일반 해법처럼 읽게 했고, 그러면 `상수 도달 실패` degrade의 빈도를 과소평가하게 된다. 실효 방어선은 ①이다 — 그래서 ①을 "상대경로 Read"가 아니라 "스킬 파일 절대경로에서 파생"으로 명시했다.
+
+> **정정 (2026-09-24 · Agent Skills 자족화):** 도달 절차가 사본 기준으로 바뀌었다. ① 자기 `SKILL.md`의 폴더(스킬 루트)를 기준으로 `references/constants.md`를 절대경로로 풀어 Read한다 — 플러그인 루트를 파생하는 단계가 없어졌다. ② `Glob` 폴백은 `**/<자기 스킬 이름>/references/constants.md`다. 2026-08-29 정정이 적은 한계(작업 디렉토리 기준이라 전역 설치본은 못 찾는다)는 그대로다. ③ 추정 기본값 금지도 그대로다. 절차의 정본 서술은 `shared/constants.md`의 «이 파일에 도달하는 법»이다.
 
 > **추정 기본값 금지가 이 절의 핵심이다.** 이 파일의 존재 이유가 *"한쪽만 바뀌는 드리프트 방지"*인데, 못 읽었을 때 "흔한 기본값"으로 때우면 드리프트를 막는 대신 **만들어낸다.** 범위는 보존 상한·등급 임계일·soak 일수·타임아웃·`boot_survival_seconds` 전부다.
 
@@ -103,6 +129,10 @@ rn-upgrade-kit/
 
 - `version`은 semver. 초기 `0.1.0`.
 - 스킬은 `skills/` 자동 발견에 맡긴다 — 매니페스트에 나열하지 않는다.
+
+> **정정 (2026-09-24 · Agent Skills 자족화):** 필드가 늘었다 — `homepage`·`repository`·`license`(`MIT`)·`keywords`. 정본은 `.claude-plugin/plugin.json`이다. 루트 `plugin.json`(Agent Plugins 1.0 매니페스트)은 `scripts/sync.mjs`가 이식 가능한 필드만 옮겨 만드는 생성물이다 — 그 스키마가 루트에 `additionalProperties: false`라서다. 마켓플레이스 매니페스트 `.claude-plugin/marketplace.json`(source `./`)이 추가됐다.
+>
+> 스킬 frontmatter도 바뀌었다. `license`·`compatibility`가 붙었고, `argument-hint` 값은 따옴표로 감싼다 — 엄격한 YAML 파서에서 `[`로 시작하는 평문 값이 frontmatter 전체를 죽이기 때문이다. `user-invocable`은 뺐다(기본값과 같은 `true`였다). 세 스킬 스펙의 frontmatter 예시·Technical Context는 인터뷰 시점 초안이라 이 정정이 우선한다. `argument-hint`·`disallowed-tools`는 Agent Skills 스펙에 없는 Claude Code 확장 필드라 `skills-ref validate`는 실패한다 — 의도된 것이다(README «Claude Code 밖에서 달라지는 것»).
 
 ---
 
